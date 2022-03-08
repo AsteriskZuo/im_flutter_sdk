@@ -29,6 +29,11 @@ android {
     defaultConfig {
         minSdkVersion 19
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        externalNativeBuild {
+            cmake {
+                cppFlags ''
+            }
+        }
     }
 
     //自3.6.0开始需要java8的支持
@@ -39,6 +44,12 @@ android {
 
     lintOptions {
         disable 'InvalidPackage'
+    }
+    externalNativeBuild {
+        cmake {
+            path file('src/main/cpp/CMakeLists.txt')
+            version '3.10.2'
+        }
     }
 
 }

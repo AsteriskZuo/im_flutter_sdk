@@ -1,0 +1,15 @@
+//
+// Created by asterisk on 2022/3/3.
+//
+
+#ifndef ANDROID_EXTSDKLISTENERJAVA_H
+#define ANDROID_EXTSDKLISTENERJAVA_H
+
+#include "ExtSdkListener.h"
+#include <jni.h>
+
+EXT_SDK_NAMESPACE_BEGIN
+
+EXT_SDK_NAMESPACE_END
+
+#endif //ANDROID_EXTSDKLISTENERJAVA_H
