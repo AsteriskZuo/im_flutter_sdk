@@ -12,7 +12,7 @@ A new flutter plugin project.
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'Your Company' => 'email@example.com' }
   s.source           = { 
-    # :git => 'https://github.com/AsteriskZuo/im_flutter_sdk.git'
+    # :git => 'https://github.com/AsteriskZuo/im_flutter_sdk.git', :branch => "ext_sdk", :commit => "911483aed3300a25b53013350e36f1134eea5f4f"
     :path => '.' 
   }
 
@@ -25,19 +25,8 @@ A new flutter plugin project.
 
   s.dependency 'Flutter'
   s.dependency 'HyphenateChat','3.8.3.1'
-  # s.dependency 'im_flutter_sdk_cpp', :podspec => 'https://raw.github.com/gist/1346394/1d26570f68ca27377a27430c65841a0880395d72/JSONKit.podspec'
 
   s.ios.deployment_target = '10.0'
-
-  # s.subspec 'cpp' do |s_cpp|
-  #   # s_cpp.source = {
-  #   #   :git => 'https://github.com/AsteriskZuo/im_flutter_sdk.git',
-  #   # }
-  #   s_cpp.source_files = 'ext_sdk/cpp/common/**/*.cpp'
-  #   s_cpp.public_header_files = 'ext_sdk/cpp/common/**/*.h'
-  #   s_cpp.dependency 'Flutter'
-  #   s_cpp.ios.deployment_target = '10.0'
-  # end
 
 end
 
