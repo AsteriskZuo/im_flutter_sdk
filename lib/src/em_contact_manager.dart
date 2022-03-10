@@ -3,18 +3,19 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:im_flutter_sdk/im_flutter_sdk.dart';
 
+import 'em_channel.dart';
 import 'em_listeners.dart';
 import 'em_sdk_method.dart';
+import 'em_test.dart';
 import 'models/em_domain_terms.dart';
 
 class EMContactManager {
-  static const _channelPrefix = 'com.easemob.im';
-  static const MethodChannel _channel = const MethodChannel(
-      '$_channelPrefix/em_contact_manager', JSONMethodCodec());
-
+  static MethodChannel _channel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'em_contact_manager' : 'dart_to_native');
+  static MethodChannel _recvChannel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'em_contact_manager' : 'native_to_dart');
+ 
   /// @nodoc
   EMContactManager() {
-    _channel.setMethodCallHandler((MethodCall call) async {
+    _recvChannel.setMethodCallHandler((MethodCall call) async {
       Map? argMap = call.arguments;
       if (call.method == EMSDKMethod.onContactChanged) {
         return _onContactChanged(argMap!);

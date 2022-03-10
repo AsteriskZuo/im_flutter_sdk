@@ -3,6 +3,7 @@
 //
 
 #include "ExtSdkJniHelper.h"
+#include "ExtSdkApiJava.h"
 #include "ExtSdkLog.h"
 #include <pthread.h>
 
@@ -21,6 +22,7 @@ void ExtSdkJniHelper::init(JavaVM *vm) {
 }
 
 void ExtSdkJniHelper::unInit(JavaVM *vm) {
+    gvm = NULL;
 }
 
 JNIEnv *ExtSdkJniHelper::attachCurrentThread() {
@@ -71,6 +73,7 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
 
     EXT_SDK_NAMESPACE_USING
     ExtSdkJniHelper::getInstance()->init(vm);
+    ExtSdkApiJava::initJni(env);
 
     return JNI_VERSION_1_6;
 }
@@ -83,4 +86,5 @@ JNIEXPORT void JNI_OnUnload(JavaVM *vm, void *reserved) {
         return;
 
     ExtSdkJniHelper::getInstance()->unInit(vm);
+    ExtSdkApiJava::unInitJni(env);
 }

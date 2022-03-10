@@ -4,19 +4,57 @@
 
 #include "ExtSdkApiJava.h"
 #include "ExtSdkObjectJava.h"
-#include "ExtSdkListenerJava.h"
 #include "ExtSdkApi.h"
 #include "ExtSdkJniHelper.h"
 #include <jni.h>
 
 EXT_SDK_NAMESPACE_BEGIN
 
+static jclass jcls_ExtSdkDispatch;
+static jmethodID jmid_getInstance;
+static jmethodID jmid_callSdkApi;
+static jmethodID jmid_addListener;
+
+void ExtSdkApiJava::initJni(JNIEnv* env) {
+    if (!env)
+        return;
+
+    jclass jcls = env->FindClass("com/easemob/ext_sdk/dispatch/ExtSdkDispatch");
+    if (jcls) {
+        jcls_ExtSdkDispatch = (jclass)env->NewGlobalRef(jcls);
+        env->DeleteLocalRef(jcls);
+    }
+
+    jmid_getInstance = env->GetStaticMethodID(jcls_ExtSdkDispatch, "getInstance",
+                                                        "()Lcom/easemob/ext_sdk/dispatch/ExtSdkDispatch;");
+    jmid_callSdkApi = env->GetMethodID(jcls_ExtSdkDispatch, "callSdkApi",
+                                                 "(Ljava/lang/String;Ljava/lang/Object;Lcom/easemob/ext_sdk/common/ExtSdkCallback;)V");
+    jmid_addListener = env->GetMethodID(jcls_ExtSdkDispatch, "addListener",
+                                        "(Lcom/easemob/ext_sdk/common/ExtSdkListener;)V");
+}
+void ExtSdkApiJava::unInitJni(JNIEnv* env) {
+    if (jcls_ExtSdkDispatch) {
+        env->DeleteGlobalRef(jcls_ExtSdkDispatch);
+    }
+    jmid_getInstance = 0;
+    jmid_callSdkApi = 0;
+    jmid_addListener = 0;
+}
+
 void ExtSdkApiJava::init(const std::shared_ptr<ExtSdkObject> config) {
 
 }
 
 void ExtSdkApiJava::addListener(const std::shared_ptr<ExtSdkObject> listener) {
-
+    JNIEnv *env = 0;
+    env = ExtSdkJniHelper::getInstance()->attachCurrentThread();
+    if (!env)
+        return;
+    std::shared_ptr<ExtSdkObjectJava> java_listener = std::dynamic_pointer_cast<ExtSdkObjectJava>(
+            listener);
+    jobject jobj = env->CallStaticObjectMethod(jcls_ExtSdkDispatch, jmid_getInstance);
+    env->CallVoidMethod(jobj, jmid_addListener, java_listener->obj);
+    env->DeleteLocalRef(jobj);
 }
 
 void ExtSdkApiJava::delListener(const std::shared_ptr<ExtSdkObject> listener) {
@@ -35,16 +73,11 @@ ExtSdkApiJava::callSdkApi(const std::string &methodType, const std::shared_ptr<E
     std::shared_ptr<ExtSdkObjectJava> java_callback = std::dynamic_pointer_cast<ExtSdkObjectJava>(
             callback);
     jstring java_method_type = env->NewStringUTF(methodType.c_str());
-
-    jclass jcls = env->FindClass("com/easemob/ext_sdk/common/ExtSdkDispatch");
-    jmethodID jmid_getInstance = env->GetStaticMethodID(jcls, "getInstance",
-                                                        "()Lcom/easemob/ext_sdk/common/ExtSdkDispatch;");
-    jmethodID jmid_callSdkApi = env->GetMethodID(jcls, "callSdkApi",
-                                                 "(Ljava/lang/String;Ljava/lang/Object;Lcom/easemob/ext_sdk/common/ExtSdkCallback;)V");
-    jobject jobj = env->CallStaticObjectMethod(jcls, jmid_getInstance);
+    jobject jobj = env->CallStaticObjectMethod(jcls_ExtSdkDispatch, jmid_getInstance);
     env->CallVoidMethod(jobj, jmid_callSdkApi, java_method_type, java_params->obj,
                         java_callback->obj);
-    env->DeleteLocalRef(jcls);
+    env->DeleteLocalRef(jobj);
+    env->DeleteLocalRef(java_method_type);
 }
 
 void ExtSdkApiJava::unInit() {

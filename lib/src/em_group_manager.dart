@@ -3,18 +3,19 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:im_flutter_sdk/im_flutter_sdk.dart';
 
+import 'em_channel.dart';
+import 'em_test.dart';
 import 'models/em_domain_terms.dart';
 import 'em_sdk_method.dart';
 //import 'em_domain_terms.dart';
 import 'em_listeners.dart';
 
 class EMGroupManager {
-  static const _channelPrefix = 'com.easemob.im';
-  static const MethodChannel _channel = const MethodChannel(
-      '$_channelPrefix/em_group_manager', JSONMethodCodec());
+  static MethodChannel _channel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'em_group_manager' : 'dart_to_native');
+  static MethodChannel _recvChannel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'em_group_manager' : 'native_to_dart');
 
   EMGroupManager() {
-    _channel.setMethodCallHandler((MethodCall call) async {
+    _recvChannel.setMethodCallHandler((MethodCall call) async {
       Map? argMap = call.arguments;
       print('[EMGroupChange:]' + argMap.toString());
       if (call.method == EMSDKMethod.onGroupChanged) {

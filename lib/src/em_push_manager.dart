@@ -1,14 +1,15 @@
 import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'package:im_flutter_sdk/src/em_test.dart';
 
+import 'em_channel.dart';
 import 'em_sdk_method.dart';
 import 'models/em_domain_terms.dart';
 
 class EMPushManager {
-  static const _channelPrefix = 'com.easemob.im';
-  static const MethodChannel _channel =
-      const MethodChannel('$_channelPrefix/em_push_manager', JSONMethodCodec());
+  static MethodChannel _channel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'em_push_manager' : 'dart_to_native');
+  static MethodChannel _recvChannel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'em_push_manager' : 'native_to_dart');
 
   /// 从本地获取ImPushConfig
   Future<EMImPushConfig> getImPushConfig() async {

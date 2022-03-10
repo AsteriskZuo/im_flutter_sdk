@@ -1,8 +1,0 @@
-//
-// Created by asterisk on 2022/3/4.
-//
-
-#ifndef ANDROID_EXTSDKCALLBACK_H
-#define ANDROID_EXTSDKCALLBACK_H
-
-#endif //ANDROID_EXTSDKCALLBACK_H

@@ -38,5 +38,5 @@ public interface ExtSdkApi {
      * @param params     选填，后续确定。可以是空，map，json, pb字符串等。
      * @param callback   选填，不关注结果可以为空
      */
-    void callSdkApi(@NonNull String methodType, @Nullable Object params, @Nullable ExtSdkCallback callback);
+    void callSdkApi(@NonNull String methodType, @Nullable Object params, @NonNull ExtSdkCallback callback);
 }

@@ -2,15 +2,20 @@ package com.easemob.im_flutter_sdk;
 
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 
+import com.easemob.ext_sdk.common.ExtSdkContext;
+import com.easemob.ext_sdk.flutter.ExtSDkChannelManager;
+import com.easemob.ext_sdk.flutter.ExtSdkApiFlutter;
+import com.easemob.ext_sdk.flutter.ExtSdkTest;
 import com.hyphenate.EMCallBack;
 import com.hyphenate.EMValueCallBack;
 import com.hyphenate.util.EMLog;
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
+import io.flutter.plugin.common.JSONMethodCodec;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
-import io.flutter.plugin.common.PluginRegistry.Registrar;
 import io.flutter.plugin.common.MethodChannel.Result;
 
 import java.util.HashMap;
@@ -27,22 +32,45 @@ public class ImFlutterSdkPlugin implements FlutterPlugin, MethodChannel.MethodCa
     public ImFlutterSdkPlugin() {
     }
 
+    static {
+        System.loadLibrary("im_flutter_sdk");
+    }
+
+    static MethodChannel _channel;
+
 
     @Override
     public void onAttachedToEngine(FlutterPlugin.FlutterPluginBinding flutterPluginBinding) {
-        final MethodChannel channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), "em_client");
-        channel.setMethodCallHandler(new EMClientWrapper(flutterPluginBinding, "em_client"));
+        if (ExtSdkTest.TEST_TYPE == 1) {
+            final MethodChannel channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), "em_client");
+            channel.setMethodCallHandler(new EMClientWrapper(flutterPluginBinding, "em_client"));
+        } else if (ExtSdkTest.TEST_TYPE == 2) {
+            ExtSDkChannelManager.getInstance().add(flutterPluginBinding.getBinaryMessenger(), ExtSDkChannelManager.ExtSdkChannelName.SEND_CHANNEL);
+            ExtSDkChannelManager.getInstance().get(ExtSDkChannelManager.ExtSdkChannelName.SEND_CHANNEL).setMethodCallHandler(ExtSdkApiFlutter.getInstance());
+            ExtSDkChannelManager.getInstance().add(flutterPluginBinding.getBinaryMessenger(), ExtSDkChannelManager.ExtSdkChannelName.RECV_CHANNEL);
+            ExtSdkContext.context = flutterPluginBinding.getApplicationContext();
+            ExtSdkApiFlutter.getInstance().init(new Object());
+//            _channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), "dart_to_native", JSONMethodCodec.INSTANCE);
+//            _channel.setMethodCallHandler(this);
+        }
     }
 
     @Override
     public void onDetachedFromEngine(FlutterPlugin.FlutterPluginBinding flutterPluginBinding) {
+        if (ExtSdkTest.TEST_TYPE == 1) {
 
+        } else if (ExtSdkTest.TEST_TYPE == 2) {
+            ExtSdkApiFlutter.getInstance().unInit(null);
+        }
     }
 
     @Override
     public void onMethodCall(MethodCall call, MethodChannel.Result result) {
-
+        Log.i(TAG, call.method + ": " + call.arguments.toString());
+        result.notImplemented();
     }
+
+    private static final String TAG = "ImFlutterSdkPlugin";
 }
 
 
@@ -92,8 +120,7 @@ class EMWrapperCallBack implements EMCallBack {
 
 class EMValueWrapperCallBack<T> implements EMValueCallBack<T> {
 
-    EMValueWrapperCallBack(MethodChannel.Result result, String channelName)
-    {
+    EMValueWrapperCallBack(MethodChannel.Result result, String channelName) {
         this.result = result;
         this.channelName = channelName;
     }
@@ -121,7 +148,7 @@ class EMValueWrapperCallBack<T> implements EMValueCallBack<T> {
     }
 
     public void updateObject(Object object) {
-        post(()-> {
+        post(() -> {
             Map<String, Object> data = new HashMap<>();
             if (object != null) {
                 data.put(channelName, object);

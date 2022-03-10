@@ -2,18 +2,20 @@ import "dart:async";
 
 import 'package:flutter/services.dart';
 import 'package:im_flutter_sdk/src/models/em_domain_terms.dart';
+import 'em_channel.dart';
 import "em_listeners.dart";
 import 'em_sdk_method.dart';
 import 'package:im_flutter_sdk/src/models/em_cursor_result.dart';
 import 'package:im_flutter_sdk/src/models/em_page_result.dart';
 
+import 'em_test.dart';
+
 class EMChatRoomManager {
-  static const _channelPrefix = 'com.easemob.im';
-  static const MethodChannel _channel = const MethodChannel(
-      '$_channelPrefix/em_chat_room_manager', JSONMethodCodec());
+  static MethodChannel _channel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'em_chat_room_manager' : 'dart_to_native');
+  static MethodChannel _recvChannel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'em_chat_room_manager' : 'native_to_dart');
 
   EMChatRoomManager() {
-    _channel.setMethodCallHandler((MethodCall call) async {
+    _recvChannel.setMethodCallHandler((MethodCall call) async {
       Map? argMap = call.arguments;
       if (call.method == EMSDKMethod.chatRoomChange) {
         return _chatRoomChange(argMap!);

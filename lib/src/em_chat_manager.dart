@@ -2,18 +2,20 @@ import "dart:async";
 
 import 'package:flutter/services.dart';
 import 'package:im_flutter_sdk/im_flutter_sdk.dart';
+import 'package:im_flutter_sdk/src/em_test.dart';
 import 'models/em_domain_terms.dart';
 import 'em_sdk_method.dart';
+import 'em_channel.dart';
+import 'em_test.dart';
 
 class EMChatManager implements EMMessageStatusListener {
-  static const _channelPrefix = 'com.easemob.im';
-  static const MethodChannel _channel =
-      const MethodChannel('$_channelPrefix/em_chat_manager', JSONMethodCodec());
+  static MethodChannel _channel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'em_chat_manager' : 'dart_to_native');
+  static MethodChannel _recvChannel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'em_chat_manager' : 'native_to_dart');
 
   final List<EMChatManagerListener> _messageListeners = [];
 
   EMChatManager() {
-    _channel.setMethodCallHandler((MethodCall call) async {
+    _recvChannel.setMethodCallHandler((MethodCall call) async {
       if (call.method == EMSDKMethod.onMessagesReceived) {
         return _onMessagesReceived(call.arguments);
       } else if (call.method == EMSDKMethod.onCmdMessagesReceived) {

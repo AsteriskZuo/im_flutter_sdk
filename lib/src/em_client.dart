@@ -1,11 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:im_flutter_sdk/src/em_channel.dart';
 
 import 'em_chat_manager.dart';
 import 'em_contact_manager.dart';
 import 'em_chat_room_manager.dart';
+import 'em_test.dart';
 import 'em_userInfo_manager.dart';
+import 'em_channel.dart';
 
 import 'em_group_manager.dart';
 import 'em_listeners.dart';
@@ -17,9 +20,8 @@ import 'models/em_options.dart';
 import 'tools/em_log.dart';
 
 class EMClient {
-  static const _channelPrefix = 'com.easemob.im';
-  static const MethodChannel _channel =
-      const MethodChannel('$_channelPrefix/em_client', JSONMethodCodec());
+  static MethodChannel _channel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'em_client' : 'dart_to_native');
+  static MethodChannel _recvChannel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'em_client' : 'native_to_dart');
   static EMClient? _instance;
   final EMChatManager _chatManager = EMChatManager();
   final EMContactManager _contactManager = EMContactManager();
@@ -66,7 +68,7 @@ class EMClient {
   }
 
   void _addNativeMethodCallHandler() {
-    _channel.setMethodCallHandler((MethodCall call) async {
+    _recvChannel.setMethodCallHandler((MethodCall call) async {
       Map? argMap = call.arguments;
       if (call.method == EMSDKMethod.onConnected) {
         return _onConnected();
