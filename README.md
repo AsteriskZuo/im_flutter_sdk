@@ -17,6 +17,12 @@ Demo中使用的音视频是针对声网音视频封装的[EaseCallKit](https://
 
 **QQ群: 535134817**
 
+## 下载子项目
+```
+cd ext_sdk && git submodule add -b master -- git@github.com:AsteriskZuo/ext_sdk_cpp.git cpp
+cd ../ios && git submodule add -b master -- git@github.com:AsteriskZuo/ext_sdk_cpp.git cpp_mirror
+```
+
 ## 前期准备
 
 如果您还没有Appkey，可以前往[环信官网](https://www.easemob.com/)注册[即时通讯云](https://console.easemob.com/user/register)。
