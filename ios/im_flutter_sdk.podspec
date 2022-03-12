@@ -29,7 +29,7 @@ A new flutter plugin project.
   s.dependency 'HyphenateChat','3.8.3.1'
 
   s.pod_target_xcconfig = {
-    # 'DEFINES_MODULE' => 'YES',
+    'DEFINES_MODULE' => 'YES',
     "CLANG_CXX_LANGUAGE_STANDARD" => "c++11",
     'VALID_ARCHS[sdk=iphonesimulator*]' => 'x86_64',
     # "ENABLE_BITCODE": "NO",
