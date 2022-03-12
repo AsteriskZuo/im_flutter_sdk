@@ -23,6 +23,12 @@ cd ext_sdk && git submodule add -b master -- git@github.com:AsteriskZuo/ext_sdk_
 cd ../ios && git submodule add -b master -- git@github.com:AsteriskZuo/ext_sdk_cpp.git cpp_mirror
 ```
 
+## android问题
+  升级kotlin到1.5.31，不然报错，1.1.5.  
+
+## iOS问题
+  'GeneratedPluginRegistrant.h' file not found.
+
 ## 前期准备
 
 如果您还没有Appkey，可以前往[环信官网](https://www.easemob.com/)注册[即时通讯云](https://console.easemob.com/user/register)。
