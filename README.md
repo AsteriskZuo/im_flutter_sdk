@@ -27,7 +27,8 @@ cd ../ios && git submodule add -b master -- git@github.com:AsteriskZuo/ext_sdk_c
   升级kotlin到1.5.31，不然报错，1.1.5.  
 
 ## iOS问题
-  'GeneratedPluginRegistrant.h' file not found.
+  'GeneratedPluginRegistrant.h' file not found.  
+  Podfile: `use_modular_headers!`, and .podspec: `'DEFINES_MODULE' => 'YES'`
 
 ## 前期准备
 
