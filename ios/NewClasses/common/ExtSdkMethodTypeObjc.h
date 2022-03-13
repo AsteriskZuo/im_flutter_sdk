@@ -423,7 +423,7 @@ static const int ExtSDkMethodKeyUpdateOwnUserInfoWithTypeValue = 1101;
 static const int ExtSDkMethodKeyFetchUserInfoByIdValue = 1102;
 static const int ExtSDkMethodKeyFetchUserInfoByIdWithTypeValue = 1103;
 
-@interface ExtSdkMethodType : NSObject
+@interface ExtSdkMethodTypeObjc : NSObject
 
 + (int)getEnumValue:(nonnull NSString*)key;
 

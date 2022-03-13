@@ -1,7 +1,7 @@
 #import <Foundation/Foundation.h>
 #import "ExtSdkApiObjc.h"
 
-@interface ExtSdkApiFlutter : NSObject <ExtSdkApiObjc>
+@interface ExtSdkDispatchObjc : NSObject <ExtSdkApiObjc>
 
 + (nonnull instancetype)getInstance;
 

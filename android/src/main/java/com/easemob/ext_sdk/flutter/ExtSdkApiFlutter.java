@@ -54,7 +54,7 @@ public class ExtSdkApiFlutter implements ExtSdkApi, MethodChannel.MethodCallHand
             @Override
             public void onReceive(@NonNull String methodType, @Nullable Object data) {
                 ExtSdkThreadUtil.mainThreadExecute(()->{
-                    ExtSDkChannelManager.getInstance().get(ExtSDkChannelManager.ExtSdkChannelName.RECV_CHANNEL).invokeMethod(methodType, data);
+                    ExtSdkChannelManager.getInstance().get(ExtSdkChannelManager.ExtSdkChannelName.RECV_CHANNEL).invokeMethod(methodType, data);
                 });
             }
 

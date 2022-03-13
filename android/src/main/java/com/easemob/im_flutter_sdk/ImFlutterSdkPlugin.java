@@ -5,7 +5,7 @@ import android.os.Looper;
 import android.util.Log;
 
 import com.easemob.ext_sdk.common.ExtSdkContext;
-import com.easemob.ext_sdk.flutter.ExtSDkChannelManager;
+import com.easemob.ext_sdk.flutter.ExtSdkChannelManager;
 import com.easemob.ext_sdk.flutter.ExtSdkApiFlutter;
 import com.easemob.ext_sdk.flutter.ExtSdkTest;
 import com.hyphenate.EMCallBack;
@@ -45,9 +45,9 @@ public class ImFlutterSdkPlugin implements FlutterPlugin, MethodChannel.MethodCa
             final MethodChannel channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), "em_client");
             channel.setMethodCallHandler(new EMClientWrapper(flutterPluginBinding, "em_client"));
         } else if (ExtSdkTest.TEST_TYPE == 2) {
-            ExtSDkChannelManager.getInstance().add(flutterPluginBinding.getBinaryMessenger(), ExtSDkChannelManager.ExtSdkChannelName.SEND_CHANNEL);
-            ExtSDkChannelManager.getInstance().get(ExtSDkChannelManager.ExtSdkChannelName.SEND_CHANNEL).setMethodCallHandler(ExtSdkApiFlutter.getInstance());
-            ExtSDkChannelManager.getInstance().add(flutterPluginBinding.getBinaryMessenger(), ExtSDkChannelManager.ExtSdkChannelName.RECV_CHANNEL);
+            ExtSdkChannelManager.getInstance().add(flutterPluginBinding.getBinaryMessenger(), ExtSdkChannelManager.ExtSdkChannelName.SEND_CHANNEL);
+            ExtSdkChannelManager.getInstance().get(ExtSdkChannelManager.ExtSdkChannelName.SEND_CHANNEL).setMethodCallHandler(ExtSdkApiFlutter.getInstance());
+            ExtSdkChannelManager.getInstance().add(flutterPluginBinding.getBinaryMessenger(), ExtSdkChannelManager.ExtSdkChannelName.RECV_CHANNEL);
             ExtSdkContext.context = flutterPluginBinding.getApplicationContext();
             ExtSdkApiFlutter.getInstance().init(new Object());
 //            _channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), "dart_to_native", JSONMethodCodec.INSTANCE);

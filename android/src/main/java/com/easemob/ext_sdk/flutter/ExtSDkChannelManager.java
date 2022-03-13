@@ -11,7 +11,7 @@ import io.flutter.plugin.common.MethodChannel;
 /**
  * 通道管理器
  */
-public class ExtSDkChannelManager {
+public class ExtSdkChannelManager {
 
     public class ExtSdkChannelName {
         public static final String SEND_CHANNEL = "com.easemob.im.ext.dart_to_native";
@@ -19,11 +19,11 @@ public class ExtSDkChannelManager {
     }
 
     private static class SingleHolder {
-        static ExtSDkChannelManager instance = new ExtSDkChannelManager();
+        static ExtSdkChannelManager instance = new ExtSdkChannelManager();
     }
 
-    public static ExtSDkChannelManager getInstance() {
-        return ExtSDkChannelManager.SingleHolder.instance;
+    public static ExtSdkChannelManager getInstance() {
+        return ExtSdkChannelManager.SingleHolder.instance;
     }
 
     public boolean add(@NonNull BinaryMessenger messenger, @NonNull String name) {
