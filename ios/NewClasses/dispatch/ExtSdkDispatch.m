@@ -1,20 +1,20 @@
-#import "ExtSdkDispatchObjc.h"
+#import "ExtSdkDispatch.h"
 #import "ExtSdkDelegateObjc.h"
 
 
-@interface ExtSdkDispatchObjc () {
+@interface ExtSdkDispatch () {
     id<ExtSdkDelegateObjc> _listener;
 }
 
 @end
 
-@implementation ExtSdkDispatchObjc
+@implementation ExtSdkDispatch
 
 + (nonnull instancetype)getInstance {
-    static ExtSdkDispatchObjc *instance = nil;
+    static ExtSdkDispatch *instance = nil;
     static dispatch_once_t predicate;
     dispatch_once(&predicate, ^{
-      instance = [[ExtSdkDispatchObjc alloc] init];
+      instance = [[ExtSdkDispatch alloc] init];
     });
     return instance;
 }

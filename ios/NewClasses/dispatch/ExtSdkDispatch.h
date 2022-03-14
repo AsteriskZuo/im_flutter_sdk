@@ -1,7 +1,7 @@
 #import <Foundation/Foundation.h>
 #import "ExtSdkApiObjc.h"
 
-@interface ExtSdkDispatchObjc : NSObject <ExtSdkApiObjc>
+@interface ExtSdkDispatch : NSObject <ExtSdkApiObjc>
 
 + (nonnull instancetype)getInstance;
 
