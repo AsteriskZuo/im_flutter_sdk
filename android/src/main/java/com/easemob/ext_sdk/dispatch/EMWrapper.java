@@ -19,7 +19,7 @@ public class EMWrapper {
 //    protected void asyncRunnable(Runnable runnable) {
 //        ExtSdkThreadUtil.asyncExecute(runnable);
 //    }
-    protected void onSuccess(@NonNull ExtSdkCallback callback, @NonNull String methodType, @Nullable Object object) {
+    protected static void onSuccess(@NonNull ExtSdkCallback callback, @NonNull String methodType, @Nullable Object object) {
         Map<String, Object> data = new HashMap<>();
         if (object != null) {
             data.put(methodType, object);
@@ -27,7 +27,7 @@ public class EMWrapper {
         callback.success(data);
     }
 
-    protected void onError(@NonNull ExtSdkCallback callback, @NonNull Object e, @Nullable Object ext) {
+    public static void onError(@NonNull ExtSdkCallback callback, @NonNull Object e, @Nullable Object ext) {
         Map<String, Object> data = new HashMap<>();
         if (e instanceof HyphenateException) {
             data.put("error", HyphenateExceptionHelper.toJson((HyphenateException)e));
@@ -41,7 +41,7 @@ public class EMWrapper {
         callback.success(data);
     }
 
-    protected void onReceive(@NonNull String methodType, @Nullable Object data) {
+    protected static void onReceive(@NonNull String methodType, @Nullable Object data) {
         ExtSdkDispatch.getInstance().onReceive(methodType, data);
     }
 }

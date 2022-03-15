@@ -34,16 +34,9 @@ public class EMClientWrapper extends EMWrapper {
         return EMClientWrapper.SingleHolder.instance;
     }
 
-    public void createAccount(JSONObject param, String channelName, ExtSdkCallback result) {
-        String username;
-        String password;
-        try {
-            username = param.getString("username");
-            password = param.getString("password");
-        } catch (JSONException e) {
-            onError(result, e, null);
-            return;
-        }
+    public void createAccount(JSONObject param, String channelName, ExtSdkCallback result) throws JSONException {
+        String username = param.getString("username");
+        String password = param.getString("password");
         try {
             EMClient.getInstance().createAccount(username, password);
             onSuccess(result, channelName, username);
@@ -52,18 +45,10 @@ public class EMClientWrapper extends EMWrapper {
         }
     }
 
-    public void login(JSONObject param, String channelName, ExtSdkCallback result) {
-        boolean isPwd;
-        String username;
-        String pwdOrToken;
-        try {
-            isPwd = param.getBoolean("isPassword");
-            username = param.getString("username");
-            pwdOrToken = param.getString("pwdOrToken");
-        } catch (JSONException e) {
-            onError(result, e, null);
-            return;
-        }
+    public void login(JSONObject param, String channelName, ExtSdkCallback result) throws JSONException {
+        boolean isPwd = param.getBoolean("isPassword");
+        String username = param.getString("username");
+        String pwdOrToken = param.getString("pwdOrToken");
 
         if (isPwd) {
             EMClient.getInstance().login(username, pwdOrToken, new EMCallBack() {
@@ -109,14 +94,8 @@ public class EMClientWrapper extends EMWrapper {
     }
 
 
-    public void logout(JSONObject param, String channelName, ExtSdkCallback result) {
-        boolean unbindToken;
-        try {
-            unbindToken = param.getBoolean("unbindToken");
-        } catch (JSONException e) {
-            onError(result, e, null);
-            return;
-        }
+    public void logout(JSONObject param, String channelName, ExtSdkCallback result) throws JSONException {
+        boolean unbindToken = param.getBoolean("unbindToken");
         EMClient.getInstance().logout(unbindToken, new EMCallBack() {
             @Override
             public void onSuccess() {
@@ -135,14 +114,8 @@ public class EMClientWrapper extends EMWrapper {
         });
     }
 
-    public void changeAppKey(JSONObject param, String channelName, ExtSdkCallback result) {
-        String appKey;
-        try {
-            appKey = param.getString("appKey");
-        } catch (JSONException e) {
-            onError(result, e, null);
-            return;
-        }
+    public void changeAppKey(JSONObject param, String channelName, ExtSdkCallback result) throws JSONException {
+        String appKey = param.getString("appKey");
         try {
             EMClient.getInstance().changeAppkey(appKey);
             onSuccess(result, channelName, true);
@@ -155,14 +128,8 @@ public class EMClientWrapper extends EMWrapper {
         onSuccess(result, channelName, EMClient.getInstance().getCurrentUser());
     }
 
-    public void updateCurrentUserNick(JSONObject param, String channelName, ExtSdkCallback result) {
-        String nickName;
-        try {
-            nickName = param.getString("nickname");
-        } catch (JSONException e) {
-            onError(result, e, null);
-            return;
-        }
+    public void updateCurrentUserNick(JSONObject param, String channelName, ExtSdkCallback result) throws JSONException {
+        String nickName = param.getString("nickname");
         try {
             boolean status = EMClient.getInstance().pushManager().updatePushNickname(nickName);
             onSuccess(result, channelName, status);
@@ -200,19 +167,12 @@ public class EMClientWrapper extends EMWrapper {
         }
     }
 
-    public void kickDevice(JSONObject param, String channelName, ExtSdkCallback result) {
+    public void kickDevice(JSONObject param, String channelName, ExtSdkCallback result) throws JSONException {
 
-        String username;
-        String password;
-        String resource;
-        try {
-            username = param.getString("username");
-            password = param.getString("password");
-            resource = param.getString("resource");
-        } catch (JSONException e) {
-            onError(result, e, null);
-            return;
-        }
+        String username = param.getString("username");
+        String password = param.getString("password");
+        String resource = param.getString("resource");
+
         try {
             EMClient.getInstance().kickDevice(username, password, resource);
             onSuccess(result, channelName, true);
@@ -221,16 +181,10 @@ public class EMClientWrapper extends EMWrapper {
         }
     }
 
-    public void kickAllDevices(JSONObject param, String channelName, ExtSdkCallback result) {
-        String username;
-        String password;
-        try {
-            username = param.getString("username");
-            password = param.getString("password");
-        } catch (JSONException e) {
-            onError(result, e, null);
-            return;
-        }
+    public void kickAllDevices(JSONObject param, String channelName, ExtSdkCallback result) throws JSONException {
+        String username = param.getString("username");
+        String password = param.getString("password");
+
         try {
             EMClient.getInstance().kickAllDevices(username, password);
             onSuccess(result, channelName, true);
@@ -247,16 +201,9 @@ public class EMClientWrapper extends EMWrapper {
 
     }
 
-    public void getLoggedInDevicesFromServer(JSONObject param, String channelName, ExtSdkCallback result) {
-        String username;
-        String password;
-        try {
-            username = param.getString("username");
-            password = param.getString("password");
-        } catch (JSONException e) {
-            onError(result, e, null);
-            return;
-        }
+    public void getLoggedInDevicesFromServer(JSONObject param, String channelName, ExtSdkCallback result) throws JSONException {
+        String username = param.getString("username");
+        String password = param.getString("password");
         new Thread(() -> {
             try {
                 List<EMDeviceInfo> devices = EMClient.getInstance().getLoggedInDevicesFromServer(username, password);
@@ -271,15 +218,9 @@ public class EMClientWrapper extends EMWrapper {
         });
     }
 
-    public void init(JSONObject param, String channelName, ExtSdkCallback result) {
-        EMOptions options = null;
-        boolean debugModel = true;
-        try {
-            options = EMOptionsHelper.fromJson(param, ExtSdkContext.context);
-            debugModel = param.getBoolean("debugModel");
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+    public void init(JSONObject param, String channelName, ExtSdkCallback result) throws JSONException {
+        EMOptions options = EMOptionsHelper.fromJson(param, ExtSdkContext.context);
+        boolean debugModel = param.getBoolean("debugModel");
 
         EMOptions finalOptions = options;
         boolean finalDebugModel = debugModel;
