@@ -1,8 +1,17 @@
+#import <Flutter/Flutter.h>
 #import "ExtSdkApiFlutter.h"
 #import "ExtSdkDelegateObjc.h"
 #import "ExtSdkCallbackObjc.h"
+#import "ExtSdkCallbackObjcImpl.h"
+#import "ExtSdkChannelManager.h"
+#import "ExtSdkThreadUtilObjc.h"
 #include "ExtSdkApiObjcImpl.h"
 #include "ExtSdkObjectObjcImpl.h"
+
+
+@interface ExtSdkApiFlutter () <FlutterPlugin>
+
+@end
 
 @implementation ExtSdkApiFlutter
 
@@ -41,6 +50,21 @@
 - (void)unInit:(nullable id<NSObject>)params {
     EXT_SDK_NAMESPACE_USING
     ExtSdkApi::getInstance()->unInit();
+}
+
++ (void)registerWithRegistrar:(nonnull NSObject<FlutterPluginRegistrar> *)registrar {
+    [[ExtSdkChannelManager getInstance] setRegistrar:registrar];
+    [[ExtSdkChannelManager getInstance] add:SEND_CHANNEL];
+    [[ExtSdkChannelManager getInstance] add:RECV_CHANNEL];
+}
+
+- (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
+//    __weak typeof(self) weakself = self; // TODO: 后续解决
+    [ExtSdkThreadUtilObjc asyncExecute:^{
+        id<NSObject> params = call.arguments;
+        id<ExtSdkCallbackObjc> callback = [[ExtSdkCallbackObjcImpl alloc] init:result];
+        [self callSdkApi:call.method withParams:params withCallback:callback];
+    }];
 }
 
 @end

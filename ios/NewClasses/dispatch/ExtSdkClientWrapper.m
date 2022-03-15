@@ -1,332 +1,246 @@
 //
 //  ExtSdkClientWrapper.m
-//  
+//
 //
 //  Created by 杜洁鹏 on 2019/10/8.
 //
 
+#import <UserNotifications/UserNotifications.h>
 #import "ExtSdkClientWrapper.h"
-#import "ExtSdkMethodTypeObjc.h"
 #import "ExtSdkChatManagerWrapper.h"
+#import "ExtSdkChatroomManagerWrapper.h"
 #import "ExtSdkContactManagerWrapper.h"
 #import "ExtSdkConversationWrapper.h"
 #import "ExtSdkGroupManagerWrapper.h"
-#import "ExtSdkChatroomManagerWrapper.h"
+#import "ExtSdkMethodTypeObjc.h"
 #import "ExtSdkPushManagerWrapper.h"
 #import "ExtSdkToJson.h"
 #import "ExtSdkUserInfoManagerWrapper.h"
 
-@interface ExtSdkClientWrapper () <EMClientDelegate, EMMultiDevicesDelegate, FlutterPlugin>
+@interface ExtSdkClientWrapper () <EMClientDelegate, EMMultiDevicesDelegate>
 @end
 
 @implementation ExtSdkClientWrapper
 
-static ExtSdkClientWrapper *wrapper = nil;
-
-
-+ (ExtSdkClientWrapper *)sharedWrapper {
-    return wrapper;
-}
-
-- (void)sendDataToFlutter:(NSDictionary *)aData {
-    if (aData == nil) {
-        return;
-    }
-    [self.channel invokeMethod:ExtSdkMethodKeySendDataToFlutter
-                     arguments:aData];
-}
-
-+ (ExtSdkClientWrapper *)channelName:(NSString *)aChannelName
-                       registrar:(NSObject<FlutterPluginRegistrar>*)registrar
-{
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        wrapper = [[ExtSdkClientWrapper alloc] initWithChannelName:aChannelName registrar:registrar];
++ (nonnull instancetype)getInstance {
+    static ExtSdkClientWrapper *instance = nil;
+    static dispatch_once_t predicate;
+    dispatch_once(&predicate, ^{
+      instance = [[ExtSdkClientWrapper alloc] init];
     });
-    return wrapper;
-}
-
-- (instancetype)initWithChannelName:(NSString *)aChannelName
-                          registrar:(NSObject<FlutterPluginRegistrar>*)registrar {
-    if(self = [super initWithChannelName:aChannelName
-                               registrar:registrar]) {
-        [registrar addApplicationDelegate:self];
-    }
-    return self;
-}
-
-#pragma mark - FlutterPlugin
-
-- (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
-    if ([ExtSdkMethodKeyInit isEqualToString:call.method])
-    {
-        [self initSDKWithDict:call.arguments result:result];
-    }
-    else if ([ExtSdkMethodKeyCreateAccount isEqualToString:call.method])
-    {
-        [self createAccount:call.arguments result:result];
-    }
-    else if ([ExtSdkMethodKeyLogin isEqualToString:call.method])
-    {
-        [self login:call.arguments result:result];
-    }
-    else if ([ExtSdkMethodKeyLogout isEqualToString:call.method])
-    {
-        [self logout:call.arguments result:result];
-    }
-    else if ([ExtSdkMethodKeyChangeAppKey isEqualToString:call.method])
-    {
-        [self changeAppKey:call.arguments result:result];
-    }
-    else if ([ExtSdkMethodKeyUploadLog isEqualToString:call.method])
-    {
-        [self uploadLog:call.arguments result:result];
-    }
-    else if ([ExtSdkMethodKeyCompressLogs isEqualToString:call.method])
-    {
-        [self compressLogs:call.arguments result:result];
-    }
-    else if ([ExtSdkMethodKeyGetLoggedInDevicesFromServer isEqualToString:call.method])
-    {
-        [self getLoggedInDevicesFromServer:call.arguments result:result];
-    }
-    else if ([ExtSdkMethodKeyKickDevice isEqualToString:call.method])
-    {
-        [self kickDevice:call.arguments result:result];
-    }
-    else if ([ExtSdkMethodKeyKickAllDevices isEqualToString:call.method])
-    {
-        [self kickAllDevices:call.arguments result:result];
-    }
-    else if([ExtSdkMethodKeyIsLoggedInBefore isEqualToString:call.method])
-    {
-        [self isLoggedInBefore:call.arguments result:result];
-    }
-    else if([ExtSdkMethodKeyCurrentUser isEqualToString:call.method])
-    {
-        [self getCurrentUser:call.arguments result:result];
-    }
-    else {
-        [super handleMethodCall:call result:result];
-    }
+    return instance;
 }
 
 #pragma mark - Actions
-- (void)initSDKWithDict:(NSDictionary *)param result:(FlutterResult)result {
-    
+- (void)initSDKWithDict:(NSDictionary *)param
+                 result:(nonnull id<ExtSdkCallbackObjc>)result {
+
     __weak typeof(self) weakSelf = self;
-    
-    EMOptions *options = [EMOptions fromJson:param];
-//    options.enableConsoleLog = YES;
+
+    EMOptions *options = [EMOptions fromJsonObject:param];
+    //    options.enableConsoleLog = YES;
     [EMClient.sharedClient initializeSDKWithOptions:options];
     [EMClient.sharedClient addDelegate:self delegateQueue:nil];
     [EMClient.sharedClient addMultiDevicesDelegate:self delegateQueue:nil];
-    [self registerManagers];
+
     // 如果有证书名，说明要使用Apns
     if (options.apnsCertName.length > 0) {
         [self _registerAPNs];
     }
-    [weakSelf wrapperCallBack:result
-                  channelName:ExtSdkMethodKeyInit
-                        error:nil
-                       object:@{
-                           @"currentUsername": EMClient.sharedClient.currentUsername ?: @"",
-                           @"isLoginBefore": @(EMClient.sharedClient.isLoggedIn)
-                       }];
+    [weakSelf onResult:result
+        withMethodType:ExtSdkMethodKeyInit
+             withError:nil
+            withParams:@{
+                @"currentUsername" : EMClient.sharedClient.currentUsername
+                    ?: @"",
+                @"isLoginBefore" : @(EMClient.sharedClient.isLoggedIn)
+            }];
 }
 
-
-- (void)registerManagers {
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-variable"
-    ExtSdkChatManagerWrapper * chatManagerWrapper = [[ExtSdkChatManagerWrapper alloc] initWithChannelName:ExtSdkChannelName(@"em_chat_manager")registrar:self.flutterPluginRegister];
-    
-    ExtSdkContactManagerWrapper * contactManagerWrapper = [[ExtSdkContactManagerWrapper alloc] initWithChannelName:ExtSdkChannelName(@"em_contact_manager") registrar:self.flutterPluginRegister];
-    
-    ExtSdkConversationWrapper *conversationWrapper = [[ExtSdkConversationWrapper alloc] initWithChannelName:ExtSdkChannelName(@"em_conversation") registrar:self.flutterPluginRegister];
-    
-    ExtSdkGroupManagerWrapper * groupManagerWrapper = [[ExtSdkGroupManagerWrapper alloc] initWithChannelName:ExtSdkChannelName(@"em_group_manager") registrar:self.flutterPluginRegister];
-    
-    ExtSdkChatroomManagerWrapper * chatroomManagerWrapper =[[ExtSdkChatroomManagerWrapper alloc] initWithChannelName:ExtSdkChannelName(@"em_chat_room_manager") registrar:self.flutterPluginRegister];
-    
-    ExtSdkPushManagerWrapper * pushManagerWrapper =[[ExtSdkPushManagerWrapper alloc] initWithChannelName:ExtSdkChannelName(@"em_push_manager") registrar:self.flutterPluginRegister];
-    
-    ExtSdkUserInfoManagerWrapper *userInfoManagerWrapper = [[ExtSdkUserInfoManagerWrapper alloc] initWithChannelName:ExtSdkChannelName(@"em_userInfo_manager") registrar:self.flutterPluginRegister];
-    
-#pragma clang diagnostic pop
-    
-}
-
-- (void)createAccount:(NSDictionary *)param result:(FlutterResult)result {
-    __weak typeof(self)weakSelf = self;
+- (void)createAccount:(NSDictionary *)param
+               result:(nonnull id<ExtSdkCallbackObjc>)result {
+    __weak typeof(self) weakSelf = self;
     NSString *username = param[@"username"];
     NSString *password = param[@"password"];
-    [EMClient.sharedClient registerWithUsername:username
-                                         password:password
-                                       completion:^(NSString *aUsername, EMError *aError)
-    {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyCreateAccount
-                            error:aError
-                           object:aUsername];
-    }];
+    [EMClient.sharedClient
+        registerWithUsername:username
+                    password:password
+                  completion:^(NSString *aUsername, EMError *aError) {
+                    [weakSelf onResult:result
+                        withMethodType:ExtSdkMethodKeyCreateAccount
+                             withError:aError
+                            withParams:aUsername];
+                  }];
 }
 
-- (void)login:(NSDictionary *)param result:(FlutterResult)result {
-    __weak typeof(self)weakSelf = self;
+- (void)login:(NSDictionary *)param
+       result:(nonnull id<ExtSdkCallbackObjc>)result {
+    __weak typeof(self) weakSelf = self;
     NSString *username = param[@"username"];
     NSString *pwdOrToken = param[@"pwdOrToken"];
     BOOL isPwd = [param[@"isPassword"] boolValue];
-    
+
     if (isPwd) {
-        [EMClient.sharedClient loginWithUsername:username
-                                        password:pwdOrToken
-                                      completion:^(NSString *aUsername, EMError *aError)
-        {
-            
-            [weakSelf wrapperCallBack:result
-                          channelName:ExtSdkMethodKeyLogin
-                                error:aError
-                               object:@{
-                                   @"username": aUsername,
-                                   @"token": EMClient.sharedClient.accessUserToken
-            }];
-        }];
-    }else {
-        [EMClient.sharedClient loginWithUsername:username
-                                           token:pwdOrToken
-                                      completion:^(NSString *aUsername, EMError *aError)
-        {
-            [weakSelf wrapperCallBack:result
-                          channelName:ExtSdkMethodKeyLogin
-                                error:aError
-                               object:@{
-                                   @"username": aUsername,
-                                   @"token": EMClient.sharedClient.accessUserToken
-                               }];
-        }];
+        [EMClient.sharedClient
+            loginWithUsername:username
+                     password:pwdOrToken
+                   completion:^(NSString *aUsername, EMError *aError) {
+                     [weakSelf onResult:result
+                         withMethodType:ExtSdkMethodKeyLogin
+                              withError:aError
+                             withParams:@{
+                                 @"username" : aUsername,
+                                 @"token" :
+                                     EMClient.sharedClient.accessUserToken
+                             }];
+                   }];
+    } else {
+        [EMClient.sharedClient
+            loginWithUsername:username
+                        token:pwdOrToken
+                   completion:^(NSString *aUsername, EMError *aError) {
+                     [weakSelf onResult:result
+                         withMethodType:ExtSdkMethodKeyLogin
+                              withError:aError
+                             withParams:@{
+                                 @"username" : aUsername,
+                                 @"token" :
+                                     EMClient.sharedClient.accessUserToken
+                             }];
+                   }];
     }
 }
 
-- (void)logout:(NSDictionary *)param result:(FlutterResult)result {
-    __weak typeof(self)weakSelf = self;
+- (void)logout:(NSDictionary *)param
+        result:(nonnull id<ExtSdkCallbackObjc>)result {
+    __weak typeof(self) weakSelf = self;
     BOOL unbindToken = [param[@"unbindToken"] boolValue];
-    [EMClient.sharedClient logout:unbindToken completion:^(EMError *aError) {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyLogout
-                            error:aError
-                           object:@(!aError)];
-    }];
+    [EMClient.sharedClient logout:unbindToken
+                       completion:^(EMError *aError) {
+                         [weakSelf onResult:result
+                             withMethodType:ExtSdkMethodKeyLogout
+                                  withError:aError
+                                 withParams:@(!aError)];
+                       }];
 }
 
-- (void)changeAppKey:(NSDictionary *)param result:(FlutterResult)result {
-    __weak typeof(self)weakSelf = self;
+- (void)changeAppKey:(NSDictionary *)param
+              result:(nonnull id<ExtSdkCallbackObjc>)result {
+    __weak typeof(self) weakSelf = self;
     NSString *appKey = param[@"appKey"];
     EMError *aError = [EMClient.sharedClient changeAppkey:appKey];
-    [weakSelf wrapperCallBack:result
-                  channelName:ExtSdkMethodKeyChangeAppKey
-                        error:aError
-                       object:@(!aError)];
+    [weakSelf onResult:result
+        withMethodType:ExtSdkMethodKeyChangeAppKey
+             withError:aError
+            withParams:@(!aError)];
 }
 
-
-- (void)getCurrentUser:(NSDictionary *)param result:(FlutterResult)result {
+- (void)getCurrentUser:(NSDictionary *)param
+                result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    NSString* username = EMClient.sharedClient.currentUsername;
-    [weakSelf wrapperCallBack:result
-                  channelName:ExtSdkMethodKeyCurrentUser
-                        error:nil
-                       object:username];
-
+    NSString *username = EMClient.sharedClient.currentUsername;
+    [weakSelf onResult:result
+        withMethodType:ExtSdkMethodKeyCurrentUser
+             withError:nil
+            withParams:username];
 }
 
-- (void)uploadLog:(NSDictionary *)param result:(FlutterResult)result {
-    __weak typeof(self)weakSelf = self;
-    [EMClient.sharedClient uploadDebugLogToServerWithCompletion:^(EMError *aError) {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyUploadLog
-                            error:aError
-                           object:nil];
-    }];
+- (void)uploadLog:(NSDictionary *)param
+           result:(nonnull id<ExtSdkCallbackObjc>)result {
+    __weak typeof(self) weakSelf = self;
+    [EMClient.sharedClient
+        uploadDebugLogToServerWithCompletion:^(EMError *aError) {
+          [weakSelf onResult:result
+              withMethodType:ExtSdkMethodKeyUploadLog
+                   withError:aError
+                  withParams:nil];
+        }];
 }
 
-- (void)compressLogs:(NSDictionary *)param result:(FlutterResult)result {
-    __weak typeof(self)weakSelf = self;
-    [EMClient.sharedClient getLogFilesPathWithCompletion:^(NSString *aPath, EMError *aError) {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyCompressLogs
-                            error:aError
-                           object:aPath];
-    }];
+- (void)compressLogs:(NSDictionary *)param
+              result:(nonnull id<ExtSdkCallbackObjc>)result {
+    __weak typeof(self) weakSelf = self;
+    [EMClient.sharedClient
+        getLogFilesPathWithCompletion:^(NSString *aPath, EMError *aError) {
+          [weakSelf onResult:result
+              withMethodType:ExtSdkMethodKeyCompressLogs
+                   withError:aError
+                  withParams:aPath];
+        }];
 }
 
-- (void)kickDevice:(NSDictionary *)param result:(FlutterResult)result {
-    __weak typeof(self)weakSelf = self;
+- (void)kickDevice:(NSDictionary *)param
+            result:(nonnull id<ExtSdkCallbackObjc>)result {
+    __weak typeof(self) weakSelf = self;
     NSString *username = param[@"username"];
     NSString *password = param[@"password"];
     NSString *resource = param[@"resource"];
-    
-    [EMClient.sharedClient kickDeviceWithUsername:username
-                                         password:password
-                                         resource:resource
-                                       completion:^(EMError *aError)
-    {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyKickDevice
-                            error:aError
-                           object:nil];
-    }];
+
+    [EMClient.sharedClient
+        kickDeviceWithUsername:username
+                      password:password
+                      resource:resource
+                    completion:^(EMError *aError) {
+                      [weakSelf onResult:result
+                          withMethodType:ExtSdkMethodKeyKickDevice
+                               withError:aError
+                              withParams:nil];
+                    }];
 }
 
-- (void)kickAllDevices:(NSDictionary *)param result:(FlutterResult)result {
-    __weak typeof(self)weakSelf = self;
-    NSString *username = param[@"username"];
-    NSString *password = param[@"password"];
-    [EMClient.sharedClient kickAllDevicesWithUsername:username
-                                             password:password
-                                           completion:^(EMError *aError)
-    {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyKickAllDevices
-                            error:aError
-                           object:nil];
-    }];
-}
-
-- (void)isLoggedInBefore:(NSDictionary *)param result:(FlutterResult)result {
+- (void)kickAllDevices:(NSDictionary *)param
+                result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [weakSelf wrapperCallBack:result
-                  channelName:ExtSdkMethodKeyIsLoggedInBefore
-                        error:nil
-                       object:@(EMClient.sharedClient.isLoggedIn)];
-
-}
-
-- (void)onMultiDeviceEvent:(NSDictionary *)param result:(FlutterResult)result {
-    
-}
-
-
-- (void)getLoggedInDevicesFromServer:(NSDictionary *)param result:(FlutterResult)result {
-    __weak typeof(self)weakSelf = self;
     NSString *username = param[@"username"];
     NSString *password = param[@"password"];
-    [EMClient.sharedClient getLoggedInDevicesFromServerWithUsername:username
-                                                           password:password
-                                                         completion:^(NSArray *aList, EMError *aError)
-    {
-        
-        NSMutableArray *list = [NSMutableArray array];
-        for (EMDeviceConfig *deviceInfo in aList) {
-            [list addObject:[deviceInfo toJson]];
-        }
-        
-        
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyGetLoggedInDevicesFromServer
-                            error:aError
-                           object:nil];
-    }];
+    [EMClient.sharedClient
+        kickAllDevicesWithUsername:username
+                          password:password
+                        completion:^(EMError *aError) {
+                          [weakSelf onResult:result
+                              withMethodType:ExtSdkMethodKeyKickAllDevices
+                                   withError:aError
+                                  withParams:nil];
+                        }];
+}
+
+- (void)isLoggedInBefore:(NSDictionary *)param
+                  result:(nonnull id<ExtSdkCallbackObjc>)result {
+    __weak typeof(self) weakSelf = self;
+    [weakSelf onResult:result
+        withMethodType:ExtSdkMethodKeyIsLoggedInBefore
+             withError:nil
+            withParams:@(EMClient.sharedClient.isLoggedIn)];
+}
+
+- (void)onMultiDeviceEvent:(NSDictionary *)param
+                    result:(nonnull id<ExtSdkCallbackObjc>)result {
+}
+
+- (void)getLoggedInDevicesFromServer:(NSDictionary *)param
+                              result:(nonnull id<ExtSdkCallbackObjc>)result {
+    __weak typeof(self) weakSelf = self;
+    NSString *username = param[@"username"];
+    NSString *password = param[@"password"];
+    [EMClient.sharedClient
+        getLoggedInDevicesFromServerWithUsername:username
+                                        password:password
+                                      completion:^(NSArray *aList,
+                                                   EMError *aError) {
+                                        NSMutableArray *list =
+                                            [NSMutableArray array];
+                                        for (EMDeviceConfig
+                                                 *deviceInfo in aList) {
+                                            [list
+                                                addObject:[deviceInfo toJsonObject]];
+                                        }
+
+                                        [weakSelf onResult:result
+                                            withMethodType:
+                                                ExtSdkMethodKeyGetLoggedInDevicesFromServer
+                                                 withError:aError
+                                                withParams:nil];
+                                      }];
 }
 
 #pragma - mark ExtSdkClientDelegate
@@ -335,15 +249,15 @@ static ExtSdkClientWrapper *wrapper = nil;
     BOOL isConnected = aConnectionState == EMConnectionConnected;
     if (isConnected) {
         [self onConnected];
-    }else {
+    } else {
         [self onDisconnected:2]; // 需要明确具体的code
     }
 }
 
 - (void)autoLoginDidCompleteWithError:(EMError *)aError {
     if (aError) {
-        [self onDisconnected:1];  // 需要明确具体的code
-    }else {
+        [self onDisconnected:1]; // 需要明确具体的code
+    } else {
         [self onConnected];
     }
 }
@@ -369,54 +283,60 @@ static ExtSdkClientWrapper *wrapper = nil;
 - (void)multiDevicesContactEventDidReceive:(EMMultiDevicesEvent)aEvent
                                   username:(NSString *)aUsername
                                        ext:(NSString *)aExt {
-        
 }
 
 - (void)multiDevicesGroupEventDidReceive:(EMMultiDevicesEvent)aEvent
                                  groupId:(NSString *)aGroupId
                                      ext:(id)aExt {
-    
 }
 
 #pragma mark - Merge Android and iOS Method
 - (void)onConnected {
-    [self.channel invokeMethod:ExtSdkMethodKeyOnConnected
-                     arguments:@{@"connected" : @(YES)}];
+    [self onReceive:ExtSdkMethodKeyOnConnected
+         withParams:@{@"connected" : @(YES)}];
 }
 
 - (void)onDisconnected:(int)errorCode {
-    [self.channel invokeMethod:ExtSdkMethodKeyOnDisconnected
-                     arguments:@{@"errorCode" : @(errorCode)}];
+    [self onReceive:ExtSdkMethodKeyOnDisconnected
+         withParams:@{@"errorCode" : @(errorCode)}];
 }
-
 
 #pragma mark - register APNs
 - (void)_registerAPNs {
     UIApplication *application = [UIApplication sharedApplication];
     application.applicationIconBadgeNumber = 0;
-    
+
     if (NSClassFromString(@"UNUserNotificationCenter")) {
-//        [UNUserNotificationCenter currentNotificationCenter].delegate = self;
-        [[UNUserNotificationCenter currentNotificationCenter] requestAuthorizationWithOptions:UNAuthorizationOptionBadge | UNAuthorizationOptionSound | UNAuthorizationOptionAlert completionHandler:^(BOOL granted, NSError *error) {
-            if (granted) {
+        //        [UNUserNotificationCenter currentNotificationCenter].delegate
+        //        = self;
+        [[UNUserNotificationCenter currentNotificationCenter]
+            requestAuthorizationWithOptions:UNAuthorizationOptionBadge |
+                                            UNAuthorizationOptionSound |
+                                            UNAuthorizationOptionAlert
+                          completionHandler:^(BOOL granted, NSError *error) {
+                            if (granted) {
 #if !TARGET_IPHONE_SIMULATOR
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    [application registerForRemoteNotifications];
-                });
+                                [application registerForRemoteNotifications];
 #endif
-            }
-        }];
+                            }
+                          }];
         return;
     }
-    
-    if([application respondsToSelector:@selector(registerUserNotificationSettings:)]) {
-        UIUserNotificationType notificationTypes = UIUserNotificationTypeBadge | UIUserNotificationTypeSound | UIUserNotificationTypeAlert;
-        UIUserNotificationSettings *settings = [UIUserNotificationSettings settingsForTypes:notificationTypes categories:nil];
+
+    if ([application
+            respondsToSelector:@selector(registerUserNotificationSettings:)]) {
+        UIUserNotificationType notificationTypes = UIUserNotificationTypeBadge |
+                                                   UIUserNotificationTypeSound |
+                                                   UIUserNotificationTypeAlert;
+        UIUserNotificationSettings *settings =
+            [UIUserNotificationSettings settingsForTypes:notificationTypes
+                                              categories:nil];
         [application registerUserNotificationSettings:settings];
     }
-    
+
 #if !TARGET_IPHONE_SIMULATOR
-    if ([application respondsToSelector:@selector(registerForRemoteNotifications)]) {
+    if ([application
+            respondsToSelector:@selector(registerForRemoteNotifications)]) {
         [application registerForRemoteNotifications];
     }
 #endif
@@ -424,14 +344,14 @@ static ExtSdkClientWrapper *wrapper = nil;
 
 #pragma mark - AppDelegate
 
-//- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-//    
+//- (BOOL)application:(UIApplication *)application
+//didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+//
 //    return YES;
 //}
 //
 //- (void)applicationDidBecomeActive:(UIApplication *)application {
-//    
+//
 //}
-
 
 @end

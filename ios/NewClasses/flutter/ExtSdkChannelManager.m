@@ -1,6 +1,9 @@
 
 #import "ExtSdkChannelManager.h"
 
+NSString* _Nonnull const SEND_CHANNEL = @"com.easemob.im.ext.dart_to_native";
+NSString* _Nonnull const RECV_CHANNEL = @"com.easemob.im.ext.native_to_dart";
+
 @interface ExtSdkChannelManager () {
   NSMutableDictionary *_map;
   NSObject<FlutterPluginRegistrar> *_registrar;

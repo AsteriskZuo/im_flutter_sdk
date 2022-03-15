@@ -1,11 +1,11 @@
 #import <Foundation/Foundation.h>
 
-@protocol ExtSdkDelegateObjc <NSObject>
+@protocol ExtSdkDelegateObjc
 
 - (void)onReceive:(nonnull NSString*)methodType withParams:(nullable id<NSObject>)data;
 
 - (void)setType:(nonnull NSString*)listenerType;
 
-- (NSString*)getType;
+- (nonnull NSString*)getType;
 
 @end

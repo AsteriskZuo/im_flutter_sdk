@@ -1,6 +1,6 @@
 #import <Foundation/Foundation.h>
 
-@protocol ExtSdkCallbackObjc <NSObject>
+@protocol ExtSdkCallbackObjc
 
 - (void)onSuccess:(nullable id<NSObject>)data;
 

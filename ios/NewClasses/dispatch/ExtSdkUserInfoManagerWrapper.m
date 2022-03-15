@@ -15,146 +15,132 @@
 @end
 
 @implementation ExtSdkUserInfoManagerWrapper
-- (instancetype)initWithChannelName:(NSString *)aChannelName registrar:(NSObject<FlutterPluginRegistrar> *)registrar {
-    
-    if(self = [super initWithChannelName:aChannelName
-                           registrar:registrar]) {
-    }
-    return self;
+
++ (nonnull instancetype)getInstance {
+    static ExtSdkUserInfoManagerWrapper *instance = nil;
+    static dispatch_once_t predicate;
+    dispatch_once(&predicate, ^{
+      instance = [[ExtSdkUserInfoManagerWrapper alloc] init];
+    });
+    return instance;
 }
 
 
-#pragma mark - FlutterPlugin
-- (void)handleMethodCall:(FlutterMethodCall *)call result:(FlutterResult)result {
-    if ([call.method isEqualToString:ExtSdkMethodKeyUpdateOwnUserInfo]) {
-        [self updateOwnUserInfo:call.arguments result:result];
-    }
-    
-    if ([call.method isEqualToString:ExtSdkMethodKeyUpdateOwnUserInfoWithType]) {
-        [self updateOwnUserInfoWithType:call.arguments result:result];
-    }
-    
-    if ([call.method isEqualToString:ExtSdkMethodKeyFetchUserInfoById]) {
-        [self fetchUserInfoById:call.arguments result:result];
-    }
-    
-    if ([call.method isEqualToString:ExtSdkMethodKeyFetchUserInfoByIdWithType]) {
-        [self fetchUserInfoByIdWithType:call.arguments result:result];
-    }
-    
+- (void)updateOwnUserInfo:(NSDictionary *)param
+                   result:(nonnull id<ExtSdkCallbackObjc>)result {
+    __weak typeof(self) weakSelf = self;
+    EMUserInfo *userInfo = [EMUserInfo fromJsonObject:param[@"userInfo"]];
+    [EMClient.sharedClient.userInfoManager
+        updateOwnUserInfo:userInfo
+               completion:^(EMUserInfo *aUserInfo, EMError *aError) {
+                 NSDictionary *objDic = [aUserInfo toJsonObject];
+
+                 [weakSelf onResult:result
+                     withMethodType:ExtSdkMethodKeyUpdateOwnUserInfo
+                          withError:aError
+                         withParams:objDic];
+               }];
 }
 
+- (void)updateOwnUserInfoWithType:(NSDictionary *)param
+                           result:(nonnull id<ExtSdkCallbackObjc>)result {
+    __weak typeof(self) weakSelf = self;
 
-- (void)updateOwnUserInfo:(NSDictionary *)param result:(FlutterResult)result {
-    __weak typeof(self)weakSelf = self;
-    EMUserInfo *userInfo = [EMUserInfo fromJson:param[@"userInfo"]];
-    [EMClient.sharedClient.userInfoManager updateOwnUserInfo:userInfo completion:^(EMUserInfo *aUserInfo, EMError *aError) {
-        NSDictionary *objDic = [aUserInfo toJson];
-
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyUpdateOwnUserInfo
-                            error:aError
-                           object:objDic];
-    }];
-}
-
-
-- (void)updateOwnUserInfoWithType:(NSDictionary *)param  result:(FlutterResult)result {
-    __weak typeof(self)weakSelf = self;
-    
     int typeValue = [param[@"userInfoType"] intValue];
     EMUserInfoType userInfoType = [self userInfoTypeFromInt:typeValue];
     NSString *userInfoValue = param[@"userInfoValue"];
 
-    
-    [EMClient.sharedClient.userInfoManager updateOwnUserInfo:userInfoValue withType:userInfoType completion:^(EMUserInfo *aUserInfo, EMError *aError) {
-        
-        NSDictionary *objDic = [aUserInfo toJson];
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyUpdateOwnUserInfoWithType
-                            error:aError
-                           object:objDic];
-    }];
-   
+    [EMClient.sharedClient.userInfoManager
+        updateOwnUserInfo:userInfoValue
+                 withType:userInfoType
+               completion:^(EMUserInfo *aUserInfo, EMError *aError) {
+                 NSDictionary *objDic = [aUserInfo toJsonObject];
+                 [weakSelf onResult:result
+                     withMethodType:ExtSdkMethodKeyUpdateOwnUserInfoWithType
+                          withError:aError
+                         withParams:objDic];
+               }];
 }
 
-
-- (void)fetchUserInfoById:(NSDictionary *)param result:(FlutterResult)result {
-    __weak typeof(self)weakSelf = self;
+- (void)fetchUserInfoById:(NSDictionary *)param
+                   result:(nonnull id<ExtSdkCallbackObjc>)result {
+    __weak typeof(self) weakSelf = self;
     NSArray *userIds = param[@"userIds"];
-    
-    [EMClient.sharedClient.userInfoManager fetchUserInfoById:userIds completion:^(NSDictionary *aUserDatas, EMError *aError) {
-        
-        NSMutableDictionary *dic = NSMutableDictionary.new;
-        [aUserDatas enumerateKeysAndObjectsUsingBlock:^(id  _Nonnull key, id  _Nonnull obj, BOOL * _Nonnull stop) {
-            dic[key] = [(EMUserInfo *)obj toJson];
-        }];
-                
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyFetchUserInfoById
-                            error:aError
-                           object:[dic copy]];
-    }];
-        
+
+    [EMClient.sharedClient.userInfoManager
+        fetchUserInfoById:userIds
+               completion:^(NSDictionary *aUserDatas, EMError *aError) {
+                 NSMutableDictionary *dic = NSMutableDictionary.new;
+                 [aUserDatas enumerateKeysAndObjectsUsingBlock:^(
+                                 id _Nonnull key, id _Nonnull obj,
+                                 BOOL *_Nonnull stop) {
+                   dic[key] = [(EMUserInfo *)obj toJsonObject];
+                 }];
+
+                 [weakSelf onResult:result
+                     withMethodType:ExtSdkMethodKeyFetchUserInfoById
+                          withError:aError
+                         withParams:[dic copy]];
+               }];
 }
 
-
-
-- (void)fetchUserInfoByIdWithType:(NSDictionary *)param result:(FlutterResult)result {
-    __weak typeof(self)weakSelf = self;
+- (void)fetchUserInfoByIdWithType:(NSDictionary *)param
+                           result:(nonnull id<ExtSdkCallbackObjc>)result {
+    __weak typeof(self) weakSelf = self;
     NSArray *userIds = param[@"userIds"];
     NSArray<NSNumber *> *userInfoTypes = param[@"userInfoTypes"];
 
-    [EMClient.sharedClient.userInfoManager fetchUserInfoById:userIds type:userInfoTypes completion:^(NSDictionary *aUserDatas, EMError *aError) {
-            
-        NSMutableDictionary *dic = NSMutableDictionary.new;
-        [aUserDatas enumerateKeysAndObjectsUsingBlock:^(id  _Nonnull key, id  _Nonnull obj, BOOL * _Nonnull stop) {
-            dic[key] = [(EMUserInfo *)obj toJson];
-        }];
-        
-        
-            [weakSelf wrapperCallBack:result
-                          channelName:ExtSdkMethodKeyFetchUserInfoByIdWithType
-                                error:aError
-                               object:dic];
-    }];
+    [EMClient.sharedClient.userInfoManager
+        fetchUserInfoById:userIds
+                     type:userInfoTypes
+               completion:^(NSDictionary *aUserDatas, EMError *aError) {
+                 NSMutableDictionary *dic = NSMutableDictionary.new;
+                 [aUserDatas enumerateKeysAndObjectsUsingBlock:^(
+                                 id _Nonnull key, id _Nonnull obj,
+                                 BOOL *_Nonnull stop) {
+                   dic[key] = [(EMUserInfo *)obj toJsonObject];
+                 }];
 
+                 [weakSelf onResult:result
+                     withMethodType:ExtSdkMethodKeyFetchUserInfoByIdWithType
+                          withError:aError
+                         withParams:dic];
+               }];
 }
-
 
 - (EMUserInfoType)userInfoTypeFromInt:(int)typeValue {
     EMUserInfoType userInfoType;
-    
+
     switch (typeValue) {
-        case 0:
-            userInfoType = EMUserInfoTypeNickName;
-            break;
-        case 1:
-            userInfoType = EMUserInfoTypeAvatarURL;
-            break;
-        case 2:
-            userInfoType = EMUserInfoTypePhone;
-            break;
-        case 3:
-            userInfoType = EMUserInfoTypeMail;
-            break;
-        case 4:
-            userInfoType = EMUserInfoTypeGender;
-            break;
-        case 5:
-            userInfoType = EMUserInfoTypeSign;
-            break;
-        case 6:
-            userInfoType = EMUserInfoTypeBirth;
-            break;
-        case 7:
-            userInfoType = EMUserInfoTypeExt;
-            break;
-        default:
-            userInfoType = EMUserInfoTypeNickName;
-            break;
+    case 0:
+        userInfoType = EMUserInfoTypeNickName;
+        break;
+    case 1:
+        userInfoType = EMUserInfoTypeAvatarURL;
+        break;
+    case 2:
+        userInfoType = EMUserInfoTypePhone;
+        break;
+    case 3:
+        userInfoType = EMUserInfoTypeMail;
+        break;
+    case 4:
+        userInfoType = EMUserInfoTypeGender;
+        break;
+    case 5:
+        userInfoType = EMUserInfoTypeSign;
+        break;
+    case 6:
+        userInfoType = EMUserInfoTypeBirth;
+        break;
+    case 7:
+        userInfoType = EMUserInfoTypeExt;
+        break;
+    default:
+        userInfoType = EMUserInfoTypeNickName;
+        break;
     }
-    
+
     return userInfoType;
 }
 

@@ -18,821 +18,695 @@
 
 @implementation ExtSdkGroupManagerWrapper
 
-- (instancetype)initWithChannelName:(NSString *)aChannelName
-                          registrar:(NSObject<FlutterPluginRegistrar>*)registrar {
-    if(self = [super initWithChannelName:aChannelName
-                               registrar:registrar]) {
-        [EMClient.sharedClient.groupManager addDelegate:self delegateQueue:nil];
-    }
-    return self;
-}
-
-#pragma mark - FlutterPlugin
-
-- (void)handleMethodCall:(FlutterMethodCall*)call
-                  result:(FlutterResult)result {
-    
-    if([ExtSdkMethodKeyGetGroupWithId isEqualToString:call.method]) {
-        [self getGroupWithId:call.arguments result:result];
-    }
-    else if ([ExtSdkMethodKeyGetJoinedGroups isEqualToString:call.method])
-    {
-        [self getJoinedGroups:call.arguments result:result];
-    }
-    else if ([ExtSdkMethodKeyGetGroupsWithoutPushNotification isEqualToString:call.method])
-    {
-        [self getGroupsWithoutPushNotification:call.arguments result:result];
-    }
-    else if ([ExtSdkMethodKeyGetJoinedGroupsFromServer isEqualToString:call.method])
-    {
-        [self getJoinedGroupsFromServer:call.arguments result:result];
-    }
-    else if ([ExtSdkMethodKeyGetPublicGroupsFromServer isEqualToString:call.method])
-    {
-        [self getPublicGroupsFromServer:call.arguments result:result];
-    }
-    else if ([ExtSdkMethodKeyCreateGroup isEqualToString:call.method])
-    {
-        [self createGroup:call.arguments result:result];
-    }
-    else if ([ExtSdkMethodKeyGetGroupSpecificationFromServer isEqualToString:call.method])
-    {
-        [self getGroupSpecificationFromServer:call.arguments result:result];
-    }
-    else if ([ExtSdkMethodKeyGetGroupMemberListFromServer isEqualToString:call.method])
-    {
-        [self getGroupMemberListFromServer:call.arguments result:result];
-    }
-    else if ([ExtSdkMethodKeyGetGroupBlockListFromServer isEqualToString:call.method])
-    {
-        [self getGroupBlockListFromServer:call.arguments result:result];
-    }
-    else if ([ExtSdkMethodKeyGetGroupMuteListFromServer isEqualToString:call.method])
-    {
-        [self getGroupMuteListFromServer:call.arguments result:result];
-    }
-    else if ([ExtSdkMethodKeyGetGroupWhiteListFromServer isEqualToString:call.method])
-    {
-        [self getGroupWhiteListFromServer:call.arguments result:result];
-    }
-    else if ([ExtSdkMethodKeyIsMemberInWhiteListFromServer isEqualToString:call.method])
-    {
-        [self isMemberInWhiteListFromServer:call.arguments result:result];
-    }
-    else if ([ExtSdkMethodKeyGetGroupFileListFromServer isEqualToString:call.method])
-    {
-        [self getGroupFileListFromServer:call.arguments result:result];
-    }
-    else if ([ExtSdkMethodKeyGetGroupAnnouncementFromServer isEqualToString:call.method])
-    {
-        [self getGroupAnnouncementFromServer:call.arguments result:result];
-    }
-    else if ([ExtSdkMethodKeyAddMembers isEqualToString:call.method])
-    {
-        [self addMembers:call.arguments result:result];
-    }
-    else if ([ExtSdkMethodKeyInviterUser isEqualToString:call.method]){
-        [self inviterUsers:call.arguments result:result];
-    }
-    else if ([ExtSdkMethodKeyRemoveMembers isEqualToString:call.method])
-    {
-        [self removeMembers:call.arguments result:result];
-    }
-    else if ([ExtSdkMethodKeyBlockMembers isEqualToString:call.method])
-    {
-        [self blockMembers:call.arguments result:result];
-    }
-    else if ([ExtSdkMethodKeyUnblockMembers isEqualToString:call.method])
-    {
-        [self unblockMembers:call.arguments result:result];
-    }
-    else if([ExtSdkMethodKeyUpdateGroupSubject isEqualToString:call.method])
-    {
-        [self updateGroupSubject:call.arguments result:result];
-    }
-    else if([ExtSdkMethodKeyUpdateDescription isEqualToString:call.method])
-    {
-        [self updateDescription:call.arguments result:result];
-    }
-    else if([ExtSdkMethodKeyLeaveGroup isEqualToString:call.method])
-    {
-        [self leaveGroup:call.arguments result:result];
-    }
-    else if([ExtSdkMethodKeyDestroyGroup isEqualToString:call.method])
-    {
-        [self destroyGroup:call.arguments result:result];
-    }
-    else if([ExtSdkMethodKeyBlockGroup isEqualToString:call.method])
-    {
-        [self blockGroup:call.arguments result:result];
-    }
-    else if([ExtSdkMethodKeyUnblockGroup isEqualToString:call.method])
-    {
-        [self unblockGroup:call.arguments result:result];
-    }
-    else if([ExtSdkMethodKeyUpdateGroupOwner isEqualToString:call.method])
-    {
-        [self updateGroupOwner:call.arguments result:result];
-    }
-    else if([ExtSdkMethodKeyAddAdmin isEqualToString:call.method])
-    {
-        [self addAdmin:call.arguments result:result];
-    }
-    else if([ExtSdkMethodKeyRemoveAdmin isEqualToString:call.method])
-    {
-        [self removeAdmin:call.arguments result:result];
-    }
-    else if([ExtSdkMethodKeyMuteMembers isEqualToString:call.method])
-    {
-        [self muteMembers:call.arguments result:result];
-    }
-    else if([ExtSdkMethodKeyUnMuteMembers isEqualToString:call.method])
-    {
-        [self unMuteMembers:call.arguments result:result];
-    }
-    else if([ExtSdkMethodKeyMuteAllMembers isEqualToString:call.method])
-    {
-        [self muteAllMembers:call.arguments result:result];
-    }
-    else if([ExtSdkMethodKeyUnMuteAllMembers isEqualToString:call.method])
-    {
-        [self unMuteAllMembers:call.arguments result:result];
-    }
-    else if([ExtSdkMethodKeyAddWhiteList isEqualToString:call.method])
-    {
-        [self addWhiteList:call.arguments result:result];
-    }
-    else if([ExtSdkMethodKeyRemoveWhiteList isEqualToString:call.method])
-    {
-        [self removeWhiteList:call.arguments result:result];
-    }
-    else if([ExtSdkMethodKeyUploadGroupSharedFile isEqualToString:call.method])
-    {
-        [self uploadGroupSharedFile:call.arguments result:result];
-    }
-    else if([ExtSdkMethodKeyDownloadGroupSharedFile isEqualToString:call.method])
-    {
-        [self downloadGroupSharedFile:call.arguments result:result];
-    }
-    else if([ExtSdkMethodKeyRemoveGroupSharedFile isEqualToString:call.method])
-    {
-        [self removeGroupSharedFile:call.arguments result:result];
-    }
-    else if([ExtSdkMethodKeyUpdateGroupAnnouncement isEqualToString:call.method])
-    {
-        [self updateGroupAnnouncement:call.arguments result:result];
-    }
-    else if([ExtSdkMethodKeyUpdateGroupExt isEqualToString:call.method])
-    {
-        [self updateGroupExt:call.arguments result:result];
-    }
-    else if([ExtSdkMethodKeyJoinPublicGroup isEqualToString:call.method])
-    {
-        [self joinPublicGroup:call.arguments result:result];
-    }
-    else if([ExtSdkMethodKeyRequestToJoinPublicGroup isEqualToString:call.method])
-    {
-        [self requestToJoinPublicGroup:call.arguments result:result];
-    }
-    else if([ExtSdkMethodKeyAcceptJoinApplication isEqualToString:call.method])
-    {
-        [self acceptJoinApplication:call.arguments result:result];
-    }
-    else if([ExtSdkMethodKeyDeclineJoinApplication isEqualToString:call.method])
-    {
-        [self declineJoinApplication:call.arguments result:result];
-    }
-    else if([ExtSdkMethodKeyAcceptInvitationFromGroup isEqualToString:call.method])
-    {
-        [self acceptInvitationFromGroup:call.arguments result:result];
-    }
-    else if([ExtSdkMethodKeyDeclineInvitationFromGroup isEqualToString:call.method])
-    {
-        [self declineInvitationFromGroup:call.arguments result:result];
-    }
-    else if([ExtSdkMethodKeyIgnoreGroupPush isEqualToString:call.method])
-    {
-        [self ignoreGroupPush:call.arguments result:result];
-    }
-    else
-    {
-        [super handleMethodCall:call result:result];
-    }
++ (nonnull instancetype)getInstance {
+    static ExtSdkGroupManagerWrapper *instance = nil;
+    static dispatch_once_t predicate;
+    dispatch_once(&predicate, ^{
+      instance = [[ExtSdkGroupManagerWrapper alloc] init];
+    });
+    return instance;
 }
 
 #pragma mark - Actions
 
-- (void)getGroupWithId:(NSDictionary *)param result:(FlutterResult)result {
+- (void)getGroupWithId:(NSDictionary *)param
+                result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
     EMGroup *group = [EMGroup groupWithId:param[@"groupId"]];
-    [weakSelf wrapperCallBack:result
-                  channelName:ExtSdkMethodKeyGetGroupWithId
-                        error:nil
-                       object:[group toJson]];
+    [weakSelf onResult:result
+        withMethodType:ExtSdkMethodKeyGetGroupWithId
+             withError:nil
+            withParams:[group toJsonObject]];
 }
 
-
-- (void)getJoinedGroups:(NSDictionary *)param result:(FlutterResult)result {
+- (void)getJoinedGroups:(NSDictionary *)param
+                 result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    NSArray *joinedGroups = [EMClient.sharedClient.groupManager getJoinedGroups];
+    NSArray *joinedGroups =
+        [EMClient.sharedClient.groupManager getJoinedGroups];
     NSMutableArray *list = [NSMutableArray array];
     for (EMGroup *group in joinedGroups) {
-        [list addObject:[group toJson]];
+        [list addObject:[group toJsonObject]];
     }
-    [weakSelf wrapperCallBack:result
-                  channelName:ExtSdkMethodKeyGetJoinedGroups
-                        error:nil
-                       object:list];
+    [weakSelf onResult:result
+        withMethodType:ExtSdkMethodKeyGetJoinedGroups
+             withError:nil
+            withParams:list];
 }
 
-- (void)getGroupsWithoutPushNotification:(NSDictionary *)param result:(FlutterResult)result {
+- (void)getGroupsWithoutPushNotification:(NSDictionary *)param
+                                  result:
+                                      (nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
     EMError *error = nil;
-    NSArray *groups = [EMClient.sharedClient.groupManager getGroupsWithoutPushNotification:&error];
+    NSArray *groups = [EMClient.sharedClient.groupManager
+        getGroupsWithoutPushNotification:&error];
     NSMutableArray *list = [NSMutableArray array];
     for (EMGroup *group in groups) {
-        [list addObject:[group toJson]];
+        [list addObject:[group toJsonObject]];
     }
-    [weakSelf wrapperCallBack:result
-                  channelName:ExtSdkMethodKeyGetJoinedGroups
-                        error:error
-                       object:list];
+    [weakSelf onResult:result
+        withMethodType:ExtSdkMethodKeyGetJoinedGroups
+             withError:error
+            withParams:list];
 }
 
-- (void)getJoinedGroupsFromServer:(NSDictionary *)param result:(FlutterResult)result {
+- (void)getJoinedGroupsFromServer:(NSDictionary *)param
+                           result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager getJoinedGroupsFromServerWithPage:[param[@"pageNum"] intValue]
-                                                                 pageSize:[param[@"pageSize"] intValue]
-                                                               completion:^(NSArray *aList, EMError *aError)
-     {
-        NSMutableArray *list = [NSMutableArray array];
-        for (EMGroup *group in aList) {
-            [list addObject:[group toJson]];
-        }
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyGetJoinedGroupsFromServer
-                            error:aError
-                           object:list];
-        
-    }];
+    [EMClient.sharedClient.groupManager
+        getJoinedGroupsFromServerWithPage:[param[@"pageNum"] intValue]
+                                 pageSize:[param[@"pageSize"] intValue]
+                               completion:^(NSArray *aList, EMError *aError) {
+                                 NSMutableArray *list = [NSMutableArray array];
+                                 for (EMGroup *group in aList) {
+                                     [list addObject:[group toJsonObject]];
+                                 }
+                                 [weakSelf onResult:result
+                                     withMethodType:
+                                         ExtSdkMethodKeyGetJoinedGroupsFromServer
+                                          withError:aError
+                                         withParams:list];
+                               }];
 }
 
-- (void)getPublicGroupsFromServer:(NSDictionary *)param result:(FlutterResult)result {
+- (void)getPublicGroupsFromServer:(NSDictionary *)param
+                           result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager getPublicGroupsFromServerWithCursor:param[@"cursor"]
-                                                                   pageSize:[param[@"pageSize"] integerValue]
-                                                                 completion:^(EMCursorResult *aResult, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyGetPublicGroupsFromServer
-                            error:aError
-                           object:[aResult toJson]];
-    }];
+    [EMClient.sharedClient.groupManager
+        getPublicGroupsFromServerWithCursor:param[@"cursor"]
+                                   pageSize:[param[@"pageSize"] integerValue]
+                                 completion:^(EMCursorResult *aResult,
+                                              EMError *aError) {
+                                   [weakSelf onResult:result
+                                       withMethodType:
+                                           ExtSdkMethodKeyGetPublicGroupsFromServer
+                                            withError:aError
+                                           withParams:[aResult toJsonObject]];
+                                 }];
 }
 
-- (void)createGroup:(NSDictionary *)param result:(FlutterResult)result {
+- (void)createGroup:(NSDictionary *)param
+             result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager createGroupWithSubject:param[@"groupName"]
-                                                   description:param[@"desc"]
-                                                      invitees:param[@"inviteMembers"]
-                                                       message:param[@"inviteReason"]
-                                                       setting:[EMGroupOptions formJson:param[@"options"]]
-                                                    completion:^(EMGroup *aGroup, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyCreateGroup
-                            error:aError
-                           object:[aGroup toJson]];
-    }];
+    [EMClient.sharedClient.groupManager
+        createGroupWithSubject:param[@"groupName"]
+                   description:param[@"desc"]
+                      invitees:param[@"inviteMembers"]
+                       message:param[@"inviteReason"]
+                       setting:[EMGroupOptions formJson:param[@"options"]]
+                    completion:^(EMGroup *aGroup, EMError *aError) {
+                      [weakSelf onResult:result
+                          withMethodType:ExtSdkMethodKeyCreateGroup
+                               withError:aError
+                              withParams:[aGroup toJsonObject]];
+                    }];
 }
 
-- (void)getGroupSpecificationFromServer:(NSDictionary *)param result:(FlutterResult)result {
+- (void)getGroupSpecificationFromServer:(NSDictionary *)param
+                                 result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager getGroupSpecificationFromServerWithId:param[@"groupId"]
-                                                                   completion:^(EMGroup *aGroup, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyGetGroupSpecificationFromServer
-                            error:aError
-                           object:[aGroup toJson]];
-    }];
+    [EMClient.sharedClient.groupManager
+        getGroupSpecificationFromServerWithId:param[@"groupId"]
+                                   completion:^(EMGroup *aGroup,
+                                                EMError *aError) {
+                                     [weakSelf onResult:result
+                                         withMethodType:
+                                             ExtSdkMethodKeyGetGroupSpecificationFromServer
+                                              withError:aError
+                                             withParams:[aGroup toJsonObject]];
+                                   }];
 }
 
-- (void)getGroupMemberListFromServer:(NSDictionary *)param result:(FlutterResult)result {
+- (void)getGroupMemberListFromServer:(NSDictionary *)param
+                              result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager getGroupMemberListFromServerWithId:param[@"groupId"]
-                                                                    cursor:param[@"cursor"]
-                                                                  pageSize:[param[@"pageSize"] intValue]
-                                                                completion:^(EMCursorResult *aResult, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyGetGroupMemberListFromServer
-                            error:aError
-                           object:[aResult toJson]];
-    }];
+    [EMClient.sharedClient.groupManager
+        getGroupMemberListFromServerWithId:param[@"groupId"]
+                                    cursor:param[@"cursor"]
+                                  pageSize:[param[@"pageSize"] intValue]
+                                completion:^(EMCursorResult *aResult,
+                                             EMError *aError) {
+                                  [weakSelf onResult:result
+                                      withMethodType:
+                                          ExtSdkMethodKeyGetGroupMemberListFromServer
+                                           withError:aError
+                                          withParams:[aResult toJsonObject]];
+                                }];
 }
 
-- (void)getGroupBlockListFromServer:(NSDictionary *)param result:(FlutterResult)result {
+- (void)getGroupBlockListFromServer:(NSDictionary *)param
+                             result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager getGroupBlacklistFromServerWithId:param[@"groupId"]
-                                                               pageNumber:[param[@"pageNum"] intValue]
-                                                                 pageSize:[param[@"pageSize"] intValue]
-                                                               completion:^(NSArray *aList, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyGetGroupBlockListFromServer
-                            error:aError
-                           object:aList];
-    }];
+    [EMClient.sharedClient.groupManager
+        getGroupBlacklistFromServerWithId:param[@"groupId"]
+                               pageNumber:[param[@"pageNum"] intValue]
+                                 pageSize:[param[@"pageSize"] intValue]
+                               completion:^(NSArray *aList, EMError *aError) {
+                                 [weakSelf onResult:result
+                                     withMethodType:
+                                         ExtSdkMethodKeyGetGroupBlockListFromServer
+                                          withError:aError
+                                         withParams:aList];
+                               }];
 }
 
-- (void)getGroupMuteListFromServer:(NSDictionary *)param result:(FlutterResult)result {
+- (void)getGroupMuteListFromServer:(NSDictionary *)param
+                            result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager getGroupMuteListFromServerWithId:param[@"groupId"]
-                                                              pageNumber:[param[@"pageNum"] intValue]
-                                                                pageSize:[param[@"pageSize"] intValue]
-                                                              completion:^(NSArray *aList, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyGetGroupMuteListFromServer
-                            error:aError
-                           object:aList];
-    }];
+    [EMClient.sharedClient.groupManager
+        getGroupMuteListFromServerWithId:param[@"groupId"]
+                              pageNumber:[param[@"pageNum"] intValue]
+                                pageSize:[param[@"pageSize"] intValue]
+                              completion:^(NSArray *aList, EMError *aError) {
+                                [weakSelf onResult:result
+                                    withMethodType:
+                                        ExtSdkMethodKeyGetGroupMuteListFromServer
+                                         withError:aError
+                                        withParams:aList];
+                              }];
 }
 
-- (void)getGroupWhiteListFromServer:(NSDictionary *)param result:(FlutterResult)result {
+- (void)getGroupWhiteListFromServer:(NSDictionary *)param
+                             result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager getGroupWhiteListFromServerWithId:param[@"groupId"]
-                                                               completion:^(NSArray *aList, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyGetGroupWhiteListFromServer
-                            error:aError
-                           object:aList];
-    }];
+    [EMClient.sharedClient.groupManager
+        getGroupWhiteListFromServerWithId:param[@"groupId"]
+                               completion:^(NSArray *aList, EMError *aError) {
+                                 [weakSelf onResult:result
+                                     withMethodType:
+                                         ExtSdkMethodKeyGetGroupWhiteListFromServer
+                                          withError:aError
+                                         withParams:aList];
+                               }];
 }
 
-- (void)isMemberInWhiteListFromServer:(NSDictionary *)param result:(FlutterResult)result {
+- (void)isMemberInWhiteListFromServer:(NSDictionary *)param
+                               result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager isMemberInWhiteListFromServerWithGroupId:param[@"groupId"]
-                                                                      completion:^(BOOL inWhiteList, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyIsMemberInWhiteListFromServer
-                            error:aError
-                           object:@(inWhiteList)];
-    }];
+    [EMClient.sharedClient.groupManager
+        isMemberInWhiteListFromServerWithGroupId:param[@"groupId"]
+                                      completion:^(BOOL inWhiteList,
+                                                   EMError *aError) {
+                                        [weakSelf onResult:result
+                                            withMethodType:
+                                                ExtSdkMethodKeyIsMemberInWhiteListFromServer
+                                                 withError:aError
+                                                withParams:@(inWhiteList)];
+                                      }];
 }
 
-- (void)getGroupFileListFromServer:(NSDictionary *)param result:(FlutterResult)result {
+- (void)getGroupFileListFromServer:(NSDictionary *)param
+                            result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager getGroupFileListWithId:param[@"groupId"]
-                                                    pageNumber:[param[@"pageNum"] intValue]
-                                                      pageSize:[param[@"pageSize"] intValue]
-                                                    completion:^(NSArray *aList, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyGetGroupFileListFromServer
-                            error:aError
-                           object:aList];
-    }];
+    [EMClient.sharedClient.groupManager
+        getGroupFileListWithId:param[@"groupId"]
+                    pageNumber:[param[@"pageNum"] intValue]
+                      pageSize:[param[@"pageSize"] intValue]
+                    completion:^(NSArray *aList, EMError *aError) {
+                      [weakSelf onResult:result
+                          withMethodType:
+                              ExtSdkMethodKeyGetGroupFileListFromServer
+                               withError:aError
+                              withParams:aList];
+                    }];
 }
-- (void)getGroupAnnouncementFromServer:(NSDictionary *)param result:(FlutterResult)result {
+- (void)getGroupAnnouncementFromServer:(NSDictionary *)param
+                                result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager getGroupAnnouncementWithId:param[@"groupId"]
-                                                        completion:^(NSString *aAnnouncement, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyGetGroupAnnouncementFromServer
-                            error:aError
-                           object:aAnnouncement];
-    }];
-}
-
-- (void)addMembers:(NSDictionary *)param result:(FlutterResult)result {
-    __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager addMembers:param[@"members"]
-                                           toGroup:param[@"groupId"]
-                                           message:param[@"welcome"]
-                                        completion:^(EMGroup *aGroup, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyAddMembers
-                            error:aError
-                           object:[aGroup toJson]];
-    }];
+    [EMClient.sharedClient.groupManager
+        getGroupAnnouncementWithId:param[@"groupId"]
+                        completion:^(NSString *aAnnouncement, EMError *aError) {
+                          [weakSelf onResult:result
+                              withMethodType:
+                                  ExtSdkMethodKeyGetGroupAnnouncementFromServer
+                                   withError:aError
+                                  withParams:aAnnouncement];
+                        }];
 }
 
-- (void)inviterUsers:(NSDictionary *)param result:(FlutterResult)result {
+- (void)addMembers:(NSDictionary *)param
+            result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager addMembers:param[@"members"]
-                                            toGroup:param[@"groupId"]
-                                            message:param[@"reason"]
-                                         completion:^(EMGroup *aGroup, EMError *aError) {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyInviterUser
-                            error:aError
-                           object:[aGroup toJson]];
-    }];
-    
+    [EMClient.sharedClient.groupManager
+        addMembers:param[@"members"]
+           toGroup:param[@"groupId"]
+           message:param[@"welcome"]
+        completion:^(EMGroup *aGroup, EMError *aError) {
+          [weakSelf onResult:result
+              withMethodType:ExtSdkMethodKeyAddMembers
+                   withError:aError
+                  withParams:[aGroup toJsonObject]];
+        }];
 }
 
-- (void)removeMembers:(NSDictionary *)param result:(FlutterResult)result {
+- (void)inviterUser:(NSDictionary *)param
+              result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager removeMembers:param[@"members"]
-                                            fromGroup:param[@"groupId"]
-                                           completion:^(EMGroup *aGroup, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyRemoveMembers
-                            error:aError
-                           object:[aGroup toJson]];
-    }];
-    
+    [EMClient.sharedClient.groupManager
+        addMembers:param[@"members"]
+           toGroup:param[@"groupId"]
+           message:param[@"reason"]
+        completion:^(EMGroup *aGroup, EMError *aError) {
+          [weakSelf onResult:result
+              withMethodType:ExtSdkMethodKeyInviterUser
+                   withError:aError
+                  withParams:[aGroup toJsonObject]];
+        }];
 }
 
-- (void)blockMembers:(NSDictionary *)param result:(FlutterResult)result {
+- (void)removeMembers:(NSDictionary *)param
+               result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager blockMembers:param[@"members"]
-                                           fromGroup:param[@"groupId"]
-                                          completion:^(EMGroup *aGroup, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyBlockMembers
-                            error:aError
-                           object:[aGroup toJson]];
-    }];
+    [EMClient.sharedClient.groupManager
+        removeMembers:param[@"members"]
+            fromGroup:param[@"groupId"]
+           completion:^(EMGroup *aGroup, EMError *aError) {
+             [weakSelf onResult:result
+                 withMethodType:ExtSdkMethodKeyRemoveMembers
+                      withError:aError
+                     withParams:[aGroup toJsonObject]];
+           }];
 }
 
-- (void)unblockMembers:(NSDictionary *)param result:(FlutterResult)result {
+- (void)blockMembers:(NSDictionary *)param
+              result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager unblockMembers:param[@"members"]
-                                             fromGroup:param[@"groupId"]
-                                            completion:^(EMGroup *aGroup, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyUnblockMembers
-                            error:aError
-                           object:[aGroup toJson]];
-    }];
+    [EMClient.sharedClient.groupManager
+        blockMembers:param[@"members"]
+           fromGroup:param[@"groupId"]
+          completion:^(EMGroup *aGroup, EMError *aError) {
+            [weakSelf onResult:result
+                withMethodType:ExtSdkMethodKeyBlockMembers
+                     withError:aError
+                    withParams:[aGroup toJsonObject]];
+          }];
 }
 
-- (void)updateGroupSubject:(NSDictionary *)param result:(FlutterResult)result {
+- (void)unblockMembers:(NSDictionary *)param
+                result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager updateGroupSubject:param[@"name"]
-                                                  forGroup:param[@"groupId"]
-                                                completion:^(EMGroup *aGroup, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyUpdateGroupSubject
-                            error:aError
-                           object:[aGroup toJson]];
-    }];
+    [EMClient.sharedClient.groupManager
+        unblockMembers:param[@"members"]
+             fromGroup:param[@"groupId"]
+            completion:^(EMGroup *aGroup, EMError *aError) {
+              [weakSelf onResult:result
+                  withMethodType:ExtSdkMethodKeyUnblockMembers
+                       withError:aError
+                      withParams:[aGroup toJsonObject]];
+            }];
 }
 
-- (void)updateDescription:(NSDictionary *)param result:(FlutterResult)result {
+- (void)updateGroupSubject:(NSDictionary *)param
+                    result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager updateDescription:param[@"desc"]
-                                                 forGroup:param[@"groupId"]
-                                               completion:^(EMGroup *aGroup, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyUpdateDescription
-                            error:aError
-                           object:[aGroup toJson]];
-    }];
+    [EMClient.sharedClient.groupManager
+        updateGroupSubject:param[@"name"]
+                  forGroup:param[@"groupId"]
+                completion:^(EMGroup *aGroup, EMError *aError) {
+                  [weakSelf onResult:result
+                      withMethodType:ExtSdkMethodKeyUpdateGroupSubject
+                           withError:aError
+                          withParams:[aGroup toJsonObject]];
+                }];
 }
 
-- (void)leaveGroup:(NSDictionary *)param result:(FlutterResult)result {
+- (void)updateDescription:(NSDictionary *)param
+                   result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager leaveGroup:param[@"groupId"]
-                                        completion:^(EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyLeaveGroup
-                            error:aError
-                           object:nil];
-    }];
+    [EMClient.sharedClient.groupManager
+        updateDescription:param[@"desc"]
+                 forGroup:param[@"groupId"]
+               completion:^(EMGroup *aGroup, EMError *aError) {
+                 [weakSelf onResult:result
+                     withMethodType:ExtSdkMethodKeyUpdateDescription
+                          withError:aError
+                         withParams:[aGroup toJsonObject]];
+               }];
 }
 
-- (void)destroyGroup:(NSDictionary *)param result:(FlutterResult)result {
+- (void)leaveGroup:(NSDictionary *)param
+            result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager destroyGroup:param[@"groupId"]
-                                    finishCompletion:^(EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyDestroyGroup
-                            error:aError
-                           object:nil];
-        
-    }];
+    [EMClient.sharedClient.groupManager
+        leaveGroup:param[@"groupId"]
+        completion:^(EMError *aError) {
+          [weakSelf onResult:result
+              withMethodType:ExtSdkMethodKeyLeaveGroup
+                   withError:aError
+                  withParams:nil];
+        }];
 }
 
-- (void)blockGroup:(NSDictionary *)param result:(FlutterResult)result {
+- (void)destroyGroup:(NSDictionary *)param
+              result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager blockGroup:param[@"groupId"]
-                                        completion:^(EMGroup *aGroup, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyBlockGroup
-                            error:aError
-                           object:[aGroup toJson]];
-        
-    }];
+    [EMClient.sharedClient.groupManager
+            destroyGroup:param[@"groupId"]
+        finishCompletion:^(EMError *aError) {
+          [weakSelf onResult:result
+              withMethodType:ExtSdkMethodKeyDestroyGroup
+                   withError:aError
+                  withParams:nil];
+        }];
 }
 
-- (void)unblockGroup:(NSDictionary *)param result:(FlutterResult)result {
+- (void)blockGroup:(NSDictionary *)param
+            result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager unblockGroup:param[@"groupId"]
-                                          completion:^(EMGroup *aGroup, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyUnblockGroup
-                            error:aError
-                           object:[aGroup toJson]];
-    }];
+    [EMClient.sharedClient.groupManager
+        blockGroup:param[@"groupId"]
+        completion:^(EMGroup *aGroup, EMError *aError) {
+          [weakSelf onResult:result
+              withMethodType:ExtSdkMethodKeyBlockGroup
+                   withError:aError
+                  withParams:[aGroup toJsonObject]];
+        }];
 }
 
-- (void)updateGroupOwner:(NSDictionary *)param result:(FlutterResult)result {
+- (void)unblockGroup:(NSDictionary *)param
+              result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager updateGroupOwner:param[@"groupId"]
-                                                newOwner:param[@"owner"]
-                                              completion:^(EMGroup *aGroup, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyUpdateGroupOwner
-                            error:aError
-                           object:[aGroup toJson]];
-    }];
+    [EMClient.sharedClient.groupManager
+        unblockGroup:param[@"groupId"]
+          completion:^(EMGroup *aGroup, EMError *aError) {
+            [weakSelf onResult:result
+                withMethodType:ExtSdkMethodKeyUnblockGroup
+                     withError:aError
+                    withParams:[aGroup toJsonObject]];
+          }];
 }
 
-- (void)addAdmin:(NSDictionary *)param result:(FlutterResult)result {
+- (void)updateGroupOwner:(NSDictionary *)param
+                  result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager addAdmin:param[@"admin"]
-                                         toGroup:param[@"groupId"]
-                                      completion:^(EMGroup *aGroup, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyAddAdmin
-                            error:aError
-                           object:[aGroup toJson]];
-    }];
+    [EMClient.sharedClient.groupManager
+        updateGroupOwner:param[@"groupId"]
+                newOwner:param[@"owner"]
+              completion:^(EMGroup *aGroup, EMError *aError) {
+                [weakSelf onResult:result
+                    withMethodType:ExtSdkMethodKeyUpdateGroupOwner
+                         withError:aError
+                        withParams:[aGroup toJsonObject]];
+              }];
 }
 
-- (void)removeAdmin:(NSDictionary *)param result:(FlutterResult)result {
+- (void)addAdmin:(NSDictionary *)param
+          result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager removeAdmin:param[@"admin"]
-                                          fromGroup:param[@"groupId"]
-                                         completion:^(EMGroup *aGroup, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyRemoveAdmin
-                            error:aError
-                           object:[aGroup toJson]];
-    }];
+    [EMClient.sharedClient.groupManager
+          addAdmin:param[@"admin"]
+           toGroup:param[@"groupId"]
+        completion:^(EMGroup *aGroup, EMError *aError) {
+          [weakSelf onResult:result
+              withMethodType:ExtSdkMethodKeyAddAdmin
+                   withError:aError
+                  withParams:[aGroup toJsonObject]];
+        }];
 }
 
-- (void)muteMembers:(NSDictionary *)param result:(FlutterResult)result {
+- (void)removeAdmin:(NSDictionary *)param
+             result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager muteMembers:param[@"members"]
-                                   muteMilliseconds:[param[@"duration"] integerValue]
-                                          fromGroup:param[@"groupId"]
-                                         completion:^(EMGroup *aGroup, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyMuteMembers
-                            error:aError
-                           object:[aGroup toJson]];
-    }];
+    [EMClient.sharedClient.groupManager
+        removeAdmin:param[@"admin"]
+          fromGroup:param[@"groupId"]
+         completion:^(EMGroup *aGroup, EMError *aError) {
+           [weakSelf onResult:result
+               withMethodType:ExtSdkMethodKeyRemoveAdmin
+                    withError:aError
+                   withParams:[aGroup toJsonObject]];
+         }];
 }
 
-- (void)unMuteMembers:(NSDictionary *)param result:(FlutterResult)result {
+- (void)muteMembers:(NSDictionary *)param
+             result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager unmuteMembers:param[@"members"]
-                                            fromGroup:param[@"groupId"]
-                                           completion:^(EMGroup *aGroup, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyUnMuteMembers
-                            error:aError
-                           object:[aGroup toJson]];
-    }];
+    [EMClient.sharedClient.groupManager
+             muteMembers:param[@"members"]
+        muteMilliseconds:[param[@"duration"] integerValue]
+               fromGroup:param[@"groupId"]
+              completion:^(EMGroup *aGroup, EMError *aError) {
+                [weakSelf onResult:result
+                    withMethodType:ExtSdkMethodKeyMuteMembers
+                         withError:aError
+                        withParams:[aGroup toJsonObject]];
+              }];
 }
 
-- (void)muteAllMembers:(NSDictionary *)param result:(FlutterResult)result {
+- (void)unMuteMembers:(NSDictionary *)param
+               result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager muteAllMembersFromGroup:param[@"groupId"]
-                                                     completion:^(EMGroup *aGroup, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyMuteAllMembers
-                            error:aError
-                           object:[aGroup toJson]];
-    }];
+    [EMClient.sharedClient.groupManager
+        unmuteMembers:param[@"members"]
+            fromGroup:param[@"groupId"]
+           completion:^(EMGroup *aGroup, EMError *aError) {
+             [weakSelf onResult:result
+                 withMethodType:ExtSdkMethodKeyUnMuteMembers
+                      withError:aError
+                     withParams:[aGroup toJsonObject]];
+           }];
 }
 
-- (void)unMuteAllMembers:(NSDictionary *)param result:(FlutterResult)result {
+- (void)muteAllMembers:(NSDictionary *)param
+                result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager unmuteAllMembersFromGroup:param[@"groupId"]
-                                                       completion:^(EMGroup *aGroup, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyUnMuteAllMembers
-                            error:aError
-                           object:[aGroup toJson]];
-    }];
+    [EMClient.sharedClient.groupManager
+        muteAllMembersFromGroup:param[@"groupId"]
+                     completion:^(EMGroup *aGroup, EMError *aError) {
+                       [weakSelf onResult:result
+                           withMethodType:ExtSdkMethodKeyMuteAllMembers
+                                withError:aError
+                               withParams:[aGroup toJsonObject]];
+                     }];
 }
 
-- (void)addWhiteList:(NSDictionary *)param result:(FlutterResult)result {
+- (void)unMuteAllMembers:(NSDictionary *)param
+                  result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager addWhiteListMembers:param[@"members"]
-                                                  fromGroup:param[@"groupId"]
-                                                 completion:^(EMGroup *aGroup, EMError *aError) {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyAddWhiteList
-                            error:aError
-                           object:[aGroup toJson]];
-    }];
+    [EMClient.sharedClient.groupManager
+        unmuteAllMembersFromGroup:param[@"groupId"]
+                       completion:^(EMGroup *aGroup, EMError *aError) {
+                         [weakSelf onResult:result
+                             withMethodType:ExtSdkMethodKeyUnMuteAllMembers
+                                  withError:aError
+                                 withParams:[aGroup toJsonObject]];
+                       }];
 }
 
-- (void)removeWhiteList:(NSDictionary *)param result:(FlutterResult)result {
+- (void)addWhiteList:(NSDictionary *)param
+              result:(nonnull id<ExtSdkCallbackObjc>)result {
+    __weak typeof(self) weakSelf = self;
+    [EMClient.sharedClient.groupManager
+        addWhiteListMembers:param[@"members"]
+                  fromGroup:param[@"groupId"]
+                 completion:^(EMGroup *aGroup, EMError *aError) {
+                   [weakSelf onResult:result
+                       withMethodType:ExtSdkMethodKeyAddWhiteList
+                            withError:aError
+                           withParams:[aGroup toJsonObject]];
+                 }];
+}
+
+- (void)removeWhiteList:(NSDictionary *)param
+                 result:(nonnull id<ExtSdkCallbackObjc>)result {
     //    __weak typeof(self) weakSelf = self;
-    //    [EMClient.sharedClient.groupManager removeWhiteListMembers:param[@"members"]
+    //    [EMClient.sharedClient.groupManager
+    //    removeWhiteListMembers:param[@"members"]
     //                                                     fromGroup:param[@"groupId"]
-    //                                                    completion:^(EMGroup *aGroup, EMError *aError) {
-    //        [weakSelf wrapperCallBack:result
-    //                      channelName:ExtSdkMethodKeyAddWhiteList
-    //                            error:aError
-    //                           object:[aGroup toJson]];
+    //                                                    completion:^(EMGroup
+    //                                                    *aGroup, EMError
+    //                                                    *aError) {
+    //        [weakSelf onResult:result
+    //                      withMethodType:ExtSdkMethodKeyAddWhiteList
+    //                            withError:aError
+    //                           withParams:[aGroup toJsonObject]];
     //    }];
 }
 
 // TODO: dujiepeng.
-- (void)uploadGroupSharedFile:(NSDictionary *)param result:(FlutterResult)result {
+- (void)uploadGroupSharedFile:(NSDictionary *)param
+                       result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager uploadGroupSharedFileWithId:param[@"groupId"]
-                                                           filePath:param[@"filePath"]
-                                                           progress:^(int progress)
-     {
-        
-    } completion:^(EMGroupSharedFile *aSharedFile, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyUploadGroupSharedFile
-                            error:aError
-                           object:@(!aError)];
-    }];
+    [EMClient.sharedClient.groupManager
+        uploadGroupSharedFileWithId:param[@"groupId"]
+        filePath:param[@"filePath"]
+        progress:^(int progress) {
+
+        }
+        completion:^(EMGroupSharedFile *aSharedFile, EMError *aError) {
+          [weakSelf onResult:result
+              withMethodType:ExtSdkMethodKeyUploadGroupSharedFile
+                   withError:aError
+                  withParams:@(!aError)];
+        }];
 }
 
-- (void)downloadGroupSharedFile:(NSDictionary *)param result:(FlutterResult)result {
+- (void)downloadGroupSharedFile:(NSDictionary *)param
+                         result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager downloadGroupSharedFileWithId:param[@"groupId"]
-                                                             filePath:param[@"savePath"]
-                                                         sharedFileId:param[@"fileId"]
-                                                             progress:^(int progress)
-     {
-        
-    } completion:^(EMGroup *aGroup, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyDownloadGroupSharedFile
-                            error:aError
-                           object:@(!aError)];
-    }];
+    [EMClient.sharedClient.groupManager
+        downloadGroupSharedFileWithId:param[@"groupId"]
+        filePath:param[@"savePath"]
+        sharedFileId:param[@"fileId"]
+        progress:^(int progress) {
+
+        }
+        completion:^(EMGroup *aGroup, EMError *aError) {
+          [weakSelf onResult:result
+              withMethodType:ExtSdkMethodKeyDownloadGroupSharedFile
+                   withError:aError
+                  withParams:@(!aError)];
+        }];
 }
 
-- (void)removeGroupSharedFile:(NSDictionary *)param result:(FlutterResult)result {
+- (void)removeGroupSharedFile:(NSDictionary *)param
+                       result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager removeGroupSharedFileWithId:param[@"groupId"]
-                                                       sharedFileId:param[@"fileId"]
-                                                         completion:^(EMGroup *aGroup, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyRemoveGroupSharedFile
-                            error:aError
-                           object:@(!aError)];
-    }];
+    [EMClient.sharedClient.groupManager
+        removeGroupSharedFileWithId:param[@"groupId"]
+                       sharedFileId:param[@"fileId"]
+                         completion:^(EMGroup *aGroup, EMError *aError) {
+                           [weakSelf onResult:result
+                               withMethodType:
+                                   ExtSdkMethodKeyRemoveGroupSharedFile
+                                    withError:aError
+                                   withParams:@(!aError)];
+                         }];
 }
 
-- (void)updateGroupAnnouncement:(NSDictionary *)param result:(FlutterResult)result {
+- (void)updateGroupAnnouncement:(NSDictionary *)param
+                         result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager updateGroupAnnouncementWithId:param[@"groupId"]
-                                                         announcement:param[@"announcement"]
-                                                           completion:^(EMGroup *aGroup, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyUpdateGroupAnnouncement
-                            error:aError
-                           object:[aGroup toJson]];
-    }];
-    
+    [EMClient.sharedClient.groupManager
+        updateGroupAnnouncementWithId:param[@"groupId"]
+                         announcement:param[@"announcement"]
+                           completion:^(EMGroup *aGroup, EMError *aError) {
+                             [weakSelf onResult:result
+                                 withMethodType:
+                                     ExtSdkMethodKeyUpdateGroupAnnouncement
+                                      withError:aError
+                                     withParams:[aGroup toJsonObject]];
+                           }];
 }
 
-- (void)updateGroupExt:(NSDictionary *)param result:(FlutterResult)result {
+- (void)updateGroupExt:(NSDictionary *)param
+                result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager updateGroupExtWithId:param[@"groupId"]
-                                                         ext:param[@"ext"]
-                                                  completion:^(EMGroup *aGroup, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyUpdateGroupExt
-                            error:aError
-                           object:[aGroup toJson]];
-    }];
+    [EMClient.sharedClient.groupManager
+        updateGroupExtWithId:param[@"groupId"]
+                         ext:param[@"ext"]
+                  completion:^(EMGroup *aGroup, EMError *aError) {
+                    [weakSelf onResult:result
+                        withMethodType:ExtSdkMethodKeyUpdateGroupExt
+                             withError:aError
+                            withParams:[aGroup toJsonObject]];
+                  }];
 }
 
-- (void)joinPublicGroup:(NSDictionary *)param result:(FlutterResult)result {
+- (void)joinPublicGroup:(NSDictionary *)param
+                 result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager joinPublicGroup:param[@"groupId"]
-                                             completion:^(EMGroup *aGroup, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyJoinPublicGroup
-                            error:aError
-                           object:[aGroup toJson]];
-    }];
+    [EMClient.sharedClient.groupManager
+        joinPublicGroup:param[@"groupId"]
+             completion:^(EMGroup *aGroup, EMError *aError) {
+               [weakSelf onResult:result
+                   withMethodType:ExtSdkMethodKeyJoinPublicGroup
+                        withError:aError
+                       withParams:[aGroup toJsonObject]];
+             }];
 }
 
-- (void)requestToJoinPublicGroup:(NSDictionary *)param result:(FlutterResult)result {
+- (void)requestToJoinPublicGroup:(NSDictionary *)param
+                          result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager requestToJoinPublicGroup:param[@"groupId"]
-                                                         message:param[@"reason"]
-                                                      completion:^(EMGroup *aGroup, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyRequestToJoinPublicGroup
-                            error:aError
-                           object:[aGroup toJson]];
-    }];
+    [EMClient.sharedClient.groupManager
+        requestToJoinPublicGroup:param[@"groupId"]
+                         message:param[@"reason"]
+                      completion:^(EMGroup *aGroup, EMError *aError) {
+                        [weakSelf onResult:result
+                            withMethodType:
+                                ExtSdkMethodKeyRequestToJoinPublicGroup
+                                 withError:aError
+                                withParams:[aGroup toJsonObject]];
+                      }];
 }
 
-- (void)acceptJoinApplication:(NSDictionary *)param result:(FlutterResult)result {
+- (void)acceptJoinApplication:(NSDictionary *)param
+                       result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager approveJoinGroupRequest:param[@"groupId"]
-                                                         sender:param[@"username"]
-                                                     completion:^(EMGroup *aGroup, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyAcceptJoinApplication
-                            error:aError
-                           object:[aGroup toJson]];
-    }];
+    [EMClient.sharedClient.groupManager
+        approveJoinGroupRequest:param[@"groupId"]
+                         sender:param[@"username"]
+                     completion:^(EMGroup *aGroup, EMError *aError) {
+                       [weakSelf onResult:result
+                           withMethodType:ExtSdkMethodKeyAcceptJoinApplication
+                                withError:aError
+                               withParams:[aGroup toJsonObject]];
+                     }];
 }
 
-- (void)declineJoinApplication:(NSDictionary *)param result:(FlutterResult)result {
+- (void)declineJoinApplication:(NSDictionary *)param
+                        result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager declineJoinGroupRequest:param[@"groupId"]
-                                                         sender:param[@"username"]
-                                                         reason:param[@"reason"]
-                                                     completion:^(EMGroup *aGroup, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyDeclineJoinApplication
-                            error:aError
-                           object:[aGroup toJson]];
-    }];
+    [EMClient.sharedClient.groupManager
+        declineJoinGroupRequest:param[@"groupId"]
+                         sender:param[@"username"]
+                         reason:param[@"reason"]
+                     completion:^(EMGroup *aGroup, EMError *aError) {
+                       [weakSelf onResult:result
+                           withMethodType:ExtSdkMethodKeyDeclineJoinApplication
+                                withError:aError
+                               withParams:[aGroup toJsonObject]];
+                     }];
 }
 
-- (void)acceptInvitationFromGroup:(NSDictionary *)param result:(FlutterResult)result {
+- (void)acceptInvitationFromGroup:(NSDictionary *)param
+                           result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager acceptInvitationFromGroup:param[@"groupId"]
-                                                          inviter:param[@"inviter"]
-                                                       completion:^(EMGroup *aGroup, EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyAcceptInvitationFromGroup
-                            error:aError
-                           object:[aGroup toJson]];
-    }];
+    [EMClient.sharedClient.groupManager
+        acceptInvitationFromGroup:param[@"groupId"]
+                          inviter:param[@"inviter"]
+                       completion:^(EMGroup *aGroup, EMError *aError) {
+                         [weakSelf onResult:result
+                             withMethodType:
+                                 ExtSdkMethodKeyAcceptInvitationFromGroup
+                                  withError:aError
+                                 withParams:[aGroup toJsonObject]];
+                       }];
 }
 
-- (void)declineInvitationFromGroup:(NSDictionary *)param result:(FlutterResult)result {
+- (void)declineInvitationFromGroup:(NSDictionary *)param
+                            result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    [EMClient.sharedClient.groupManager declineGroupInvitation:param[@"groupId"]
-                                                       inviter:param[@"inviter"]
-                                                        reason:param[@"reason"]
-                                                    completion:^(EMError *aError)
-     {
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyDeclineInvitationFromGroup
-                            error:aError
-                           object:nil];
-    }];
+    [EMClient.sharedClient.groupManager
+        declineGroupInvitation:param[@"groupId"]
+                       inviter:param[@"inviter"]
+                        reason:param[@"reason"]
+                    completion:^(EMError *aError) {
+                      [weakSelf onResult:result
+                          withMethodType:
+                              ExtSdkMethodKeyDeclineInvitationFromGroup
+                               withError:aError
+                              withParams:nil];
+                    }];
 }
 
-- (void)ignoreGroupPush:(NSDictionary *)param result:(FlutterResult)result {
+- (void)ignoreGroupPush:(NSDictionary *)param
+                 result:(nonnull id<ExtSdkCallbackObjc>)result {
     __weak typeof(self) weakSelf = self;
-    
+
     __block NSString *groupId = param[@"groupId"];
-    [EMClient.sharedClient.pushManager updatePushServiceForGroups:@[groupId]
-                                                      disablePush:[param[@"ignore"] boolValue]
-                                                       completion:^(EMError * _Nonnull aError) {
-        EMGroup *aGroup = [EMGroup groupWithId:groupId];
-        [weakSelf wrapperCallBack:result
-                      channelName:ExtSdkMethodKeyIgnoreGroupPush
-                            error:aError
-                           object:[aGroup toJson]];
-    }];
+    [EMClient.sharedClient.pushManager
+        updatePushServiceForGroups:@[ groupId ]
+                       disablePush:[param[@"ignore"] boolValue]
+                        completion:^(EMError *_Nonnull aError) {
+                          EMGroup *aGroup = [EMGroup groupWithId:groupId];
+                          [weakSelf onResult:result
+                              withMethodType:ExtSdkMethodKeyIgnoreGroupPush
+                                   withError:aError
+                                  withParams:[aGroup toJsonObject]];
+                        }];
 }
 
 #pragma mark - ExtSdkGroupManagerDelegate
@@ -841,56 +715,49 @@
                           inviter:(NSString *)aInviter
                           message:(NSString *)aMessage {
     NSDictionary *map = @{
-        @"type":@"onInvitationReceived",
-        @"groupId":aGroupId,
-        @"inviter":aInviter,
-        @"message":aMessage
+        @"type" : @"onInvitationReceived",
+        @"groupId" : aGroupId,
+        @"inviter" : aInviter,
+        @"message" : aMessage
     };
-    [self.channel invokeMethod:ExtSdkMethodKeyOnGroupChanged
-                     arguments:map];
-    
+    [self onReceive:ExtSdkMethodKeyOnGroupChanged withParams:map];
 }
 
 - (void)groupInvitationDidAccept:(EMGroup *)aGroup
                          invitee:(NSString *)aInvitee {
     NSDictionary *map = @{
-        @"type":@"onInvitationAccepted",
-        @"groupId":aGroup.groupId,
-        @"invitee":aInvitee
+        @"type" : @"onInvitationAccepted",
+        @"groupId" : aGroup.groupId,
+        @"invitee" : aInvitee
     };
-    [self.channel invokeMethod:ExtSdkMethodKeyOnGroupChanged
-                     arguments:map];
-    
+    [self onReceive:ExtSdkMethodKeyOnGroupChanged withParams:map];
 }
 
 - (void)groupInvitationDidDecline:(EMGroup *)aGroup
                           invitee:(NSString *)aInvitee
                            reason:(NSString *)aReason {
     NSDictionary *map = @{
-        @"type":@"onInvitationDeclined",
-        @"groupId":aGroup.groupId,
-        @"invitee":aInvitee,
-        @"reason":aReason
+        @"type" : @"onInvitationDeclined",
+        @"groupId" : aGroup.groupId,
+        @"invitee" : aInvitee,
+        @"reason" : aReason
     };
-    [self.channel invokeMethod:ExtSdkMethodKeyOnGroupChanged
-                     arguments:map];
+    [self onReceive:ExtSdkMethodKeyOnGroupChanged withParams:map];
 }
 
 - (void)didJoinGroup:(EMGroup *)aGroup
              inviter:(NSString *)aInviter
              message:(NSString *)aMessage {
     NSDictionary *map = @{
-        @"type":@"onAutoAcceptInvitationFromGroup",
-        @"groupId":aGroup.groupId,
-        @"message":aMessage,
-        @"inviter":aInviter
+        @"type" : @"onAutoAcceptInvitationFromGroup",
+        @"groupId" : aGroup.groupId,
+        @"message" : aMessage,
+        @"inviter" : aInviter
     };
-    [self.channel invokeMethod:ExtSdkMethodKeyOnGroupChanged
-                     arguments:map];
+    [self onReceive:ExtSdkMethodKeyOnGroupChanged withParams:map];
 }
 
-- (void)didLeaveGroup:(EMGroup *)aGroup
-               reason:(EMGroupLeaveReason)aReason {
+- (void)didLeaveGroup:(EMGroup *)aGroup reason:(EMGroupLeaveReason)aReason {
     NSString *type;
     if (aReason == EMGroupLeaveReasonBeRemoved) {
         type = @"onUserRemoved";
@@ -898,195 +765,175 @@
         type = @"onGroupDestroyed";
     }
     NSDictionary *map = @{
-        @"type":type,
-        @"groupId":aGroup.groupId,
-        @"groupName":aGroup.groupName
+        @"type" : type,
+        @"groupId" : aGroup.groupId,
+        @"groupName" : aGroup.groupName
     };
-    [self.channel invokeMethod:ExtSdkMethodKeyOnGroupChanged
-                     arguments:map];
+    [self onReceive:ExtSdkMethodKeyOnGroupChanged withParams:map];
 }
 
 - (void)joinGroupRequestDidReceive:(EMGroup *)aGroup
                               user:(NSString *)aUsername
                             reason:(NSString *)aReason {
     NSDictionary *map = @{
-        @"type":@"onRequestToJoinReceived",
-        @"groupId":aGroup.groupId,
-        @"applicant":aUsername,
-        @"reason":aReason
+        @"type" : @"onRequestToJoinReceived",
+        @"groupId" : aGroup.groupId,
+        @"applicant" : aUsername,
+        @"reason" : aReason
     };
-    [self.channel invokeMethod:ExtSdkMethodKeyOnGroupChanged
-                     arguments:map];
+    [self onReceive:ExtSdkMethodKeyOnGroupChanged withParams:map];
 }
 
 - (void)joinGroupRequestDidDecline:(NSString *)aGroupId
                             reason:(NSString *)aReason {
     NSDictionary *map = @{
-        @"type":@"onRequestToJoinDeclined",
-        @"groupId":aGroupId,
-        @"reason":aReason
+        @"type" : @"onRequestToJoinDeclined",
+        @"groupId" : aGroupId,
+        @"reason" : aReason
     };
-    [self.channel invokeMethod:ExtSdkMethodKeyOnGroupChanged
-                     arguments:map];
+    [self onReceive:ExtSdkMethodKeyOnGroupChanged withParams:map];
 }
 
 - (void)joinGroupRequestDidApprove:(EMGroup *)aGroup {
     NSDictionary *map = @{
-        @"type":@"onRequestToJoinAccepted",
-        @"groupId":aGroup.groupId,
-        @"groupName":aGroup.groupName,
-        @"accepter":aGroup.owner,
+        @"type" : @"onRequestToJoinAccepted",
+        @"groupId" : aGroup.groupId,
+        @"groupName" : aGroup.groupName,
+        @"accepter" : aGroup.owner,
     };
-    [self.channel invokeMethod:ExtSdkMethodKeyOnGroupChanged
-                     arguments:map];
+    [self onReceive:ExtSdkMethodKeyOnGroupChanged withParams:map];
 }
 
 - (void)groupMuteListDidUpdate:(EMGroup *)aGroup
              addedMutedMembers:(NSArray *)aMutedMembers
                     muteExpire:(NSInteger)aMuteExpire {
     NSDictionary *map = @{
-        @"type":@"onMuteListAdded",
-        @"groupId":aGroup.groupId,
-        @"mutes":aMutedMembers,
-        @"muteExpire":[NSNumber numberWithInteger:aMuteExpire]
+        @"type" : @"onMuteListAdded",
+        @"groupId" : aGroup.groupId,
+        @"mutes" : aMutedMembers,
+        @"muteExpire" : [NSNumber numberWithInteger:aMuteExpire]
     };
-    [self.channel invokeMethod:ExtSdkMethodKeyOnGroupChanged
-                     arguments:map];
+    [self onReceive:ExtSdkMethodKeyOnGroupChanged withParams:map];
 }
 
 - (void)groupMuteListDidUpdate:(EMGroup *)aGroup
            removedMutedMembers:(NSArray *)aMutedMembers {
     NSDictionary *map = @{
-        @"type":@"onMuteListRemoved",
-        @"groupId":aGroup.groupId,
-        @"mutes":aMutedMembers
+        @"type" : @"onMuteListRemoved",
+        @"groupId" : aGroup.groupId,
+        @"mutes" : aMutedMembers
     };
-    [self.channel invokeMethod:ExtSdkMethodKeyOnGroupChanged
-                     arguments:map];
+    [self onReceive:ExtSdkMethodKeyOnGroupChanged withParams:map];
 }
 
 - (void)groupWhiteListDidUpdate:(EMGroup *)aGroup
           addedWhiteListMembers:(NSArray *)aMembers {
     NSDictionary *map = @{
-        @"type":@"onWhiteListAdded",
-        @"groupId":aGroup.groupId,
-        @"whitelist":aMembers
+        @"type" : @"onWhiteListAdded",
+        @"groupId" : aGroup.groupId,
+        @"whitelist" : aMembers
     };
-    [self.channel invokeMethod:ExtSdkMethodKeyOnGroupChanged
-                     arguments:map];
+    [self onReceive:ExtSdkMethodKeyOnGroupChanged withParams:map];
 }
 
 - (void)groupWhiteListDidUpdate:(EMGroup *)aGroup
         removedWhiteListMembers:(NSArray *)aMembers {
     NSDictionary *map = @{
-        @"type":@"onWhiteListRemoved",
-        @"groupId":aGroup.groupId,
-        @"whitelist":aMembers
+        @"type" : @"onWhiteListRemoved",
+        @"groupId" : aGroup.groupId,
+        @"whitelist" : aMembers
     };
-    [self.channel invokeMethod:ExtSdkMethodKeyOnGroupChanged
-                     arguments:map];
+    [self onReceive:ExtSdkMethodKeyOnGroupChanged withParams:map];
 }
 
 - (void)groupAllMemberMuteChanged:(EMGroup *)aGroup
                  isAllMemberMuted:(BOOL)aMuted {
     NSDictionary *map = @{
-        @"type":@"onAllMemberMuteStateChanged",
-        @"groupId":aGroup.groupId,
-        @"isMuted":@(aMuted)
+        @"type" : @"onAllMemberMuteStateChanged",
+        @"groupId" : aGroup.groupId,
+        @"isMuted" : @(aMuted)
     };
-    [self.channel invokeMethod:ExtSdkMethodKeyOnGroupChanged
-                     arguments:map];
+    [self onReceive:ExtSdkMethodKeyOnGroupChanged withParams:map];
 }
 
 - (void)groupAdminListDidUpdate:(EMGroup *)aGroup
                      addedAdmin:(NSString *)aAdmin {
     NSDictionary *map = @{
-        @"type":@"onAdminAdded",
-        @"groupId":aGroup.groupId,
-        @"administrator":aAdmin
+        @"type" : @"onAdminAdded",
+        @"groupId" : aGroup.groupId,
+        @"administrator" : aAdmin
     };
-    [self.channel invokeMethod:ExtSdkMethodKeyOnGroupChanged
-                     arguments:map];
+    [self onReceive:ExtSdkMethodKeyOnGroupChanged withParams:map];
 }
 
 - (void)groupAdminListDidUpdate:(EMGroup *)aGroup
                    removedAdmin:(NSString *)aAdmin {
     NSDictionary *map = @{
-        @"type":@"onAdminRemoved",
-        @"groupId":aGroup.groupId,
-        @"administrator":aAdmin
+        @"type" : @"onAdminRemoved",
+        @"groupId" : aGroup.groupId,
+        @"administrator" : aAdmin
     };
-    [self.channel invokeMethod:ExtSdkMethodKeyOnGroupChanged
-                     arguments:map];
+    [self onReceive:ExtSdkMethodKeyOnGroupChanged withParams:map];
 }
 
 - (void)groupOwnerDidUpdate:(EMGroup *)aGroup
                    newOwner:(NSString *)aNewOwner
                    oldOwner:(NSString *)aOldOwner {
     NSDictionary *map = @{
-        @"type":@"onOwnerChanged",
-        @"groupId":aGroup.groupId,
-        @"newOwner":aNewOwner,
-        @"oldOwner":aOldOwner
+        @"type" : @"onOwnerChanged",
+        @"groupId" : aGroup.groupId,
+        @"newOwner" : aNewOwner,
+        @"oldOwner" : aOldOwner
     };
-    [self.channel invokeMethod:ExtSdkMethodKeyOnGroupChanged
-                     arguments:map];
+    [self onReceive:ExtSdkMethodKeyOnGroupChanged withParams:map];
 }
 
-- (void)userDidJoinGroup:(EMGroup *)aGroup
-                    user:(NSString *)aUsername {
+- (void)userDidJoinGroup:(EMGroup *)aGroup user:(NSString *)aUsername {
     NSDictionary *map = @{
-        @"type":@"onMemberJoined",
-        @"groupId":aGroup.groupId,
-        @"member":aUsername
+        @"type" : @"onMemberJoined",
+        @"groupId" : aGroup.groupId,
+        @"member" : aUsername
     };
-    [self.channel invokeMethod:ExtSdkMethodKeyOnGroupChanged
-                     arguments:map];
+    [self onReceive:ExtSdkMethodKeyOnGroupChanged withParams:map];
 }
 
-- (void)userDidLeaveGroup:(EMGroup *)aGroup
-                     user:(NSString *)aUsername {
+- (void)userDidLeaveGroup:(EMGroup *)aGroup user:(NSString *)aUsername {
     NSDictionary *map = @{
-        @"type":@"onMemberExited",
-        @"groupId":aGroup.groupId,
-        @"member":aUsername
+        @"type" : @"onMemberExited",
+        @"groupId" : aGroup.groupId,
+        @"member" : aUsername
     };
-    [self.channel invokeMethod:ExtSdkMethodKeyOnGroupChanged
-                     arguments:map];
+    [self onReceive:ExtSdkMethodKeyOnGroupChanged withParams:map];
 }
 
 - (void)groupAnnouncementDidUpdate:(EMGroup *)aGroup
                       announcement:(NSString *)aAnnouncement {
     NSDictionary *map = @{
-        @"type":@"onAnnouncementChanged",
-        @"groupId":aGroup.groupId,
-        @"announcement":aAnnouncement
+        @"type" : @"onAnnouncementChanged",
+        @"groupId" : aGroup.groupId,
+        @"announcement" : aAnnouncement
     };
-    [self.channel invokeMethod:ExtSdkMethodKeyOnGroupChanged
-                     arguments:map];
+    [self onReceive:ExtSdkMethodKeyOnGroupChanged withParams:map];
 }
 
 - (void)groupFileListDidUpdate:(EMGroup *)aGroup
                addedSharedFile:(EMGroupSharedFile *)aSharedFile {
     NSDictionary *map = @{
-        @"type":@"onSharedFileAdded",
-        @"groupId":aGroup.groupId,
-        @"sharedFile":[aSharedFile toJson]
+        @"type" : @"onSharedFileAdded",
+        @"groupId" : aGroup.groupId,
+        @"sharedFile" : [aSharedFile toJsonObject]
     };
-    [self.channel invokeMethod:ExtSdkMethodKeyOnGroupChanged
-                     arguments:map];
+    [self onReceive:ExtSdkMethodKeyOnGroupChanged withParams:map];
 }
 
 - (void)groupFileListDidUpdate:(EMGroup *)aGroup
              removedSharedFile:(NSString *)aFileId {
     NSDictionary *map = @{
-        @"type":@"onSharedFileDeleted",
-        @"groupId":aGroup.groupId,
-        @"fileId":aFileId
+        @"type" : @"onSharedFileDeleted",
+        @"groupId" : aGroup.groupId,
+        @"fileId" : aFileId
     };
-    [self.channel invokeMethod:ExtSdkMethodKeyOnGroupChanged
-                     arguments:map];
+    [self onReceive:ExtSdkMethodKeyOnGroupChanged withParams:map];
 }
-
 
 @end

@@ -176,7 +176,12 @@ WhitespaceSensitiveMacros:
   - CF_SWIFT_NAME
 ---
 Language:        Cpp
+IndentWidth:     4
 ---
 Language:        ObjC
+IndentWidth:     4
+---
+Language:        Java
+IndentWidth:     4
 ...
 

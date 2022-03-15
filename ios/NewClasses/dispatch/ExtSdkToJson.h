@@ -13,9 +13,9 @@
 #import <HyphenateChat/EMDeviceConfig.h>
 #import <HyphenateChat/EMError.h>
 #import <HyphenateChat/EMGroup.h>
+#import <HyphenateChat/EMGroupMessageAck.h>
 #import <HyphenateChat/EMGroupOptions.h>
 #import <HyphenateChat/EMGroupSharedFile.h>
-#import <HyphenateChat/EMGroupMessageAck.h>
 #import <HyphenateChat/EMMessage.h>
 #import <HyphenateChat/EMMessageBody.h>
 #import <HyphenateChat/EMOptions.h>
@@ -26,79 +26,79 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @protocol ExtSdkToJson <NSObject>
-- (NSDictionary *)toJson;
+- (NSDictionary *)toJsonObject;
 @end
 
 @interface EMChatroom (Json) <ExtSdkToJson>
-- (NSDictionary *)toJson;
+- (NSDictionary *)toJsonObject;
 @end
 
 @interface EMConversation (Json) <ExtSdkToJson>
-- (NSDictionary *)toJson;
+- (NSDictionary *)toJsonObject;
 + (int)typeToInt:(EMConversationType)aType;
 + (EMConversationType)typeFromInt:(int)aType;
 @end
 
 @interface EMCursorResult (Json) <ExtSdkToJson>
-- (NSDictionary *)toJson;
+- (NSDictionary *)toJsonObject;
 @end
 
 @interface EMDeviceConfig (Json) <ExtSdkToJson>
-- (NSDictionary *)toJson;
+- (NSDictionary *)toJsonObject;
 @end
 
 @interface EMError (Json) <ExtSdkToJson>
-- (NSDictionary *)toJson;
+- (NSDictionary *)toJsonObject;
 @end
 
 @interface EMGroup (Json) <ExtSdkToJson>
-- (NSDictionary *)toJson;
+- (NSDictionary *)toJsonObject;
 + (EMGroupPermissionType)premissionTypeFromInt:(int)type;
 + (int)premissionTypeToInt:(EMGroupPermissionType)type;
 @end
 
 @interface EMGroupOptions (Json) <ExtSdkToJson>
 + (EMGroupOptions *)formJson:(NSDictionary *)dict;
-- (NSDictionary *)toJson;
+- (NSDictionary *)toJsonObject;
 + (EMGroupStyle)styleFromInt:(int)style;
 + (int)styleToInt:(EMGroupStyle)style;
 @end
 
 @interface EMGroupSharedFile (Json) <ExtSdkToJson>
-- (NSDictionary *)toJson;
+- (NSDictionary *)toJsonObject;
 @end
 
 @interface EMGroupMessageAck (Json) <ExtSdkToJson>
-- (NSDictionary *)toJson;
+- (NSDictionary *)toJsonObject;
 @end
 
 @interface EMMessage (Json) <ExtSdkToJson>
-+ (EMMessage *)fromJson:(NSDictionary *)aJson;
-- (NSDictionary *)toJson;
++ (EMMessage *)fromJsonObject:(NSDictionary *)aJson;
+- (NSDictionary *)toJsonObject;
 @end
 
 @interface EMMessageBody (Json) <ExtSdkToJson>
-+ (EMMessageBody *)fromJson:(NSDictionary *)aJson;
-- (NSDictionary *)toJson;
++ (EMMessageBody *)fromJsonObject:(NSDictionary *)aJson;
+- (NSDictionary *)toJsonObject;
 + (EMMessageBodyType)typeFromString:(NSString *)aStrType;
 @end
 
 @interface EMOptions (Json) <ExtSdkToJson>
-- (NSDictionary *)toJson;
-+ (EMOptions *)fromJson:(NSDictionary *)aJson;
+- (NSDictionary *)toJsonObject;
++ (EMOptions *)fromJsonObject:(NSDictionary *)aJson;
 @end
 
 @interface EMPageResult (Json) <ExtSdkToJson>
-- (NSDictionary *)toJson;
+- (NSDictionary *)toJsonObject;
 @end
 
 @interface EMPushOptions (Json) <ExtSdkToJson>
-- (NSDictionary *)toJson;
+- (NSDictionary *)toJsonObject;
 @end
 
 @interface EMUserInfo (Json) <ExtSdkToJson>
-- (NSDictionary *)toJson;
-+ (EMUserInfo *)fromJson:(NSDictionary *)aJson;
+- (NSDictionary *)toJsonObject;
++ (EMUserInfo *)fromJsonObject:(NSDictionary *)aJson;
 @end
 
 NS_ASSUME_NONNULL_END
