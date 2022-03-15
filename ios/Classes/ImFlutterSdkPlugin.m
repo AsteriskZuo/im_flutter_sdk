@@ -11,12 +11,13 @@
 
 #import "ExtSdkTest.h"
 #import "ExtSdkApiFlutter.h"
-#import "ExtSdkDelegateObjcImpl.h"
 
+static NSString* const TAG = @"ImFlutterSdkPlugin";
 @implementation ImFlutterSdkPlugin
 
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
+    NSLog(@"%@: registerWithRegistrar: %d", TAG, [ExtSdkTest testType]);
     if ([ExtSdkTest testType] == 1) {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-variable"
@@ -24,8 +25,7 @@
     [EMClientWrapper channelName:EMChannelName(@"em_client") registrar:registrar];
 #pragma clang diagnostic pop
     } else if ([ExtSdkTest testType] == 2) {
-        [[ExtSdkApiFlutter getInstance] addListener:[[ExtSdkDelegateObjcImpl alloc] init]];
-        
+        [ExtSdkApiFlutter registerWithRegistrar:registrar];
     } else {
         @throw [NSException exceptionWithName:NSInvalidArgumentException
                                        reason:[NSString stringWithFormat:@"test type is not exist: %d", [ExtSdkTest testType]]
@@ -35,6 +35,7 @@
 }
 
 - (void)handleMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
+    NSLog(@"%@: handleMethodCall:", TAG);
 }
 
 @end
@@ -46,7 +47,7 @@
     if ([ExtSdkTest testType] == 1) {
         [[EMClient sharedClient] applicationDidEnterBackground:application];
     } else if ([ExtSdkTest testType] == 2) {
-        [[EMClient sharedClient] applicationDidEnterBackground:application];
+        
     } else {
         @throw [NSException exceptionWithName:NSInvalidArgumentException
                                        reason:[NSString stringWithFormat:@"test type is not exist: %d", [ExtSdkTest testType]]
@@ -60,7 +61,7 @@
     if ([ExtSdkTest testType] == 1) {
         [[EMClient sharedClient] applicationWillEnterForeground:application];
     } else if ([ExtSdkTest testType] == 2) {
-        [[EMClient sharedClient] applicationWillEnterForeground:application];
+        
     } else {
         @throw [NSException exceptionWithName:NSInvalidArgumentException
                                        reason:[NSString stringWithFormat:@"test type is not exist: %d", [ExtSdkTest testType]]

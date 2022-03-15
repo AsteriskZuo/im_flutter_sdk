@@ -16,6 +16,7 @@
 #import "ExtSdkPushManagerWrapper.h"
 #import "ExtSdkToJson.h"
 #import "ExtSdkUserInfoManagerWrapper.h"
+#import "ExtSdkThreadUtilObjc.h"
 
 @interface ExtSdkClientWrapper () <EMClientDelegate, EMMultiDevicesDelegate>
 @end
@@ -303,43 +304,49 @@
 
 #pragma mark - register APNs
 - (void)_registerAPNs {
-    UIApplication *application = [UIApplication sharedApplication];
-    application.applicationIconBadgeNumber = 0;
+    [ExtSdkThreadUtilObjc mainThreadExecute:^{
+        UIApplication *application = [UIApplication sharedApplication];
+        application.applicationIconBadgeNumber = 0;
 
-    if (NSClassFromString(@"UNUserNotificationCenter")) {
-        //        [UNUserNotificationCenter currentNotificationCenter].delegate
-        //        = self;
-        [[UNUserNotificationCenter currentNotificationCenter]
-            requestAuthorizationWithOptions:UNAuthorizationOptionBadge |
-                                            UNAuthorizationOptionSound |
-                                            UNAuthorizationOptionAlert
-                          completionHandler:^(BOOL granted, NSError *error) {
-                            if (granted) {
-#if !TARGET_IPHONE_SIMULATOR
-                                [application registerForRemoteNotifications];
-#endif
-                            }
-                          }];
-        return;
-    }
+        if (NSClassFromString(@"UNUserNotificationCenter")) {
+            //        [UNUserNotificationCenter currentNotificationCenter].delegate
+            //        = self;
+            [[UNUserNotificationCenter currentNotificationCenter]
+                requestAuthorizationWithOptions:UNAuthorizationOptionBadge |
+                                                UNAuthorizationOptionSound |
+                                                UNAuthorizationOptionAlert
+                              completionHandler:^(BOOL granted, NSError *error) {
+                                if (granted) {
+    #if !TARGET_IPHONE_SIMULATOR
+                                    [ExtSdkThreadUtilObjc mainThreadExecute:^{
+                                                                            [application registerForRemoteNotifications];
+                                    }];
+                                    
+    #endif
+                                }
+                              }];
+            return;
+        }
 
-    if ([application
-            respondsToSelector:@selector(registerUserNotificationSettings:)]) {
-        UIUserNotificationType notificationTypes = UIUserNotificationTypeBadge |
-                                                   UIUserNotificationTypeSound |
-                                                   UIUserNotificationTypeAlert;
-        UIUserNotificationSettings *settings =
-            [UIUserNotificationSettings settingsForTypes:notificationTypes
-                                              categories:nil];
-        [application registerUserNotificationSettings:settings];
-    }
+        if ([application
+                respondsToSelector:@selector(registerUserNotificationSettings:)]) {
+            UIUserNotificationType notificationTypes = UIUserNotificationTypeBadge |
+                                                       UIUserNotificationTypeSound |
+                                                       UIUserNotificationTypeAlert;
+            UIUserNotificationSettings *settings =
+                [UIUserNotificationSettings settingsForTypes:notificationTypes
+                                                  categories:nil];
+            [application registerUserNotificationSettings:settings];
+        }
 
-#if !TARGET_IPHONE_SIMULATOR
-    if ([application
-            respondsToSelector:@selector(registerForRemoteNotifications)]) {
-        [application registerForRemoteNotifications];
-    }
-#endif
+    #if !TARGET_IPHONE_SIMULATOR
+        if ([application
+                respondsToSelector:@selector(registerForRemoteNotifications)]) {
+            [application registerForRemoteNotifications];
+        }
+    #endif
+    }];
+    
 }
 
 #pragma mark - AppDelegate

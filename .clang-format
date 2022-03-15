@@ -177,11 +177,14 @@ WhitespaceSensitiveMacros:
 ---
 Language:        Cpp
 IndentWidth:     4
+ColumnLimit:     120
 ---
 Language:        ObjC
 IndentWidth:     4
+ColumnLimit:     120
 ---
 Language:        Java
 IndentWidth:     4
+ColumnLimit:     120
 ...
 

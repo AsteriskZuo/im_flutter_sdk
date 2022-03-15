@@ -11,6 +11,7 @@
 #import "ExtSdkPushManagerWrapper.h"
 #import "ExtSdkUserInfoManagerWrapper.h"
 
+static NSString* const TAG = @"ExtSdkDispatch";
 @interface ExtSdkDispatch () {
     id<ExtSdkDelegateObjc> _listener;
 }
@@ -29,12 +30,14 @@
 }
 
 - (void)addListener:(nonnull id<ExtSdkDelegateObjc>)listener {
+    NSLog(@"%@: addListener:", TAG);
     _listener = listener;
 }
 
 - (void)callSdkApi:(nonnull NSString *)methodType
         withParams:(nullable id<NSObject>)params
       withCallback:(nonnull id<ExtSdkCallbackObjc>)callback {
+    NSLog(@"%@: callSdkApi:", TAG);
            NSDictionary * ps = (NSDictionary*)params;
 
     switch ([ExtSdkMethodTypeObjc getEnumValue:methodType]) {
@@ -256,16 +259,20 @@
 }
 
 - (void)delListener:(nonnull id<ExtSdkDelegateObjc>)listener {
+    NSLog(@"%@: delListener:", TAG);
 }
 
 - (void)init:(nonnull id<NSObject>)config {
+    NSLog(@"%@: init:", TAG);
 }
 
 - (void)unInit:(nullable id<NSObject>)params {
+    NSLog(@"%@: unInit:", TAG);
 }
 
 - (void)onReceive:(nonnull NSString *)methodType
        withParams:(nullable NSObject *)params {
+    NSLog(@"%@: onReceive: %@: %@", TAG, methodType, nil != params ? params : @"");
     [_listener onReceive:methodType withParams:params];
 }
 
