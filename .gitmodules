@@ -1,7 +1,3 @@
-[submodule "ext_sdk/cpp"]
-	path = ext_sdk/cpp
-	url = git@github.com:AsteriskZuo/ext_sdk_cpp.git
-	branch = master
 [submodule "ios/cpp"]
 	path = ios/cpp
 	url = git@github.com:AsteriskZuo/ext_sdk_cpp.git
