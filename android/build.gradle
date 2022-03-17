@@ -52,6 +52,13 @@ android {
         }
     }
 
+    sourceSets {
+        main.java {
+            srcDir '../ext_sdk/java'
+            exclude 'com/easemob/ext_sdk/rn/*.java'
+        }
+    }
+
 }
 
 tasks.withType(JavaCompile){
