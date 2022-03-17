@@ -6,7 +6,7 @@
 
 cmake_minimum_required(VERSION 3.10.2)
 
-project("im_flutter_sdk")
+project("ext_sdk")
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../../ios/cpp ${CMAKE_CURRENT_SOURCE_DIR}/../../../../ext_sdk/output/cpp/build)
 

@@ -33,7 +33,11 @@ public class ImFlutterSdkPlugin implements FlutterPlugin, MethodChannel.MethodCa
     }
 
     static {
-        System.loadLibrary("im_flutter_sdk");
+        if (ExtSdkTest.TEST_TYPE == 1) {
+            System.loadLibrary("im_flutter_sdk");
+        } else if (ExtSdkTest.TEST_TYPE == 2) {
+            System.loadLibrary("ext_sdk");
+        }
     }
 
     static MethodChannel _channel;
