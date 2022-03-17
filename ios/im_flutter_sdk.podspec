@@ -23,7 +23,7 @@ A new flutter plugin project.
   s.source_files = ['Classes/**/*', 'cpp/**/*.{h,cpp,mm}', 'objc/**/*']
   s.public_header_files = ['Classes/**/*.h']
   s.private_header_files = ['cpp/**/*.h']
-  s.exclude_files = ['cpp/java/**/*', 'cpp/android/**/*']
+  s.exclude_files = ['cpp/java/**/*', 'cpp/android/**/*', 'objc/rn/**/*']
 
   s.dependency 'Flutter'
   s.dependency 'HyphenateChat','3.8.3.1'
