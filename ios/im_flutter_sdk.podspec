@@ -20,10 +20,10 @@ A new flutter plugin project.
   s.pod_target_xcconfig = { 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'arm64' }
   s.user_target_xcconfig = { 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'arm64' }
   
-  s.source_files = ['Classes/**/*', 'cpp_mirror/**/*.{h,cpp,mm}', 'NewClasses/**/*']
+  s.source_files = ['Classes/**/*', 'cpp/**/*.{h,cpp,mm}', 'objc/**/*']
   s.public_header_files = ['Classes/**/*.h']
-  s.private_header_files = ['cpp_mirror/**/*.h']
-  s.exclude_files = ['cpp_mirror/java/**/*', 'cpp_mirror/android/**/*']
+  s.private_header_files = ['cpp/**/*.h']
+  s.exclude_files = ['cpp/java/**/*', 'cpp/android/**/*']
 
   s.dependency 'Flutter'
   s.dependency 'HyphenateChat','3.8.3.1'
@@ -39,12 +39,12 @@ A new flutter plugin project.
       '-Wunused-variable'
     ],
     'HEADER_SEARCH_PATHS' => [
-      "$(PODS_TARGET_SRCROOT)/cpp_mirror/common",
-      "$(PODS_TARGET_SRCROOT)/cpp_mirror/core",
-      "$(PODS_TARGET_SRCROOT)/cpp_mirror/objc",
-      "$(PODS_TARGET_SRCROOT)/NewClasses/common",
-      "$(PODS_TARGET_SRCROOT)/NewClasses/dispatch",
-      "$(PODS_TARGET_SRCROOT)/NewClasses/flutter"
+      "$(PODS_TARGET_SRCROOT)/cpp/common",
+      "$(PODS_TARGET_SRCROOT)/cpp/core",
+      "$(PODS_TARGET_SRCROOT)/cpp/objc",
+      "$(PODS_TARGET_SRCROOT)/objc/common",
+      "$(PODS_TARGET_SRCROOT)/objc/dispatch",
+      "$(PODS_TARGET_SRCROOT)/objc/flutter"
     ]
   }
   s.xcconfig = {
