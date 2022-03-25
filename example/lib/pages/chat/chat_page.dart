@@ -1,7 +1,4 @@
-import 'dart:convert';
 import 'dart:io';
-
-import 'package:ease_call_kit/ease_call_kit.dart';
 import 'package:easeim_flutter_demo/pages/chat/chat_input_bar.dart';
 import 'package:easeim_flutter_demo/unit/chat_voice_player.dart';
 import 'package:easeim_flutter_demo/widgets/common_widgets.dart';
@@ -13,20 +10,17 @@ import 'package:flutter/services.dart';
 import 'package:im_flutter_sdk/im_flutter_sdk.dart';
 
 import 'package:image_picker/image_picker.dart';
-import 'package:keyboard_visibility/keyboard_visibility.dart';
 import 'package:provider/provider.dart';
-// import 'package:record_amr/record_amr.dart';
 import 'chat_face_view.dart';
 import 'chat_items/chat_item.dart';
 import 'chat_more_view.dart';
-import 'dart:convert' as convert;
 
 class ChatPage extends StatefulWidget {
   ChatPage(
     this.titleStr,
     EMConversation conversation,
-  ) : conv = conversation;
-  final EMConversation conv;
+  ) : conversation = conversation;
+  final EMConversation conversation;
   final String titleStr;
   @override
   State<StatefulWidget> createState() => _ChatPageState();
@@ -36,23 +30,21 @@ class _ChatPageState extends State<ChatPage>
     implements
         ChatInputBarListener,
         EMChatManagerListener,
-        EMChatRoomEventListener,
-        EaseCallKitListener {
-  List<ChatMoreViewItem> items;
+        EMChatRoomEventListener {
+  late List<ChatMoreViewItem> items;
 
   final _scrollController = ScrollController();
 
   /// 时间显示间隔为1分钟
   final int _timeInterval = 60 * 1000;
 
-  ChatInputBar _inputBar;
+  late ChatInputBar _inputBar;
   // 用来决定是否显示时间
   int _adjacentTime = 0;
   ChatInputBarType _inputBarType = ChatInputBarType.normal;
   ChatVoicePlayer _voicePlayer = ChatVoicePlayer();
-  ChatMoreView _moreView;
+  late ChatMoreView _moreView;
   TextEditingController _inputBarEditingController = TextEditingController();
-  int _subscribeId;
   bool _keyboardVisible = false;
 
   /// 消息List
@@ -61,15 +53,6 @@ class _ChatPageState extends State<ChatPage>
   @override
   void initState() {
     super.initState();
-    EaseCallKit.listener = this;
-    // 监听键盘弹起收回
-    _subscribeId = KeyboardVisibilityNotification().addNewListener(
-      onChange: (bool visible) {
-        _keyboardVisible = visible;
-        _setStateAndMoreToListViewEnd();
-      },
-    );
-
     items = [
       ChatMoreViewItem(
           'images/chat_input_more_photo.png', '相册', _moreViewPhotoBtnOnTap),
@@ -90,7 +73,7 @@ class _ChatPageState extends State<ChatPage>
     EMClient.getInstance.chatManager.addListener(this);
     EMClient.getInstance.chatRoomManager.addChatRoomChangeListener(this);
     // 设置所有消息已读
-    widget.conv?.markAllMessagesAsRead();
+    widget.conversation.markAllMessagesAsRead();
 
     _scrollController.addListener(() {
       if (_scrollController.position.pixels ==
@@ -98,7 +81,7 @@ class _ChatPageState extends State<ChatPage>
         _loadMessages(moveBottom: false);
       }
     });
-    if (widget.conv?.type == EMConversationType.ChatRoom) {
+    if (widget.conversation.type == EMConversationType.ChatRoom) {
       joinChatRoom();
     } else {
       _loadMessages();
@@ -107,7 +90,8 @@ class _ChatPageState extends State<ChatPage>
 
   void joinChatRoom() async {
     try {
-      await EMClient.getInstance.chatRoomManager.joinChatRoom(widget.conv?.id);
+      await EMClient.getInstance.chatRoomManager
+          .joinChatRoom(widget.conversation.id);
       _loadMessages();
     } on EMError catch (e) {
       print("加入房间失败 -- " + e.toString());
@@ -115,16 +99,14 @@ class _ChatPageState extends State<ChatPage>
   }
 
   void dispose() {
-    // 移除键盘监听
-    KeyboardVisibilityNotification().removeListener(_subscribeId);
     // 移除环信回调监听
     EMClient.getInstance.chatManager.removeListener(this);
     _scrollController.dispose();
     _inputBarEditingController.dispose();
-    if (widget.conv?.type == EMConversationType.ChatRoom) {
-      EMClient.getInstance.chatRoomManager.leaveChatRoom(widget.conv?.id);
+    if (widget.conversation.type == EMConversationType.ChatRoom) {
+      EMClient.getInstance.chatRoomManager
+          .leaveChatRoom(widget.conversation.id);
     }
-    EaseCallKit.dispose();
     super.dispose();
   }
 
@@ -262,7 +244,7 @@ class _ChatPageState extends State<ChatPage>
       }
       if (msg.hasRead == false) {
         try {
-          await widget.conv.markMessageAsRead(msg.msgId);
+          await widget.conversation.markMessageAsRead(msg.msgId!);
         } on EMError {}
       }
     }
@@ -296,9 +278,10 @@ class _ChatPageState extends State<ChatPage>
   /// 下拉加载更多消息
   _loadMessages({int count = 20, bool moveBottom = true}) async {
     try {
-      List<EMMessage> msgs = await widget.conv.loadMessages(
-          startMsgId: _msgList.length > 0 ? _msgList.first.msgId : '',
-          loadCount: count);
+      List<EMMessage> msgs = await widget.conversation.loadMessages(
+        startMsgId: _msgList.length > 0 ? _msgList.first.msgId! : '',
+        loadCount: count,
+      );
       _msgList.insertAll(0, msgs);
     } on EMError {
     } finally {
@@ -320,7 +303,7 @@ class _ChatPageState extends State<ChatPage>
 
   /// 点击bubble
   _messageBubbleOnTap(EMMessage msg) async {
-    switch (msg.body.type) {
+    switch (msg.body!.type!) {
       case EMMessageBodyType.TXT:
         break;
       case EMMessageBodyType.IMAGE:
@@ -329,12 +312,12 @@ class _ChatPageState extends State<ChatPage>
           Image img;
           if (body.fileStatus != EMDownloadStatus.SUCCESS) {
             img = Image.network(
-              body.remotePath,
+              body.remotePath!,
               fit: BoxFit.cover,
             );
           } else {
             img = Image.file(
-              File(body.localPath),
+              File(body.localPath!),
               fit: BoxFit.cover,
             );
           }
@@ -372,20 +355,13 @@ class _ChatPageState extends State<ChatPage>
   /// 消息长按
   _messageOnLongPress(EMMessage msg) async {
     print('长按消息 $msg');
-    String toAddUsername;
-    String reason;
-    try {
-      EMClient.getInstance.contactManager.addContact(toAddUsername, reason);
-    } on EMError catch (e) {
-      debugPrint(e.toString());
-    }
   }
 
   /// 发送文字消息
   _sendTextMessage(String txt) async {
     if (txt.length == 0) return;
     EMMessage msg = EMMessage.createTxtSendMessage(
-      widget.conv.id,
+      widget.conversation.id,
       txt,
     );
 
@@ -404,11 +380,11 @@ class _ChatPageState extends State<ChatPage>
         .resolve(ImageConfiguration())
         .addListener(ImageStreamListener((ImageInfo info, bool _) {
       EMMessage msg = EMMessage.createImageSendMessage(
-        username: widget.conv.id,
+        username: widget.conversation.id,
         filePath: imagePath,
         displayName: fileName,
       );
-      EMImageMessageBody body = msg.body;
+      EMImageMessageBody body = msg.body! as EMImageMessageBody;
       body.height = info.image.height.toDouble();
       body.width = info.image.width.toDouble();
       msg.body = body;
@@ -420,7 +396,7 @@ class _ChatPageState extends State<ChatPage>
   _sendMessage(EMMessage msg) async {
     _chatType() {
       EMMessageChatType type = EMMessageChatType.Chat;
-      switch (widget.conv.type) {
+      switch (widget.conversation.type) {
         case EMConversationType.Chat:
           type = EMMessageChatType.Chat;
           break;
@@ -451,21 +427,15 @@ class _ChatPageState extends State<ChatPage>
 
   /// 相册按钮被点击
   _moreViewPhotoBtnOnTap() async {
-    PickedFile pickedFile =
-        await ImagePicker().getImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      _sendImageMessage(
-        pickedFile.path,
-      );
+    XFile? pf = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (pf != null) {
+      _sendImageMessage(pf.path);
     }
   }
 
   /// 拍照按钮被点击
   _moreCameraBtnOnTap() {
     print('_moreCameraBtnOnTap');
-    widget.conv.deleteAllMessages();
-    _msgList.clear();
-    setState(() {});
   }
 
   /// 位置按钮被点击
@@ -480,15 +450,14 @@ class _ChatPageState extends State<ChatPage>
 
   /// 大头针按钮被点击
   _moreVoiceCallBtnOnTap() {
-    if (widget.conv.type == EMConversationType.Chat) {
-      EaseCallKit.startSingleCall(widget.conv.id);
+    if (widget.conversation.type == EMConversationType.Chat) {
+      // TODO: call
     }
   }
 
   _moreVideoCallBtnOnTap() {
-    if (widget.conv.type == EMConversationType.Chat) {
-      EaseCallKit.startSingleCall(widget.conv.id,
-          callType: EaseCallType.SingeVideo);
+    if (widget.conversation.type == EMConversationType.Chat) {
+      // TODO: call
     }
   }
 
@@ -581,7 +550,7 @@ class _ChatPageState extends State<ChatPage>
   }
 
   @override
-  void sendBtnOnTap(String str) => _sendTextMessage(str);
+  void sendBtnOnTap(String? str) => _sendTextMessage(str ?? "");
 
   @override
   onCmdMessagesReceived(List<EMMessage> messages) {}
@@ -598,7 +567,7 @@ class _ChatPageState extends State<ChatPage>
   @override
   onMessagesReceived(List<EMMessage> messages) {
     for (var msg in messages) {
-      if (msg.conversationId == widget.conv.id) {
+      if (msg.conversationId == widget.conversation.id) {
         _msgList.add(msg);
       }
     }
@@ -607,9 +576,6 @@ class _ChatPageState extends State<ChatPage>
 
   @override
   onConversationsUpdate() {}
-
-  @override
-  onConversationRead(String from, String to) {}
 
   @override
   void onAdminAddedFromChatRoom(String roomId, String admin) {}
@@ -621,20 +587,7 @@ class _ChatPageState extends State<ChatPage>
   void onAnnouncementChangedFromChatRoom(String roomId, String announcement) {}
 
   @override
-  void onChatRoomDestroyed(String roomId, String roomName) {
-    print('聊天室解散 -- $roomId, $roomName');
-  }
-
-  @override
-  void onMemberExitedFromChatRoom(
-      String roomId, String roomName, String participant) {}
-
-  @override
   void onMemberJoinedFromChatRoom(String roomId, String participant) {}
-
-  @override
-  void onMuteListAddedFromChatRoom(
-      String roomId, List<String> mutes, String expireTime) {}
 
   @override
   void onMuteListRemovedFromChatRoom(String roomId, List<String> mutes) {}
@@ -642,10 +595,6 @@ class _ChatPageState extends State<ChatPage>
   @override
   void onOwnerChangedFromChatRoom(
       String roomId, String newOwner, String oldOwner) {}
-
-  @override
-  void onRemovedFromChatRoom(
-      String roomId, String roomName, String participant) {}
 
   @override
   void onAllChatRoomMemberMuteStateChanged(String roomId, bool isAllMuted) {}
@@ -657,59 +606,24 @@ class _ChatPageState extends State<ChatPage>
   void onWhiteListRemovedFromChatRoom(String roomId, List<String> members) {}
 
   @override
-  void callDidEnd(String channelName, EaseCallEndReason reason, int time,
-      EaseCallType callType) {}
-
-  @override
-  void callDidJoinChannel(String channelName, int uid) {}
-
-  @override
-  void callDidOccurError(EaseCallError error) {}
-
-  @override
-  void callDidReceive(EaseCallType callType, String inviter, Map ext) {}
-
-  @override
-  void callDidRequestRTCToken(
-      String appId, String channelName, String eid) async {
-    String emUsername = EMClient.getInstance.currentUsername;
-    await fetchRTCToken(channelName, emUsername);
-  }
-
-  @override
-  void multiCallDidInviting(List<String> excludeUsers, Map ext) {}
-
-  Future<void> fetchRTCToken(String channelName, String username) async {
-    String token = EMClient.getInstance.accessToken;
-    if (token == null) return null;
-    var httpClient = new HttpClient();
-    var uri = Uri.http("a1.easemob.com", "/token/rtcToken/v1", {
-      "userAccount": username,
-      "channelName": channelName,
-      "appkey": EMClient.getInstance.options.appKey,
-    });
-    var request = await httpClient.getUrl(uri);
-    request.headers.add("Authorization", "Bearer $token");
-    HttpClientResponse response = await request.close();
-    httpClient.close();
-    if (response.statusCode == HttpStatus.ok) {
-      var _content = await response.transform(Utf8Decoder()).join();
-      debugPrint(_content);
-      Map<String, dynamic> map = convert.jsonDecode(_content);
-      if (map != null) {
-        if (map["code"] == "RES_0K") {
-          debugPrint("获取数据成功: $map");
-          String rtcToken = map["accessToken"];
-          int agoraUserId = map["agoraUserId"];
-          await EaseCallKit.setRTCToken(rtcToken, channelName, agoraUserId);
-        }
-      }
-    }
-  }
-
-  @override
   void onGroupMessageRead(List<EMGroupMessageAck> groupMessageAcks) {}
+  @override
+  void onChatRoomDestroyed(String roomId, String? roomName) {
+    // TODO: implement onChatRoomDestroyed
+  }
 
   @override
-  void remoteUserDidJoinChannel(String channelName, int uid, String eid) {}
+  void onConversationRead(String? from, String? to) {}
+
+  @override
+  void onMemberExitedFromChatRoom(
+      String roomId, String? roomName, String participant) {}
+
+  @override
+  void onMuteListAddedFromChatRoom(
+      String roomId, List<String> mutes, String? expireTime) {}
+
+  @override
+  void onRemovedFromChatRoom(
+      String roomId, String? roomName, String? participant) {}
 }

@@ -8,7 +8,7 @@ class ContactItem extends StatelessWidget {
     this.unreadCount = 0,
   });
   final String title;
-  final Image avatar;
+  final Image? avatar;
   final unreadCount;
   @override
   Widget build(BuildContext context) {
@@ -55,7 +55,7 @@ class ContactItem extends StatelessWidget {
             color: Colors.red,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: unreadCoundWidget(unreadCount),
+          child: unreadCountWidget(unreadCount),
         ),
       ],
     );

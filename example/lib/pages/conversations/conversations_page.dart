@@ -1,4 +1,3 @@
-import 'package:ease_call_kit/ease_call_kit.dart';
 import 'package:easeim_flutter_demo/pages/conversations/conversation_item.dart';
 import 'package:easeim_flutter_demo/unit/event_bus_manager.dart';
 import 'package:easeim_flutter_demo/widgets/common_widgets.dart';
@@ -11,9 +10,9 @@ import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 // ignore: must_be_immutable
 class ConversationPage extends StatefulWidget with ChangeNotifier {
-  num totalUnreadCount = 0;
+  int totalUnreadCount = 0;
 
-  updateCount(num count) {
+  updateCount(int count) {
     totalUnreadCount = count;
     notifyListeners();
   }
@@ -36,7 +35,7 @@ class ConversationPageState extends State<ConversationPage>
     // 添加环信回调监听
     EMClient.getInstance.chatManager.addListener(this);
     notifier = eventBus.on<EventBusManager>().listen((event) {
-      if (event.eventKey == EventBusManager.updateConversaitonsList) {
+      if (event.eventKey == EventBusManager.updateConversationsList) {
         _reLoadAllConversations();
       }
     });
@@ -73,11 +72,9 @@ class ConversationPageState extends State<ConversationPage>
                       .then((value) {});
                 } else if (index == 2) {
                   Navigator.of(context).pushNamed('/contactSelect').then(
-                    (value) {
+                    (value) async {
                       List<String> users = value as List<String>;
-                      if (users.length > 0) {
-                        EaseCallKit.startInviteUsers(users);
-                      }
+                      if (users.length > 0) {}
                     },
                   );
                 }
@@ -161,9 +158,9 @@ class ConversationPageState extends State<ConversationPage>
       _conversationsList.clear();
       _conversationsList.addAll(list);
       _refreshController.refreshCompleted();
-      num count = 0;
-      for (var conv in _conversationsList) {
-        count += conv.unreadCount;
+      int count = 0;
+      for (var conversation in _conversationsList) {
+        count += conversation.unreadCount ?? 0;
       }
       widget.updateCount(count);
     } on Error {
@@ -177,7 +174,7 @@ class ConversationPageState extends State<ConversationPage>
   Widget conversationWidgetForIndex(int index) {
     return slidableItem(
       child: ConversationItem(
-        conv: _conversationsList[index],
+        conversation: _conversationsList[index],
         onTap: () => {_conversationItemOnPress(index)},
       ),
       // 侧滑事件，有必要可以加上置顶之类的
@@ -188,8 +185,9 @@ class ConversationPageState extends State<ConversationPage>
   /// 侧滑删除按钮点击
   _deleteConversation(int index) async {
     try {
-      await EMClient.getInstance.chatManager
-          .deleteConversation(_conversationsList[index].id);
+      await EMClient.getInstance.chatManager.deleteConversation(
+        _conversationsList[index].id,
+      );
       _conversationsList.removeAt(index);
     } on Error {
     } finally {
@@ -238,7 +236,7 @@ class ConversationPageState extends State<ConversationPage>
   }
 
   @override
-  void onConversationRead(String from, String to) {}
+  void onConversationRead(String? from, String? to) {}
 
   @override
   void onConversationsUpdate() {}

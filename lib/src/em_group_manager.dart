@@ -561,12 +561,12 @@ class EMGroupManager {
   }
 
   /// @nodoc addGroupChangeListener - Adds [listener] to be aware of group change events.
-  void addGroupChangeListener(EMGroupChangeListener listener) {
+  void addGroupChangeListener(EMGroupEventListener listener) {
     _groupChangeListeners.add(listener);
   }
 
   /// @nodoc removeGroupChangeListener - Remove [listener] from the listener list.
-  void removeGroupChangeListener(EMGroupChangeListener listener) {
+  void removeGroupChangeListener(EMGroupEventListener listener) {
     if (_groupChangeListeners.contains(listener)) {
       _groupChangeListeners.remove(listener);
     }
@@ -574,7 +574,7 @@ class EMGroupManager {
 
   /// @nodoc
   Future<void> _onGroupChanged(Map? map) async {
-    for (EMGroupChangeListener listener in _groupChangeListeners) {
+    for (EMGroupEventListener listener in _groupChangeListeners) {
       var type = map!['type'];
       switch (type) {
         case EMGroupChangeEvent.ON_INVITATION_RECEIVED:
@@ -639,13 +639,13 @@ class EMGroupManager {
           break;
         case EMGroupChangeEvent.ON_MUTE_LIST_ADDED:
           String groupId = map['groupId'];
-          List<String> mutes = map['mutes'];
+          List<String> mutes = List.from(map['mutes']);
           int? muteExpire = map['muteExpire'];
           listener.onMuteListAddedFromGroup(groupId, mutes, muteExpire);
           break;
         case EMGroupChangeEvent.ON_MUTE_LIST_REMOVED:
           String groupId = map['groupId'];
-          List<String> mutes = map['mutes'];
+          List<String> mutes = List.from(map['mutes']);
           listener.onMuteListRemovedFromGroup(groupId, mutes);
           break;
         case EMGroupChangeEvent.ON_ADMIN_ADDED:
@@ -692,12 +692,12 @@ class EMGroupManager {
           break;
         case EMGroupChangeEvent.ON_WHITE_LIST_ADDED:
           String groupId = map["groupId"];
-          List<String> members = map['whitelist'];
+          List<String> members = List.from(map['whitelist']);
           listener.onWhiteListAddedFromGroup(groupId, members);
           break;
         case EMGroupChangeEvent.ON_WHITE_LIST_REMOVED:
           String groupId = map["groupId"];
-          List<String> members = map['whitelist'];
+          List<String> members = List.from(map['whitelist']);
           listener.onWhiteListRemovedFromGroup(groupId, members);
           break;
         case EMGroupChangeEvent.ON_ALL_MEMBER_MUTE_STATE_CHANGED:

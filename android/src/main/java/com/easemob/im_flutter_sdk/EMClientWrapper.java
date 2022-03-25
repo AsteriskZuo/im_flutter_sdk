@@ -103,6 +103,10 @@ public class EMClientWrapper extends EMWrapper implements MethodCallHandler {
             {
                 getCurrentUser(param, EMSDKMethod.getCurrentUser, result);
             }
+            else if (EMSDKMethod.getToken.equals(call.method))
+            {
+                getToken(param, EMSDKMethod.getToken, result);
+            }
             else  {
                 super.onMethodCall(call, result);
             }
@@ -110,6 +114,11 @@ public class EMClientWrapper extends EMWrapper implements MethodCallHandler {
         }catch (JSONException ignored) {
 
         }
+    }
+
+    private void getToken(JSONObject param, String channelName, Result result) throws JSONException
+    {
+        onSuccess(result, channelName, EMClient.getInstance().getAccessToken());
     }
 
     private void createAccount(JSONObject param, String channelName, Result result) throws JSONException {

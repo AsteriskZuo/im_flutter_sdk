@@ -5,11 +5,12 @@ import 'package:im_flutter_sdk/im_flutter_sdk.dart';
 
 class ConversationItem extends StatefulWidget {
   @override
-  const ConversationItem({EMConversation conv, VoidCallback onTap})
-      : _conv = conv,
-        _onTap = onTap;
-  final EMConversation _conv;
-  final VoidCallback _onTap;
+  const ConversationItem({
+    required this.conversation,
+    this.onTap,
+  });
+  final EMConversation conversation;
+  final VoidCallback? onTap;
 
   _ConversationItemState createState() => _ConversationItemState();
 }
@@ -24,7 +25,7 @@ class _ConversationItemState extends State<ConversationItem> {
   Widget build(BuildContext context) {
     return InkWell(
       highlightColor: Colors.grey[300],
-      onTap: () => this.widget._onTap(),
+      onTap: () => this.widget.onTap?.call(),
       child: Container(
         height: sWidth(74),
         child: Row(
@@ -53,7 +54,7 @@ class _ConversationItemState extends State<ConversationItem> {
                 Positioned(
                   top: sHeight(10),
                   right: sWidth(5),
-                  child: unreadCoundWidget(
+                  child: unreadCountWidget(
                     _unreadCount(),
                   ),
                 ),
@@ -124,15 +125,15 @@ class _ConversationItemState extends State<ConversationItem> {
   /// 消息详情
   String _showInfo() {
     String showInfo = '';
-    EMMessage _latestMesage = this.widget._conv.latestMessage;
-    if (_latestMesage == null) {
+    EMMessage? _latestMessage = this.widget.conversation.latestMessage;
+    if (_latestMessage == null) {
       return showInfo;
     }
 
-    switch (_latestMesage.body.type) {
+    switch (_latestMessage.body!.type) {
       case EMMessageBodyType.TXT:
-        var body = _latestMesage.body as EMTextMessageBody;
-        showInfo = body.content;
+        var body = _latestMessage.body as EMTextMessageBody;
+        showInfo = body.content!;
         break;
       case EMMessageBodyType.IMAGE:
         showInfo = '[图片]';
@@ -157,19 +158,19 @@ class _ConversationItemState extends State<ConversationItem> {
 
   /// 显示的名称
   String _showName() {
-    return this.widget._conv.name;
+    return this.widget.conversation.name;
   }
 
   /// 未读数
   int _unreadCount() {
-    return this.widget._conv.unreadCount;
+    return this.widget.conversation.unreadCount ?? 0;
   }
 
   /// 消息时间
   String _latestMessageTime() {
-    if (this.widget._conv.latestMessage == null) {
+    if (this.widget.conversation.latestMessage == null) {
       return '';
     }
-    return timeStrByMs(this.widget._conv.latestMessage?.serverTime ?? 0);
+    return timeStrByMs(this.widget.conversation.latestMessage?.serverTime ?? 0);
   }
 }

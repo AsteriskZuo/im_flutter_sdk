@@ -1,10 +1,8 @@
-import 'package:ease_call_kit/ease_call_kit.dart';
 import 'package:easeim_flutter_demo/pages/contacts/contacts_page.dart';
 import 'package:easeim_flutter_demo/pages/conversations/conversations_page.dart';
 import 'package:easeim_flutter_demo/pages/me/me_page.dart';
 import 'package:easeim_flutter_demo/widgets/common_widgets.dart';
 import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
@@ -12,27 +10,19 @@ class HomePage extends StatefulWidget {
   State<StatefulWidget> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin {
-  num _selectedPageIndex = 0;
-  ConversationPage _convPage;
-  List<Widget> _pages;
+class _HomePageState extends State<HomePage>
+    with AutomaticKeepAliveClientMixin {
+  int _selectedPageIndex = 0;
+  late ConversationPage _conversationListPage;
+  late List<Widget> _pages;
 
   @override
   void initState() {
     super.initState();
 
-    // 初始化 EaseCallKit插件
-    EaseCallKit.initWithConfig(
-      EaseCallConfig('15cb0d28b87b425ea613fc46f7c9f974')
-        ..userMap = {
-          'du001': EaseCallUser('nick001', ''),
-          'du002': EaseCallUser('nick002', ''),
-        },
-    );
-    _requestPermiss();
-    _convPage = ConversationPage();
+    _conversationListPage = ConversationPage();
     _pages = [
-      _convPage,
+      _conversationListPage,
       ContactsPage(),
       MePage(),
     ];
@@ -76,7 +66,12 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     );
   }
 
-  BottomNavigationBarItem bottomItem(String title, String unSelectedImageName, [String selectedImageName, bool needUnreadCount = false]) {
+  BottomNavigationBarItem bottomItem(
+    String title,
+    String unSelectedImageName, [
+    String? selectedImageName,
+    bool needUnreadCount = false,
+  ]) {
     return BottomNavigationBarItem(
       activeIcon: SizedBox(
         child: Stack(
@@ -96,10 +91,10 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                     right: sWidth(0),
                     top: sHeight(2),
                     child: ChangeNotifierProvider<ConversationPage>(
-                      create: (_) => _convPage,
+                      create: (_) => _conversationListPage,
                       child: Selector(
-                        builder: (context, num data, Widget child) {
-                          return unreadCoundWidget(data);
+                        builder: (context, int data, Widget? child) {
+                          return unreadCountWidget(data);
                         },
                         selector: (_, ConversationPage state) {
                           return state.totalUnreadCount;
@@ -132,10 +127,10 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
                     right: sWidth(0),
                     top: sHeight(2),
                     child: ChangeNotifierProvider<ConversationPage>(
-                      create: (_) => _convPage,
+                      create: (_) => _conversationListPage,
                       child: Selector(
-                        builder: (context, num data, Widget child) {
-                          return unreadCoundWidget(data);
+                        builder: (context, int data, Widget? child) {
+                          return unreadCountWidget(data);
                         },
                         selector: (_, ConversationPage state) {
                           return state.totalUnreadCount;
@@ -153,18 +148,11 @@ class _HomePageState extends State<HomePage> with AutomaticKeepAliveClientMixin 
     );
   }
 
-  updatePages() {
+  Widget updatePages() {
     return IndexedStack(
       children: _pages,
       index: _selectedPageIndex,
     );
-  }
-
-  /// 获取麦克风权限
-  _requestPermiss() async {
-    Future.delayed(Duration(seconds: 3)).then((value) {
-      Permission.microphone.request();
-    });
   }
 
   @override
