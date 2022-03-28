@@ -24,6 +24,7 @@ void main() {
   SystemChrome.setSystemUIOverlayStyle(uiStyle);
   EMPushConfig config = EMPushConfig()..enableAPNs('EaseIM_APNS_Product');
   var options = EMOptions(appKey: 'easemob-demo#easeim');
+  options.autoLogin = false;
   options.debugModel = true;
 
   options.pushConfig = config;

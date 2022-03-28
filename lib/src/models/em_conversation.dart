@@ -2,6 +2,9 @@ import 'dart:core';
 import 'package:flutter/services.dart';
 import 'package:im_flutter_sdk/im_flutter_sdk.dart';
 
+import '../em_channel.dart';
+import '../em_test.dart';
+
 enum EMConversationType {
   Chat, // 单聊消息
   GroupChat, // 群聊消息
@@ -89,8 +92,7 @@ class EMConversation {
 }
 
 extension EMConversationExtension on EMConversation {
-  static const MethodChannel _emConversationChannel =
-      const MethodChannel('com.easemob.im/em_conversation', JSONMethodCodec());
+  static MethodChannel _channel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'em_conversation' : 'dart_to_native');
 
   int? get unreadCount {
     return _unreadCount;
@@ -128,14 +130,14 @@ extension EMConversationExtension on EMConversation {
   Future<void> _syncNameToNative() async {
     Map req = this.toJson();
     req['con_name'] = this._name ?? '';
-    await _emConversationChannel.invokeMethod(
+    await _channel.invokeMethod(
         EMSDKMethod.syncConversationName, req);
   }
 
   Future<void> _syncExtToNative() async {
     Map req = this.toJson();
     req['ext'] = this._ext ?? '';
-    await _emConversationChannel.invokeMethod(
+    await _channel.invokeMethod(
         EMSDKMethod.syncConversationExt, req);
   }
 
@@ -143,7 +145,7 @@ extension EMConversationExtension on EMConversation {
   Future<bool> markMessageAsRead(String messageId) async {
     Map req = this.toJson();
     req['msg_id'] = messageId;
-    Map result = await _emConversationChannel.invokeMethod(
+    Map result = await _channel.invokeMethod(
         EMSDKMethod.markMessageAsRead, req);
     EMError.hasErrorFromResult(result);
     return result.boolValue(EMSDKMethod.markMessageAsRead);
@@ -151,7 +153,7 @@ extension EMConversationExtension on EMConversation {
 
   /// 设置当前会话中所有消息为已读
   Future<void> markAllMessagesAsRead() async {
-    Map result = await _emConversationChannel.invokeMethod(
+    Map result = await _channel.invokeMethod(
         EMSDKMethod.markAllMessagesAsRead, this.toJson());
     EMError.hasErrorFromResult(result);
   }
@@ -160,7 +162,7 @@ extension EMConversationExtension on EMConversation {
   Future<bool> insertMessage(EMMessage message) async {
     Map req = this.toJson();
     req['msg'] = message.toJson();
-    Map result = await _emConversationChannel.invokeMethod(
+    Map result = await _channel.invokeMethod(
         EMSDKMethod.insertMessage, req);
     EMError.hasErrorFromResult(result);
     return result.boolValue(EMSDKMethod.insertMessage);
@@ -170,7 +172,7 @@ extension EMConversationExtension on EMConversation {
   Future<bool> appendMessage(EMMessage message) async {
     Map req = this.toJson();
     req['msg'] = message.toJson();
-    Map result = await _emConversationChannel.invokeMethod(
+    Map result = await _channel.invokeMethod(
         EMSDKMethod.appendMessage, req);
     return result.boolValue(EMSDKMethod.appendMessage);
   }
@@ -179,7 +181,7 @@ extension EMConversationExtension on EMConversation {
   Future<bool> updateMessage(EMMessage message) async {
     Map req = this.toJson();
     req['msg'] = message.toJson();
-    Map result = await _emConversationChannel.invokeMethod(
+    Map result = await _channel.invokeMethod(
         EMSDKMethod.updateConversationMessage, req);
     EMError.hasErrorFromResult(result);
     return result.boolValue(EMSDKMethod.updateConversationMessage);
@@ -189,7 +191,7 @@ extension EMConversationExtension on EMConversation {
   Future<bool> deleteMessage(String messageId) async {
     Map req = this.toJson();
     req['msg_id'] = messageId;
-    Map result = await _emConversationChannel.invokeMethod(
+    Map result = await _channel.invokeMethod(
         EMSDKMethod.removeMessage, req);
     EMError.hasErrorFromResult(result);
     return result.boolValue(EMSDKMethod.removeMessage);
@@ -197,7 +199,7 @@ extension EMConversationExtension on EMConversation {
 
   // 删除当前会话中所有消息
   Future<bool> deleteAllMessages() async {
-    Map result = await _emConversationChannel.invokeMethod(
+    Map result = await _channel.invokeMethod(
         EMSDKMethod.clearAllMessages, this.toJson());
     EMError.hasErrorFromResult(result);
     return result.boolValue(EMSDKMethod.clearAllMessages);
@@ -207,7 +209,7 @@ extension EMConversationExtension on EMConversation {
   Future<EMMessage?> loadMessage(String messageId) async {
     Map req = this.toJson();
     req['msg_id'] = messageId;
-    Map result = await _emConversationChannel.invokeMethod(
+    Map result = await _channel.invokeMethod(
         EMSDKMethod.loadMsgWithId, req);
     EMError.hasErrorFromResult(result);
     if (result[EMSDKMethod.loadMsgWithId] != null) {
@@ -232,7 +234,7 @@ extension EMConversationExtension on EMConversation {
     req['sender'] = sender;
     req['direction'] = direction == EMMessageSearchDirection.Up ? "up" : "down";
 
-    Map result = await _emConversationChannel.invokeMethod(
+    Map result = await _channel.invokeMethod(
         EMSDKMethod.loadMsgWithMsgType, req);
     EMError.hasErrorFromResult(result);
 
@@ -254,7 +256,7 @@ extension EMConversationExtension on EMConversation {
     req['count'] = loadCount;
     req['direction'] = direction == EMMessageSearchDirection.Up ? "up" : "down";
 
-    Map<String, dynamic> result = await _emConversationChannel.invokeMethod(
+    Map<String, dynamic> result = await _channel.invokeMethod(
         EMSDKMethod.loadMsgWithStartId, req);
 
     EMError.hasErrorFromResult(result);
@@ -282,7 +284,7 @@ extension EMConversationExtension on EMConversation {
     req['timestamp'] = timestamp;
     req['direction'] = direction == EMMessageSearchDirection.Up ? "up" : "down";
 
-    Map<String, dynamic> result = await _emConversationChannel.invokeMethod(
+    Map<String, dynamic> result = await _channel.invokeMethod(
         EMSDKMethod.loadMsgWithKeywords, req);
 
     EMError.hasErrorFromResult(result);
@@ -304,7 +306,7 @@ extension EMConversationExtension on EMConversation {
     req['endTime'] = endTime;
     req['count'] = count;
 
-    Map<String, dynamic> result = await _emConversationChannel.invokeMethod(
+    Map<String, dynamic> result = await _channel.invokeMethod(
         EMSDKMethod.loadMsgWithTime, req);
 
     EMError.hasErrorFromResult(result);

@@ -10,7 +10,7 @@
 #import <UserNotifications/UserNotifications.h>
 
 #import "ExtSdkTest.h"
-#import "ExtSdkApiFlutter.h"
+#import "ExtSdkApiObjcFlutter.h"
 
 static NSString* const TAG = @"ImFlutterSdkPlugin";
 @implementation ImFlutterSdkPlugin
