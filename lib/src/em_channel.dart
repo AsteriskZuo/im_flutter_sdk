@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'em_test.dart';
 
 class EMChannel {
-  static const _channelPrefix = EMTest.TEST_TYPE == 1 ? 'com.chat.im' : 'com.easemob.im.ext';
+  static const _channelPrefix = EMTest.TEST_TYPE == 1 ? 'com.chat.im' : 'com.chat.im.ext';
   static HashMap<String, MethodChannel> _list =
       new HashMap<String, MethodChannel>();
 
