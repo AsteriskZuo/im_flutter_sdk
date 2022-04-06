@@ -22,7 +22,7 @@ static NSString* const TAG = @"ImFlutterSdkPlugin";
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-variable"
 //    EMClientWrapper *wrapper =  [[EMClientWrapper alloc] initWithChannelName:EMChannelName(@"em_client") registrar:registrar];
-    [EMClientWrapper channelName:EMChannelName(@"em_client") registrar:registrar];
+    [EMClientWrapper channelName:EMChannelName(@"chat_client") registrar:registrar];
 #pragma clang diagnostic pop
     } else if ([ExtSdkTest testType] == 2) {
         [ExtSdkApiFlutter registerWithRegistrar:registrar];

@@ -17,7 +17,7 @@ class ContactsPage extends StatefulWidget {
 }
 
 class ContactsPageState extends State<ContactsPage>
-    implements EMContactEventListener {
+    implements EMContactManagerListener {
   List<ContactModel> _contactList = [];
   List<ContactModel> _topList = [
     ContactModel.custom('新的好友'),
@@ -35,7 +35,9 @@ class ContactsPageState extends State<ContactsPage>
     String? currentUser = EMClient.getInstance.currentUsername;
     if (currentUser != null) {
       SharePreferenceManager.load(currentUser, callback: () {
-        setState(() {});
+        if (mounted) {
+          setState(() {});
+        }
       });
     }
   }
@@ -236,7 +238,7 @@ class ContactsPageState extends State<ContactsPage>
 
     count--;
     try {
-      List<String?> contacts =
+      List<String> contacts =
           await EMClient.getInstance.contactManager.getAllContactsFromServer();
       List<ContactModel>? list;
       if (contacts.isNotEmpty) {
@@ -253,7 +255,9 @@ class ContactsPageState extends State<ContactsPage>
       SuspensionUtil.sortListBySuspensionTag(_contactList);
       SuspensionUtil.setShowSuspensionStatus(_contactList);
       _contactList.insertAll(0, _topList);
-      setState(() {});
+      if (mounted) {
+        setState(() {});
+      }
     }
   }
 
@@ -274,7 +278,9 @@ class ContactsPageState extends State<ContactsPage>
       SuspensionUtil.sortListBySuspensionTag(_contactList);
       SuspensionUtil.setShowSuspensionStatus(_contactList);
       _contactList.insertAll(0, _topList);
-      setState(() {});
+      if (mounted) {
+        setState(() {});
+      }
       Future.delayed(Duration(seconds: 3)).then((value) {
         _fetchContactsFromServer(count);
       });
@@ -284,8 +290,8 @@ class ContactsPageState extends State<ContactsPage>
   Future<List<ContactModel>> _fetchUserInfo(List<String> emIds) async {
     List<ContactModel> ret = [];
 
-    Map<String, EMUserInfo> map = await EMClient.getInstance.userInfoManager
-        .fetchUserInfoByIdWithExpireTime(emIds);
+    Map<String, EMUserInfo> map =
+        await EMClient.getInstance.userInfoManager.fetchUserInfoById(emIds);
 
     List<String> hasInfoIds = map.keys.toList();
     for (var hasInfoId in hasInfoIds) {
@@ -320,7 +326,9 @@ class ContactsPageState extends State<ContactsPage>
   void onContactInvited(String? userName, String? reason) {
     SharePreferenceManager.addRequest(userName!);
     _friendRequestCount = SharePreferenceManager.loadUnreadCount();
-    setState(() {});
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override

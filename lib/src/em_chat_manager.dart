@@ -1,82 +1,148 @@
 import "dart:async";
 
 import 'package:flutter/services.dart';
-import 'package:im_flutter_sdk/im_flutter_sdk.dart';
-import 'package:im_flutter_sdk/src/em_test.dart';
-import 'models/em_domain_terms.dart';
-import 'em_sdk_method.dart';
 import 'em_channel.dart';
 import 'em_test.dart';
+import 'internal/em_transform_tools.dart';
+import 'tools/em_extension.dart';
+import '../im_flutter_sdk.dart';
+import 'internal/chat_method_keys.dart';
+import 'tools/em_message_callback_manager.dart';
 
-class EMChatManager implements EMMessageStatusListener {
-  static MethodChannel _channel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'em_chat_manager' : 'dart_to_native');
-  static MethodChannel _recvChannel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'em_chat_manager' : 'native_to_dart');
+///
+/// The chat manager. This class is responsible for managing conversations.
+/// (such as: load, delete), sending messages, downloading attachments and so on.
+///
+/// Such as, send a text message:
+///
+/// ```dart
+///    EMMessage msg = EMMessage.createTxtSendMessage(
+///        username: toChatUsername, content: content);
+///    await EMClient.getInstance.chatManager.sendMessage(msg);
+/// ```
+///
+class EMChatManager {
+  static MethodChannel _channel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'chat_manager' : 'dart_to_native');
+  static MethodChannel _recvChannel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'chat_manager' : 'native_to_dart');
 
   final List<EMChatManagerListener> _messageListeners = [];
 
+  /// @nodoc
   EMChatManager() {
+    MessageCallBackManager.getInstance;
     _recvChannel.setMethodCallHandler((MethodCall call) async {
-      if (call.method == EMSDKMethod.onMessagesReceived) {
+      if (call.method == ChatMethodKeys.onMessagesReceived) {
         return _onMessagesReceived(call.arguments);
-      } else if (call.method == EMSDKMethod.onCmdMessagesReceived) {
+      } else if (call.method == ChatMethodKeys.onCmdMessagesReceived) {
         return _onCmdMessagesReceived(call.arguments);
-      } else if (call.method == EMSDKMethod.onMessagesRead) {
+      } else if (call.method == ChatMethodKeys.onMessagesRead) {
         return _onMessagesRead(call.arguments);
-      } else if (call.method == EMSDKMethod.onGroupMessageRead) {
+      } else if (call.method == ChatMethodKeys.onGroupMessageRead) {
         return _onGroupMessageRead(call.arguments);
-      } else if (call.method == EMSDKMethod.onMessagesDelivered) {
+      } else if (call.method == ChatMethodKeys.onMessagesDelivered) {
         return _onMessagesDelivered(call.arguments);
-      } else if (call.method == EMSDKMethod.onMessagesRecalled) {
+      } else if (call.method == ChatMethodKeys.onMessagesRecalled) {
         return _onMessagesRecalled(call.arguments);
-      } else if (call.method == EMSDKMethod.onConversationUpdate) {
+      } else if (call.method == ChatMethodKeys.onConversationUpdate) {
         return _onConversationsUpdate(call.arguments);
-      } else if (call.method == EMSDKMethod.onConversationHasRead) {
+      } else if (call.method == ChatMethodKeys.onConversationHasRead) {
         return _onConversationHasRead(call.arguments);
       }
       return null;
     });
   }
 
-  /// 发送消息 [message].
+  ///
+  /// Sends a message.
+  ///
+  /// Reference:
+  /// If the message is voice, picture and other message with attachment, the SDK will automatically upload the attachment.
+  /// You can set whether to upload the attachment to the chat sever by {@link EMOptions#serverTransfer(boolean)}.
+  ///
+  /// To listen for the status of sending messages, call {@link EMMessage#setMessageStatusListener(StatusListener)}.
+  ///
+  /// Param [message] The message object to be sent
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<EMMessage> sendMessage(EMMessage message) async {
-    if (message.listener == null) {
-      message.listener = this;
+    message.status = MessageStatus.PROGRESS;
+    Map result = await _channel.invokeMethod(
+        ChatMethodKeys.sendMessage, message.toJson());
+    try {
+      EMError.hasErrorFromResult(result);
+      EMMessage msg = EMMessage.fromJson(result[ChatMethodKeys.sendMessage]);
+      message.from = msg.from;
+      message.to = msg.to;
+      message.status = msg.status;
+      return message;
+    } on EMError catch (e) {
+      throw e;
     }
-    message.status = EMMessageStatus.PROGRESS;
-    Map result =
-        await _channel.invokeMethod(EMSDKMethod.sendMessage, message.toJson());
-    EMError.hasErrorFromResult(result);
-    EMMessage msg = EMMessage.fromJson(result[EMSDKMethod.sendMessage]);
-    message.from = msg.from;
-    message.to = msg.to;
-    message.status = msg.status;
-    return message;
   }
 
   /// 重发消息 [message].
   Future<EMMessage> resendMessage(EMMessage message) async {
-    if (message.listener == null) {
-      message.listener = this;
-    }
-    message.status = EMMessageStatus.PROGRESS;
+    message.status = MessageStatus.PROGRESS;
     Map result = await _channel.invokeMethod(
-        EMSDKMethod.resendMessage, message.toJson());
-    EMError.hasErrorFromResult(result);
-    EMMessage msg = EMMessage.fromJson(result[EMSDKMethod.resendMessage]);
-    message.from = msg.from;
-    message.to = msg.to;
-    message.status = msg.status;
-    return message;
+        ChatMethodKeys.resendMessage, message.toJson());
+    try {
+      EMError.hasErrorFromResult(result);
+      EMMessage msg = EMMessage.fromJson(result[ChatMethodKeys.resendMessage]);
+      message.from = msg.from;
+      message.to = msg.to;
+      message.status = msg.status;
+      return message;
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 发送消息已读 [message].
+  ///
+  /// Sends the read receipt to the server.
+  ///
+  /// This method applies to one-to-one chats only.
+  ///
+  /// Precondition: set {@link EMOptions#requireAck(bool)}.
+  ///
+  /// Reference:
+  /// To send the group message read receipt, call {@link #sendGroupMessageReadAck(String, String, String)}.
+  ///
+  /// We recommend that you call {@link #sendConversationReadAck(String)} when entering a chat page, and call this method in other cases to reduce the number of method calls.
+  ///
+  /// Param [message] The message.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<bool> sendMessageReadAck(EMMessage message) async {
     Map req = {"to": message.from, "msg_id": message.msgId};
-    Map result = await _channel.invokeMethod(EMSDKMethod.ackMessageRead, req);
-    EMError.hasErrorFromResult(result);
-    return result.boolValue(EMSDKMethod.ackMessageRead);
+    Map result =
+        await _channel.invokeMethod(ChatMethodKeys.ackMessageRead, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return result.boolValue(ChatMethodKeys.ackMessageRead);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
+  ///
+  /// Sends the group message receipt to the server.
+  ///
+  /// You can only call the method after setting the following method: {@link EMOptions#requireAck(bool)} and {@link EMMessage#needGroupAck(bool)}.
+  ///
+  /// Reference:
+  /// To send the one-to-one chat message receipt to server, call {@link #sendMessageReadAck(EMMessage)};
+  /// To send the conversation receipt to the server, call {@link #sendConversationReadAck(String)}.
+  ///
+  /// Param [msgId] The message ID.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [content] The extension information. Developer self-defined command string that can be used for specifying custom action/command.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<bool> sendGroupMessageReadAck(
     String msgId,
     String groupId, {
@@ -90,38 +156,101 @@ class EMChatManager implements EMMessageStatusListener {
       req["content"] = content;
     }
     Map result =
-        await _channel.invokeMethod(EMSDKMethod.ackGroupMessageRead, req);
-    EMError.hasErrorFromResult(result);
-    return result.boolValue(EMSDKMethod.ackMessageRead);
+        await _channel.invokeMethod(ChatMethodKeys.ackGroupMessageRead, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return result.boolValue(ChatMethodKeys.ackMessageRead);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 发送会话已读 [conversationId]为会话Id
+  ///
+  /// Sends the conversation read receipt to the server. This method is only for one-to-one chat conversation.
+  ///
+  /// This method will inform the sever to set the unread message count of the conversation to 0, and conversation list (with multiple devices) will receive
+  /// a callback method from {@link EMChatManagerListener#onConversationRead(String, String)}.
+  ///
+  /// Reference：
+  /// To send the group message read receipt, call {@link #sendGroupMessageReadAck(String, String, String)}.
+  ///
+  /// Param [conversationId] The conversation ID.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<bool> sendConversationReadAck(String conversationId) async {
     Map req = {"con_id": conversationId};
     Map result =
-        await _channel.invokeMethod(EMSDKMethod.ackConversationRead, req);
-    EMError.hasErrorFromResult(result);
-    return result.boolValue(EMSDKMethod.ackConversationRead);
+        await _channel.invokeMethod(ChatMethodKeys.ackConversationRead, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return result.boolValue(ChatMethodKeys.ackConversationRead);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 撤回发送的消息(增值服务), 默认时效为2分钟，超过2分钟无法撤回.
+  ///
+  /// Recalls the sent message.
+  ///
+  /// Param [messageId] The message id.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<bool> recallMessage(String messageId) async {
     Map req = {"msg_id": messageId};
-    Map result = await _channel.invokeMethod(EMSDKMethod.recallMessage, req);
-    EMError.hasErrorFromResult(result);
-    return result.boolValue(EMSDKMethod.recallMessage);
+    Map result = await _channel.invokeMethod(ChatMethodKeys.recallMessage, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return result.boolValue(ChatMethodKeys.recallMessage);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 通过[messageId]从db获取消息.
-  Future<EMMessage> loadMessage(String messageId) async {
+  ///
+  /// Fetches message for local database by message ID.
+  ///
+  /// Param [messageId] The message ID.
+  ///
+  /// **return** The message object obtained by the specified ID. Returns null if the message doesn't exist.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<EMMessage?> loadMessage(String messageId) async {
     Map req = {"msg_id": messageId};
     Map<String, dynamic> result =
-        await _channel.invokeMethod(EMSDKMethod.getMessage, req);
-    EMError.hasErrorFromResult(result);
-    return EMMessage.fromJson(result[EMSDKMethod.getMessage]);
+        await _channel.invokeMethod(ChatMethodKeys.getMessage, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      if (result.containsKey(ChatMethodKeys.getMessage)) {
+        return EMMessage.fromJson(result[ChatMethodKeys.getMessage]);
+      } else {
+        return null;
+      }
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 通过会话[conversationId], 会话类型[type]获取会话.
+  ///
+  /// Gets the conversation by conversation ID and conversation type.
+  ///
+  /// The SDK wil return null if the conversation is not found.
+  ///
+  /// Param [conversationId] The conversation ID.
+  ///
+  /// Param [type] The conversation type, see {@link EMConversationType}.
+  ///
+  /// Param [createIfNeed] Whether to create a conversation if not find the specified conversation.
+  ///
+  /// `true` (default) means create one.
+  /// `false` means not.
+  ///
+  /// **return** The conversation object found according to the ID and type. Returns null if the conversation is not found.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<EMConversation?> getConversation(
     String conversationId, [
     EMConversationType type = EMConversationType.Chat,
@@ -129,127 +258,261 @@ class EMChatManager implements EMMessageStatusListener {
   ]) async {
     Map req = {
       "con_id": conversationId,
-      "type": EMConversation.typeToInt(type),
+      "type": conversationTypeToInt(type),
       "createIfNeed": createIfNeed
     };
-    Map result = await _channel.invokeMethod(EMSDKMethod.getConversation, req);
-    EMError.hasErrorFromResult(result);
-    EMConversation? ret;
-    if (result[EMSDKMethod.getConversation] != null) {
-      ret = EMConversation.fromJson(result[EMSDKMethod.getConversation]);
+    Map result =
+        await _channel.invokeMethod(ChatMethodKeys.getConversation, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      EMConversation? ret;
+      if (result[ChatMethodKeys.getConversation] != null) {
+        ret = EMConversation.fromJson(result[ChatMethodKeys.getConversation]);
+      }
+      return ret;
+    } on EMError catch (e) {
+      throw e;
     }
-    return ret;
   }
 
-  /// 将所有对话标记为已读.
-  Future<bool> markAllConversationsAsRead() async {
-    Map result = await _channel.invokeMethod(EMSDKMethod.markAllChatMsgAsRead);
-    EMError.hasErrorFromResult(result);
-    return result.boolValue(EMSDKMethod.markAllChatMsgAsRead);
+  /// Marks all messages as read.
+  ///
+  /// This method is for the local conversations only.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> markAllConversationsAsRead() async {
+    Map result =
+        await _channel.invokeMethod(ChatMethodKeys.markAllChatMsgAsRead);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 获取未读消息的计数.
-  Future<int?> getUnreadMessageCount() async {
-    Map result = await _channel.invokeMethod(EMSDKMethod.getUnreadMessageCount);
-    EMError.hasErrorFromResult(result);
-    return result[EMSDKMethod.getUnreadMessageCount] as int?;
+  ///
+  /// Gets the unread message count.
+  ///
+  /// **return** The count of unread messages.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<int> getUnreadMessageCount() async {
+    Map result =
+        await _channel.invokeMethod(ChatMethodKeys.getUnreadMessageCount);
+    try {
+      int ret = 0;
+      EMError.hasErrorFromResult(result);
+      if (result.containsKey(ChatMethodKeys.getUnreadMessageCount)) {
+        ret = result[ChatMethodKeys.getUnreadMessageCount] as int;
+      }
+      return ret;
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 更新消息[message].
-  Future<EMMessage> updateMessage(EMMessage message) async {
+  ///
+  /// Updates the local message.
+  ///
+  /// Will update the memory and the local database at the same time.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> updateMessage(EMMessage message) async {
     Map req = {"message": message.toJson()};
     Map result =
-        await _channel.invokeMethod(EMSDKMethod.updateChatMessage, req);
-    EMError.hasErrorFromResult(result);
-    return EMMessage.fromJson(result[EMSDKMethod.updateChatMessage]);
+        await _channel.invokeMethod(ChatMethodKeys.updateChatMessage, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 导入消息 [messages].
-  Future<bool> importMessages(List<EMMessage> messages) async {
+  ///
+  /// Imports messages to the local database.
+  ///
+  /// Make sure the message's sender or receiver is the current user before option.
+  ///
+  /// Recommends import less than 1,000 messages per operation.
+  ///
+  /// Param [messages] The message list.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> importMessages(List<EMMessage> messages) async {
     List<Map> list = [];
     messages.forEach((element) {
       list.add(element.toJson());
     });
     Map req = {"messages": list};
-    Map result = await _channel.invokeMethod(EMSDKMethod.importMessages, req);
-    EMError.hasErrorFromResult(result);
-    return result.boolValue(EMSDKMethod.importMessages);
+    Map result =
+        await _channel.invokeMethod(ChatMethodKeys.importMessages, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 下载附件 [message].
-  Future<EMMessage> downloadAttachment(EMMessage message) async {
+  ///
+  /// Downloads the attachment files from the server.
+  ///
+  /// You can call the method again if the attachment download fails.
+  ///
+  /// Param [message] The message to be download the attachment.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> downloadAttachment(EMMessage message) async {
     Map result = await _channel.invokeMethod(
-        EMSDKMethod.downloadAttachment, {"message": message.toJson()});
-    EMError.hasErrorFromResult(result);
-    return EMMessage.fromJson(result[EMSDKMethod.downloadAttachment]);
+        ChatMethodKeys.downloadAttachment, {"message": message.toJson()});
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 下载缩略图 [message].
-  Future<EMMessage> downloadThumbnail(EMMessage message) async {
+  ///
+  /// Downloads the thumbnail if the msg is not downloaded before or the download failed.
+  ///
+  /// Param [message] The message object.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> downloadThumbnail(EMMessage message) async {
     Map result = await _channel.invokeMethod(
-        EMSDKMethod.downloadThumbnail, {"message": message.toJson()});
-    EMError.hasErrorFromResult(result);
-    return EMMessage.fromJson(result[EMSDKMethod.downloadThumbnail]);
+        ChatMethodKeys.downloadThumbnail, {"message": message.toJson()});
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 获取所有会话
+  ///
+  /// Gets all conversations from the local database.
+  ///
+  /// Conversations will be loaded from memory first, if no conversation is found then the SDk loads from the local database.
+  ///
+  /// **return** Returns all the conversations from the memory or local database.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<List<EMConversation>> loadAllConversations() async {
-    Map result = await _channel.invokeMethod(EMSDKMethod.loadAllConversations);
-    EMError.hasErrorFromResult(result);
-    List<EMConversation> conversationList = [];
-    result[EMSDKMethod.loadAllConversations]?.forEach((element) {
-      conversationList.add(EMConversation.fromJson(element));
-    });
-    return conversationList;
+    Map result =
+        await _channel.invokeMethod(ChatMethodKeys.loadAllConversations);
+    try {
+      EMError.hasErrorFromResult(result);
+      List<EMConversation> conversationList = [];
+      result[ChatMethodKeys.loadAllConversations]?.forEach((element) {
+        conversationList.add(EMConversation.fromJson(element));
+      });
+      return conversationList;
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 从服务器获取会话
+  ///
+  /// Fetches the conversation list from the server.
+  ///
+  /// The default maximum return is 100.
+  ///
+  /// **return** Returns the conversation list of the current user.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<List<EMConversation>> getConversationsFromServer() async {
     Map result =
-        await _channel.invokeMethod(EMSDKMethod.getConversationsFromServer);
-    EMError.hasErrorFromResult(result);
-    List<EMConversation> conversationList = [];
-    result[EMSDKMethod.getConversationsFromServer]?.forEach((element) {
-      conversationList.add(EMConversation.fromJson(element));
-    });
-    return conversationList;
+        await _channel.invokeMethod(ChatMethodKeys.getConversationsFromServer);
+    try {
+      EMError.hasErrorFromResult(result);
+      List<EMConversation> conversationList = [];
+      result[ChatMethodKeys.getConversationsFromServer]?.forEach((element) {
+        conversationList.add(EMConversation.fromJson(element));
+      });
+      return conversationList;
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  // 批量更新一组会话显示名称`Map`,`key`会话id, `value`对应名称,既conversation.name属性。
-  // Future<bool> updateConversationsName(Map<String, String> nameMap) async {
-  //   Map req = {"name_map": nameMap};
-  //   Map result =
-  //       await _channel.invokeMethod(EMSDKMethod.updateConversationsName, req);
-  //   EMError.hasErrorFromResult(result);
-  //   return result.boolValue(EMSDKMethod.updateConversationsName);
-  // }
-
-  /// 删除会话, 如果[deleteMessages]设置为true，则同时删除消息。
+  ///
+  /// Deletes conversation and messages from the local database.
+  ///
+  /// If you set `deleteMessages` to `true`, delete the local chat history when delete the conversation.
+  ///
+  /// Param [conversationId] The conversation ID.
+  ///
+  /// Param [deleteMessages] Whether to delete the chat history when delete the conversation.
+  ///
+  /// `true`: (default) means delete the chat history when delete the conversation.
+  /// `false`: means not.
+  ///
+  /// **return** The result of deleting. `True` means success, `false` means failure.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<bool> deleteConversation(
     String conversationId, [
     bool deleteMessages = true,
   ]) async {
     Map req = {"con_id": conversationId, "deleteMessages": deleteMessages};
     Map result =
-        await _channel.invokeMethod(EMSDKMethod.deleteConversation, req);
-    EMError.hasErrorFromResult(result);
-    return result.boolValue(EMSDKMethod.deleteConversation);
+        await _channel.invokeMethod(ChatMethodKeys.deleteConversation, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return result.boolValue(ChatMethodKeys.deleteConversation);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 添加消息监听 [listener]
-  void addListener(EMChatManagerListener listener) {
+  ///
+  /// Adds the message listener.
+  ///
+  /// Receives new messages and so on can set the method to listen, see {@link EMChatManagerListener}.
+  ///
+  /// Param [listener] The message listener which is used to listen the incoming messages, see {@link EMChatManagerListener}
+  ///
+  void addChatManagerListener(EMChatManagerListener listener) {
     _messageListeners.add(listener);
   }
 
-  /// 移除消息监听[listener]
-  void removeListener(EMChatManagerListener listener) {
+  ///
+  /// Removes the message listener.
+  ///
+  /// You should call this method after set {@link #addMessageListener(addChatManagerListener)} .
+  ///
+  /// Param [listener] The message listener to be removed.
+  ///
+  void removeChatManagerListener(EMChatManagerListener listener) {
     if (_messageListeners.contains(listener)) {
       _messageListeners.remove(listener);
     }
   }
 
-  /// 在会话[conversationId]中提取历史消息，按[type]筛选。
-  /// 结果按每页[pageSize]分页，从[startMsgId]开始。
+  ///
+  /// Fetches history messages of the conversation from the server.
+  ///
+  /// Fetches by page.
+  ///
+  /// Param [conversationId] The conversation ID.
+  ///
+  /// Param [type] The conversation type which select to fetch roam message, see {@link EMConversationType}
+  ///
+  /// Param [pageSize] The number of records per page.
+  ///
+  /// Param [startMsgId] The start search roam message, if the param is empty, fetches from the server latest message.
+  ///
+  /// **return** Returns the messages and the cursor for next fetch action.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<EMCursorResult<EMMessage?>> fetchHistoryMessages(
     String conversationId, {
     EMConversationType type = EMConversationType.Chat,
@@ -258,49 +521,87 @@ class EMChatManager implements EMMessageStatusListener {
   }) async {
     Map req = Map();
     req['con_id'] = conversationId;
-    req['type'] = EMConversation.typeToInt(type);
+    req['type'] = conversationTypeToInt(type);
     req['pageSize'] = pageSize;
     req['startMsgId'] = startMsgId;
     Map result =
-        await _channel.invokeMethod(EMSDKMethod.fetchHistoryMessages, req);
-    EMError.hasErrorFromResult(result);
-    return EMCursorResult<EMMessage?>.fromJson(
-        result[EMSDKMethod.fetchHistoryMessages], dataItemCallback: (value) {
-      return EMMessage.fromJson(value);
-    });
+        await _channel.invokeMethod(ChatMethodKeys.fetchHistoryMessages, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return EMCursorResult<EMMessage?>.fromJson(
+          result[ChatMethodKeys.fetchHistoryMessages],
+          dataItemCallback: (value) {
+        return EMMessage.fromJson(value);
+      });
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 搜索包含[keywords]的消息，消息类型为[type]，起始时间[timeStamp]，条数[maxCount], 消息发送方[from]，方向[direction]。
+  ///
+  /// Searches messages from the database according to the parameters.
+  ///
+  /// Note: Cautious about the memory usage when the maxCount is large, currently the limited number is 400 entries at a time.
+  ///
+  /// Param [keywords] The keywords in message.
+  ///
+  /// Param [timeStamp] The timestamp for search, Unix timestamp, in milliseconds.
+  ///
+  /// Param [maxCount] The max number of message to search at a time.
+  ///
+  /// Param [from] A user ID or a group ID searches for messages, usually refers to the conversation ID.
+  ///
+  /// **return** The list of messages.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<List<EMMessage>> searchMsgFromDB(
     String keywords, {
     int timeStamp = -1,
     int maxCount = 20,
     String from = '',
-    EMMessageSearchDirection direction = EMMessageSearchDirection.Up,
+    EMSearchDirection direction = EMSearchDirection.Up,
   }) async {
     Map req = Map();
     req['keywords'] = keywords;
     req['timeStamp'] = timeStamp;
     req['maxCount'] = maxCount;
     req['from'] = from;
-    req['direction'] = direction == EMMessageSearchDirection.Up ? "up" : "down";
+    req['direction'] = direction == EMSearchDirection.Up ? "up" : "down";
 
     Map result =
-        await _channel.invokeMethod(EMSDKMethod.searchChatMsgFromDB, req);
-    EMError.hasErrorFromResult(result);
-    List<EMMessage> list = [];
-    result[EMSDKMethod.searchChatMsgFromDB]?.forEach((element) {
-      list.add(EMMessage.fromJson(element));
-    });
-
-    return list;
+        await _channel.invokeMethod(ChatMethodKeys.searchChatMsgFromDB, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      List<EMMessage> list = [];
+      result[ChatMethodKeys.searchChatMsgFromDB]?.forEach((element) {
+        list.add(EMMessage.fromJson(element));
+      });
+      return list;
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 从服务器获取群组已读回执。
-  /// [msgId], 需要获取的群消息id。
-  /// [startAckId], 起始的ackId, 用于分页。
-  /// [pageSize], 返回的数量。
-  Future<EMCursorResult<EMGroupMessageAck?>> asyncFetchGroupAcks(
+  ///
+  /// Fetches the ack details for group messages from server.
+  ///
+  /// Fetches by page.
+  ///
+  /// Reference:
+  /// If you want to send group message receipt, see {@link {@link #sendConversationReadAck(String)}.
+  ///
+  /// Param [msgId] The message ID.
+  ///
+  /// Param [startAckId] The start ID for fetch receipts, can be null. If you set it as null, the SDK will start from the server's latest receipt.
+  ///
+  /// Param [pageSize] The number of records per page.
+  ///
+  /// **return** The group acks cursor result.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<EMCursorResult<EMGroupMessageAck?>> fetchGroupAcks(
     String msgId, {
     String? startAckId,
     int pageSize = 0,
@@ -312,22 +613,60 @@ class EMChatManager implements EMMessageStatusListener {
     }
     req["pageSize"] = pageSize;
 
-    Map data =
-        await _channel.invokeMethod(EMSDKMethod.asyncFetchGroupAcks, req);
+    Map result =
+        await _channel.invokeMethod(ChatMethodKeys.asyncFetchGroupAcks, req);
 
-    EMError.hasErrorFromResult(data);
+    try {
+      EMError.hasErrorFromResult(result);
+      EMCursorResult<EMGroupMessageAck?> cursorResult = EMCursorResult.fromJson(
+        result[ChatMethodKeys.asyncFetchGroupAcks],
+        dataItemCallback: (map) {
+          return EMGroupMessageAck.fromJson(map);
+        },
+      );
 
-    EMCursorResult<EMGroupMessageAck?> result = EMCursorResult.fromJson(
-      data[EMSDKMethod.asyncFetchGroupAcks],
-      dataItemCallback: (map) {
-        return EMGroupMessageAck.fromJson(map);
-      },
-    );
-
-    return result;
+      return cursorResult;
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// @nodoc
+  ///
+  /// Deletes the conversation of a specified ID and it's chat records on the server.
+  ///
+  /// Param [conversationId] Conversation ID.
+  ///
+  /// Param [conversationType] Conversation type  {@link EMConversationType}
+  ///
+  /// Param [isDeleteMessage] Whether to delete the server chat records when delete conversation.
+  ///
+  /// `true`:(default) means to delete the chat history when delete the conversation;
+  /// `false`: means not.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> deleteRemoteConversation(
+    String conversationId, {
+    EMConversationType conversationType = EMConversationType.Chat,
+    bool isDeleteMessage = true,
+  }) async {
+    Map req = {};
+    req["conversationId"] = conversationId;
+    if (conversationType == EMConversationType.Chat) {
+      req["conversationType"] = 0;
+    } else if (conversationType == EMConversationType.GroupChat) {
+      req["conversationType"] = 1;
+    } else {
+      req["conversationType"] = 2;
+    }
+    req["isDeleteRemoteMessage"] = isDeleteMessage;
+
+    Map data = await _channel.invokeMethod(
+        ChatMethodKeys.deleteRemoteConversation, req);
+
+    EMError.hasErrorFromResult(data);
+  }
+
   Future<void> _onMessagesReceived(List messages) async {
     List<EMMessage> messageList = [];
     for (var message in messages) {
@@ -338,7 +677,6 @@ class EMChatManager implements EMMessageStatusListener {
     }
   }
 
-  /// @nodoc
   Future<void> _onCmdMessagesReceived(List messages) async {
     List<EMMessage> list = [];
     for (var message in messages) {
@@ -349,7 +687,6 @@ class EMChatManager implements EMMessageStatusListener {
     }
   }
 
-  /// @nodoc
   Future<void> _onMessagesRead(List messages) async {
     List<EMMessage> list = [];
     for (var message in messages) {
@@ -360,7 +697,6 @@ class EMChatManager implements EMMessageStatusListener {
     }
   }
 
-  /// @nodoc
   Future<void> _onGroupMessageRead(List messages) async {
     List<EMGroupMessageAck> list = [];
     for (var message in messages) {
@@ -371,7 +707,6 @@ class EMChatManager implements EMMessageStatusListener {
     }
   }
 
-  /// @nodoc
   Future<void> _onMessagesDelivered(List messages) async {
     List<EMMessage> list = [];
     for (var message in messages) {
@@ -400,53 +735,9 @@ class EMChatManager implements EMMessageStatusListener {
 
   Future<void> _onConversationHasRead(dynamic obj) async {
     for (var listener in _messageListeners) {
-      String? from = (obj as Map)['from'];
-      String? to = obj['to'];
+      String from = (obj as Map)['from'];
+      String to = obj['to'];
       listener.onConversationRead(from, to);
     }
   }
-
-  @override
-  void onDeliveryAck() {}
-
-  @override
-  void onError(EMError error) {}
-
-  @override
-  void onProgress(int progress) {}
-
-  @override
-  void onReadAck() {}
-
-  @override
-  void onStatusChanged() {}
-
-  @override
-  void onSuccess() {}
-}
-
-abstract class EMChatManagerListener {
-  /// 收到消息[messages]
-  void onMessagesReceived(List<EMMessage> messages) {}
-
-  /// 收到cmd消息[messages]
-  void onCmdMessagesReceived(List<EMMessage> messages) {}
-
-  /// 收到[messages]消息已读
-  void onMessagesRead(List<EMMessage> messages) {}
-
-  /// 收到[groupMessageAcks]群消息已读回调
-  void onGroupMessageRead(List<EMGroupMessageAck> groupMessageAcks) {}
-
-  /// 收到[messages]消息已送达
-  void onMessagesDelivered(List<EMMessage> messages) {}
-
-  /// 收到[messages]消息被撤回
-  void onMessagesRecalled(List<EMMessage> messages) {}
-
-  /// 会话列表变化
-  void onConversationsUpdate() {}
-
-  /// 会话已读`from`是已读的发送方, `to`是已读的接收方
-  void onConversationRead(String? from, String? to) {}
 }

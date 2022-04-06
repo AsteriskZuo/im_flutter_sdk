@@ -1,15 +1,73 @@
 ## NEXT
 
-* 支持gcm推送点击
+## 3.8.9
+- 增加单聊消息免打扰；
+- 去除不必要的信息收集；
+- 修复安卓某些场景下数据库损坏导致崩溃；
+- 移除对FCM11.4.0的依赖；
+- 修复安卓WAKE_LOCK权限导致的崩溃；
+- 增加用户被全局禁言时发消息错误码；
+- 增强数据传输安全性；
+- 增强本地数据存储安全性；
+- 新增使用Token登录时，Token过期的回调；
+- 修复拉取历史漫游消息不全的bug；
+- 默认使用https；
+- 优化登录速度；
+
+
+## 3.8.3+9
+- 将设置推送相关操作从EMPushConfigs中移到EMPushManager中；
+
+
+## 3.8.3+8
+
+- 修复ios使用token登录失败；
+- 修改Login方法和Logout方法返回值；
+
+
+## 3.8.3+6
+
+- 修改EMImPushConfig为EMPushConfigs;
+- 删除EMOptions中的EMPushConfig.设置推送证书时直接调用EMOptions即可;
+- EMGroup中移除ShareFiles，如果需要获取共享文件，请调用Api:
+  `EMClient.getInstance.groupManager.getGroupFileListFromServer(groupId)` 
+- 将isConnected和isLoginBefore、Token改为从原生获取；
+- 修复安卓设置群组免打扰失效的问题；
+- 修复获取公开群crash的问题；
+- 修改throw error的逻辑；
+- 修改构造文本消息时的方法，需要传入参数名；
+- 修改部分原生方法逻辑；
+- 调整项目目录结构；
+- 将`onConversationRead`回调方法参数改为必选；
+- 
+
+## 3.8.3+5
+
+- 更新安卓依赖原生sdk版本；
+- 修复获取本地群组crash；
+
+## 3.8.3+4
+
+* 修复消息attribute类型变为bool类型；
+* 修复群组免打扰属性不准；
+* 修复ios importMessages方法bug；
+* 修复群、聊天室禁言时不执行回调的bug；
+* 修复下载方法不执行callback；
+* 构造文件消息提供设置文件大小属性；
+* 修改`EMGroupChangeListener` 为 `EMGroupEventListener`
 
 ## 3.8.3+3
-* 修复安卓下resendMessage方法发送失败时不回调onError。
+
+* 修复安卓下resendMessage方法发送失败时不回调onError；
+* 修复fetchChatRoomMembers返回类型错误；
 
 ## 3.8.3+2
+
 * 增加群组已读回执；
 * 不在提供EMContact类，直接返回String类型username;
 
 ## 3.8.3
+
 * 增加用户属性；
 * 修复已知bug；
 

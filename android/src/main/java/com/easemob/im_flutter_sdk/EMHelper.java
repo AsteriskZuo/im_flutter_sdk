@@ -5,7 +5,6 @@ import android.content.Context;
 import com.hyphenate.chat.EMChatRoom;
 import com.hyphenate.chat.EMClient;
 import com.hyphenate.chat.EMCmdMessageBody;
-import com.hyphenate.chat.EMContact;
 import com.hyphenate.chat.EMConversation;
 import com.hyphenate.chat.EMCursorResult;
 import com.hyphenate.chat.EMCustomMessageBody;
@@ -128,22 +127,6 @@ class EMOptionsHelper {
     }
 }
 
-class EMContactHelper {
-    static EMContact fromJson(JSONObject json) throws JSONException {
-        EMContact contact = new EMContact(json.getString("eid"));
-        contact.setNickname(json.getString("nickname"));
-        return contact;
-    }
-
-    static Map<String, Object> toJson(EMContact contact) {
-
-        Map<String, Object> data = new HashMap<>();
-        data.put("eid", contact.getUsername());
-        data.put("nickname", contact.getNickname());
-        return data;
-    }
-}
-
 class EMGroupHelper {
     static Map<String, Object> toJson(EMGroup group) {
         Map<String, Object> data = new HashMap<>();
@@ -157,7 +140,7 @@ class EMGroupHelper {
         data.put("adminList", group.getAdminList());
         data.put("blockList", group.getBlackList());
         data.put("muteList", group.getMuteList());
-        data.put("sharedFileList", group.getShareFileList());
+
         if (group.getGroupId() != null && EMClient.getInstance().pushManager().getNoPushGroups() != null) {
             data.put("noticeEnable",
                     !EMClient.getInstance().pushManager().getNoPushGroups().contains(group.getGroupId()));
@@ -453,7 +436,8 @@ class EMMessageHelper {
         message.setStatus(statusFromInt(json.getInt("status")));
         message.setChatType(chatTypeFromInt(json.getInt("chatType")));
         message.setMsgId(json.getString("msgId"));
-        if (null != json.getJSONObject("attributes")) {
+
+        if(json.has("attributes")){
             JSONObject data = json.getJSONObject("attributes");
             Iterator iterator = data.keys();
             while (iterator.hasNext()) {
@@ -604,6 +588,7 @@ class EMGroupAckHelper {
     static Map<String, Object>toJson(EMGroupReadAck ack) {
         Map<String, Object> data = new HashMap<>();
         data.put("msg_id", ack.getMsgId());
+        data.put("ack_id", ack.getAckId());
         data.put("from", ack.getFrom());
         data.put("count", ack.getCount());
         data.put("timestamp", ack.getTimestamp());

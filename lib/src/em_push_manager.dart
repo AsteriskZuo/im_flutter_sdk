@@ -1,74 +1,256 @@
 import 'dart:io';
 
 import 'package:flutter/services.dart';
-import 'package:im_flutter_sdk/src/em_test.dart';
-
 import 'em_channel.dart';
-import 'em_sdk_method.dart';
-import 'models/em_domain_terms.dart';
+import 'em_test.dart';
+import 'internal/chat_method_keys.dart';
+import 'models/em_error.dart';
+import 'models/em_push_configs.dart';
 
+///
+/// The push message presentation style: Simple represents the presentation of a simple message,
+///
+/// and Summary represents the presentation of message content.
+///
+enum DisplayStyle {
+  /// 显示 ”您有一条新消息“
+  Simple,
+
+  /// 显示推送内容详情
+  Summary,
+}
+
+///
+///  The message push configuration options.
+///
 class EMPushManager {
-  static MethodChannel _channel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'em_push_manager' : 'dart_to_native');
-  static MethodChannel _recvChannel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'em_push_manager' : 'native_to_dart');
+  static MethodChannel _channel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'chat_push_manager' : 'dart_to_native');
+  // static MethodChannel _recvChannel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'chat_push_manager' : 'native_to_dart');
 
-  /// 从本地获取ImPushConfig
-  Future<EMImPushConfig> getImPushConfig() async {
-    Map result = await _channel.invokeMethod(EMSDKMethod.getImPushConfig);
-    EMError.hasErrorFromResult(result);
-    return EMImPushConfig.fromJson(result[EMSDKMethod.getImPushConfig]);
+  Future<EMPushConfigs?> getPushConfigsFromCache() async {
+    Map result = await _channel.invokeMethod(ChatMethodKeys.getImPushConfig);
+    try {
+      EMError.hasErrorFromResult(result);
+      return EMPushConfigs.fromJson(result[ChatMethodKeys.getImPushConfig]);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 从服务器获取ImPushConfig
-  Future<EMImPushConfig> getImPushConfigFromServer() async {
+  /// 从服务器获取 `EMPushConfigs`
+  Future<EMPushConfigs> getPushConfigsFromServer() async {
     Map result =
-        await _channel.invokeMethod(EMSDKMethod.getImPushConfigFromServer);
-    EMError.hasErrorFromResult(result);
-    return EMImPushConfig.fromJson(
-        result[EMSDKMethod.getImPushConfigFromServer]);
+        await _channel.invokeMethod(ChatMethodKeys.getImPushConfigFromServer);
+    try {
+      EMError.hasErrorFromResult(result);
+      return EMPushConfigs.fromJson(
+          result[ChatMethodKeys.getImPushConfigFromServer]);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 更新当前用户的[nickname],这样离线消息推送的时候可以显示用户昵称而不是id，需要登录环信服务器成功后调用才生效
-  Future<bool> updatePushNickname(String nickname) async {
+  ///
+  /// Turns on the push notification.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> enableOfflinePush() async {
+    Map result = await _channel.invokeMethod(ChatMethodKeys.enableOfflinePush);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
+  }
+
+  ///
+  /// Do not push the offline messages within the specified time period (24-hour clock).
+  ///
+  /// Param [start] The start hour.
+  ///
+  /// Param [end] The end hour.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> disableOfflinePush({
+    required int start,
+    required int end,
+  }) async {
+    Map req = {'start': start, 'end': end};
+    Map result =
+        await _channel.invokeMethod(ChatMethodKeys.disableOfflinePush, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
+  }
+
+  ///
+  /// Sets wether to turn on or turn off the push notification for the the specified groups.
+  ///
+  /// [groupIds]  The list of groups to be set.
+  ///
+  /// [enablePush] enable push notification.
+  /// `true`: Turns on the notification;
+  /// `false`: Turns off the notification;
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> updatePushServiceForGroup({
+    required List<String> groupIds,
+    required bool enablePush,
+  }) async {
+    Map req = {'noPush': !enablePush, 'group_ids': groupIds};
+    Map result =
+        await _channel.invokeMethod(ChatMethodKeys.updateGroupPushService, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
+  }
+
+  ///
+  /// Gets the list of groups which have blocked the push notification.
+  ///
+  /// **return** The list of groups that blocked the push notification.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<List<String>?> getNoPushGroupsFromCache() async {
+    Map result = await _channel.invokeMethod(ChatMethodKeys.getNoPushGroups);
+    List<String> list = [];
+    if (result.containsKey(ChatMethodKeys.getNoPushGroups)) {
+      list = result[ChatMethodKeys.getNoPushGroups]?.cast<String>();
+    }
+    return list;
+  }
+
+  ///
+  /// Updates the push display nickname of the current user.
+  ///
+  /// This method can be used to set a push display nickname, the push display nickname will be used to show for offline push notification.
+  /// When the app user changes the nickname in the user profile(use {@link EMUserInfoManager#updateOwnInfo(EMUserInfo, int?)
+  /// be sure to also call this method to update to prevent the display differences.
+  ///
+  /// Param [nickname] The push display nickname, which is different from the nickname in the user profile.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> updatePushNickname(String nickname) async {
     Map req = {'nickname': nickname};
     Map result =
-        await _channel.invokeMethod(EMSDKMethod.updatePushNickname, req);
-    EMError.hasErrorFromResult(result);
-    return result.boolValue(EMSDKMethod.updatePushNickname);
+        await _channel.invokeMethod(ChatMethodKeys.updatePushNickname, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 上传华为推送token, 需要确保登录成功后再调用(可以是进入home页面后)
-  Future<bool> updateHMSPushToken(String token) async {
+  ///
+  /// Update the push message style. The default value is {@link DisplayStyle#Simple}.
+  ///
+  /// Param [displayStyle] The push message display style.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> updatePushDisplayStyle(DisplayStyle displayStyle) async {
+    Map req = {'pushStyle': displayStyle == DisplayStyle.Simple ? 0 : 1};
+    Map result =
+        await _channel.invokeMethod(ChatMethodKeys.updateImPushStyle, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
+  }
+
+  ///
+  /// Update the HMS push token.
+  ///
+  /// Param [token] The HMS push token.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> updateHMSPushToken(String token) async {
     if (Platform.isAndroid) {
       Map req = {'token': token};
       Map result =
-          await _channel.invokeMethod(EMSDKMethod.updateHMSPushToken, req);
-      EMError.hasErrorFromResult(result);
-      return result.boolValue(EMSDKMethod.updateHMSPushToken);
+          await _channel.invokeMethod(ChatMethodKeys.updateHMSPushToken, req);
+      try {
+        EMError.hasErrorFromResult(result);
+      } on EMError catch (e) {
+        throw e;
+      }
     }
-    return true;
   }
 
-  /// 上传FCM推送token, 需要确保登录成功后再调用(可以是进入home页面后)
-  Future<bool> updateFCMPushToken(String token) async {
+  ///
+  /// Update the FCM push token.
+  ///
+  /// Param [token] The FCM push token.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> updateFCMPushToken(String token) async {
     if (Platform.isAndroid) {
       Map req = {'token': token};
       Map result =
-          await _channel.invokeMethod(EMSDKMethod.updateFCMPushToken, req);
-      EMError.hasErrorFromResult(result);
-      return result.boolValue(EMSDKMethod.updateFCMPushToken);
+          await _channel.invokeMethod(ChatMethodKeys.updateFCMPushToken, req);
+      try {
+        EMError.hasErrorFromResult(result);
+      } on EMError catch (e) {
+        throw e;
+      }
     }
-    return true;
   }
 
-  /// 上传iOS推送deviceToken
-  Future<bool> updateAPNsDeviceToken(String token) async {
+  ///
+  /// Update the APNs push token.
+  ///
+  /// Param [token] The APNs push token.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> updateAPNsDeviceToken(String token) async {
     if (Platform.isIOS) {
       Map req = {'token': token};
       Map result =
-          await _channel.invokeMethod(EMSDKMethod.updateAPNsPushToken, req);
-      EMError.hasErrorFromResult(result);
-      return true;
+          await _channel.invokeMethod(ChatMethodKeys.updateAPNsPushToken, req);
+      try {
+        EMError.hasErrorFromResult(result);
+      } on EMError catch (e) {
+        throw e;
+      }
     }
-    return true;
+  }
+
+  /// 从本地获取ImPushConfig
+  @Deprecated('use - getPushConfigsFromCache method instead.')
+  Future<EMPushConfigs> getImPushConfig() async {
+    Map result = await _channel.invokeMethod(ChatMethodKeys.getImPushConfig);
+    try {
+      EMError.hasErrorFromResult(result);
+      return EMPushConfigs.fromJson(result[ChatMethodKeys.getImPushConfig]);
+    } on EMError catch (e) {
+      throw e;
+    }
+  }
+
+  /// 从服务器获取ImPushConfig
+  @Deprecated('use - getPushConfigsFromServer method instead.')
+  Future<EMPushConfigs> getImPushConfigFromServer() async {
+    Map result =
+        await _channel.invokeMethod(ChatMethodKeys.getImPushConfigFromServer);
+    try {
+      EMError.hasErrorFromResult(result);
+      return EMPushConfigs.fromJson(
+          result[ChatMethodKeys.getImPushConfigFromServer]);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 }

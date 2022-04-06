@@ -1,11 +1,13 @@
-class EMSDKMethod {
+class ChatMethodKeys {
   /// EMClient methods
   static const String init = 'init';
   static const String createAccount = 'createAccount';
   static const String login = 'login';
+  static const String loginWithAgoraToken = 'loginWithAgoraToken';
+  static const String renewToken = 'renewToken';
   static const String logout = 'logout';
   static const String changeAppKey = 'changeAppKey';
-  static const String isLoggedInBefore = 'isLoggedInBefore';
+
   static const String uploadLog = 'uploadLog';
   static const String compressLogs = 'compressLogs';
   static const String kickDevice = 'kickDevice';
@@ -13,13 +15,19 @@ class EMSDKMethod {
   static const String currentUser = 'currentUser';
   static const String getLoggedInDevicesFromServer =
       'getLoggedInDevicesFromServer';
+
   static const String getToken = 'getToken';
+  static const String getCurrentUser = 'getCurrentUser';
+  static const String isLoggedInBefore = 'isLoggedInBefore';
+  static const String isConnected = 'isConnected';
 
   /// EMClient listener
   static const String onMultiDeviceEvent = 'onMultiDeviceEvent';
   static const String onConnected = 'onConnected';
   static const String onDisconnected = 'onDisconnected';
   static const String onSendDataToFlutter = "onSendDataToFlutter";
+  static const String onTokenWillExpire = 'onTokenWillExpire';
+  static const String onTokenDidExpire = 'onTokenDidExpire';
 
   /// EMContactManager methods
   static const String addContact = 'addContact';
@@ -59,6 +67,7 @@ class EMSDKMethod {
   static const String searchChatMsgFromDB = 'searchChatMsgFromDB';
   static const String getMessage = 'getMessage';
   static const String asyncFetchGroupAcks = 'asyncFetchGroupAcks';
+  static const String deleteRemoteConversation = "deleteRemoteConversation";
 
   /// EMChatManager listener
   static const String onMessagesReceived = 'onMessagesReceived';
@@ -211,12 +220,18 @@ class EMSDKMethod {
   static const String updateHMSPushToken = 'updateHMSPushToken';
   static const String updateFCMPushToken = 'updateFCMPushToken';
   static const String updateAPNsPushToken = 'updateAPNsPushToken';
+  static const String enableOfflinePush = 'enableOfflinePush';
+  static const String disableOfflinePush = 'disableOfflinePush';
+  static const String getNoPushGroups = 'getNoPushGroups';
 
   /// ImPushConfig
   static const String imPushNoDisturb = 'imPushNoDisturb';
   static const String updateImPushStyle = 'updateImPushStyle';
   static const String updateGroupPushService = 'updateGroupPushService';
   static const String getNoDisturbGroups = 'getNoDisturbGroups';
+  static const String setNoDisturbUsers = 'setNoDisturbUsers';
+  static const String getNoDisturbUsersFromServer =
+      'getNoDisturbUsersFromServer';
 
   /// EMUserInfoManager methods
   static const String updateOwnUserInfo = 'updateOwnUserInfo';

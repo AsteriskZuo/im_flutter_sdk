@@ -208,7 +208,7 @@ class _LoginPageState extends State<LoginPage> {
     String passwd = _pwdController.text;
 
     try {
-      // SmartDialog.showLoading(msg: '登录中...');
+      SmartDialog.showLoading(msg: '登录中...');
       await EMClient.getInstance.login(username, passwd);
 
       Navigator.of(context).pushReplacementNamed(

@@ -22,13 +22,12 @@
     ret[@"adminList"] = self.adminList;
     ret[@"blockList"] = self.blacklist;
     ret[@"muteList"] = self.muteList;
-    ret[@"sharedFileList"] = self.sharedFileList;
     ret[@"noticeEnable"] = @(self.isPushNotificationEnabled);
     ret[@"messageBlocked"] = @(self.isBlocked);
     ret[@"isAllMemberMuted"] = @(self.isMuteAllMembers);
     ret[@"options"] = [self.setting toJson];
     ret[@"permissionType"] = @([EMGroup premissionTypeToInt:self.permissionType]);
-    
+
     return ret;
 }
 

@@ -5,22 +5,27 @@ public class EMSDKMethod {
     static final String init = "init";
     static final String createAccount = "createAccount";
     static final String login = "login";
+    static final String loginWithAgoraToken = "loginWithAgoraToken";
     static final String logout = "logout";
     static final String changeAppKey = "changeAppKey";
-    static final String isLoggedInBefore = "isLoggedInBefore";
     static final String updateCurrentUserNick = "updateCurrentUserNick";
     static final String uploadLog = "uploadLog";
     static final String compressLogs = "compressLogs";
     static final String kickDevice = "kickDevice";
     static final String kickAllDevices = "kickAllDevices";
     static final String getLoggedInDevicesFromServer = "getLoggedInDevicesFromServer";
-    static final String getCurrentUser = "getCurrentUser";
+
     static final String getToken = "getToken";
+    static final String getCurrentUser = "getCurrentUser";
+    static final String isLoggedInBefore = "isLoggedInBefore";
+    static final String isConnected = "isConnected";
 
     static final String onConnected = "onConnected";
     static final String onDisconnected = "onDisconnected";
     static final String onMultiDeviceEvent = "onMultiDeviceEvent";
     static final String onSendDataToFlutter = "onSendDataToFlutter";
+    static final String onTokenWillExpire = "onTokenWillExpire";
+    static final String onTokenDidExpire = "onTokenDidExpire";
 
     /// EMContactManager methods
     static final String addContact = "addContact";
@@ -59,6 +64,7 @@ public class EMSDKMethod {
     static final String searchChatMsgFromDB = "searchChatMsgFromDB";
     static final String getMessage = "getMessage";
     static final String asyncFetchGroupAcks = "asyncFetchGroupAcks";
+    static final String deleteRemoteConversation = "deleteRemoteConversation";
 
     /// EMChatManager listener
     static final String onMessagesReceived = "onMessagesReceived";
@@ -198,12 +204,17 @@ public class EMSDKMethod {
     static final String updatePushNickname = "updatePushNickname";
     static final String updateHMSPushToken = "updateHMSPushToken";
     static final String updateFCMPushToken = "updateFCMPushToken";
+    static final String enableOfflinePush = "enableOfflinePush";
+    static final String disableOfflinePush = "disableOfflinePush";
+    static final String getNoPushGroups = "getNoPushGroups";
 
     /// ImPushConfig
     static final String imPushNoDisturb = "imPushNoDisturb";
     static final String updateImPushStyle = "updateImPushStyle";
     static final String updateGroupPushService = "updateGroupPushService";
     static final String getNoDisturbGroups = "getNoDisturbGroups";
+    static final String setNoDisturbUsers = "setNoDisturbUsers";
+    static final String getNoDisturbUsersFromServer = "getNoDisturbUsersFromServer";
 
 
     /// EMUserInfoManager 

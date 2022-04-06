@@ -1,24 +1,32 @@
 import 'dart:async';
 
 import 'package:flutter/services.dart';
-import 'package:im_flutter_sdk/im_flutter_sdk.dart';
-
 import 'em_channel.dart';
-import 'em_test.dart';
-import 'models/em_domain_terms.dart';
-import 'em_sdk_method.dart';
-//import 'em_domain_terms.dart';
 import 'em_listeners.dart';
+import 'em_test.dart';
+import 'internal/em_event_keys.dart';
+import 'models/em_cursor_result.dart';
+import 'models/em_error.dart';
+import 'models/em_group.dart';
+import 'models/em_group_options.dart';
+import 'models/em_group_shared_file.dart';
+import 'tools/em_extension.dart';
 
+import 'internal/chat_method_keys.dart';
+
+///
+/// The group manager for management of group creation and deletion and member management.
+///
 class EMGroupManager {
-  static MethodChannel _channel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'em_group_manager' : 'dart_to_native');
-  static MethodChannel _recvChannel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'em_group_manager' : 'native_to_dart');
+  static MethodChannel _channel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'chat_group_manager' : 'dart_to_native');
+  static MethodChannel _recvChannel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'chat_group_manager' : 'native_to_dart');
 
+  /// @nodoc
   EMGroupManager() {
     _recvChannel.setMethodCallHandler((MethodCall call) async {
       Map? argMap = call.arguments;
       print('[EMGroupChange:]' + argMap.toString());
-      if (call.method == EMSDKMethod.onGroupChanged) {
+      if (call.method == ChatMethodKeys.onGroupChanged) {
         return _onGroupChanged(argMap);
       }
       return null;
@@ -27,197 +35,436 @@ class EMGroupManager {
 
   final _groupChangeListeners = [];
 
-  /// 根据群组id获取群实例
-  Future<EMGroup> getGroupWithId(String groupId) async {
+  ///
+  /// Gets the group instance from the cache by group ID.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// **return** The group instance. Returns null if the group does not exist.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<EMGroup?> getGroupWithId(String groupId) async {
     Map req = {'groupId': groupId};
-    Map result = await _channel.invokeMethod(EMSDKMethod.getGroupWithId, req);
-    EMError.hasErrorFromResult(result);
-    return EMGroup.fromJson(result[EMSDKMethod.getGroupWithId]);
+    Map result =
+        await _channel.invokeMethod(ChatMethodKeys.getGroupWithId, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      if (result.containsKey(ChatMethodKeys.getGroupWithId)) {
+        return EMGroup.fromJson(result[ChatMethodKeys.getGroupWithId]);
+      } else {
+        return null;
+      }
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 从本地缓存中获取已加入的群组列表
+  ///
+  /// Gets all groups of the current user (from the cache).
+  ///
+  /// **return** The group list.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<List<EMGroup>> getJoinedGroups() async {
-    Map result = await _channel.invokeMethod(EMSDKMethod.getJoinedGroups);
+    Map result = await _channel.invokeMethod(ChatMethodKeys.getJoinedGroups);
     EMError.hasErrorFromResult(result);
     List<EMGroup> list = [];
-    result[EMSDKMethod.getJoinedGroups]
+    result[ChatMethodKeys.getJoinedGroups]
         ?.forEach((element) => list.add(EMGroup.fromJson(element)));
     return list;
   }
 
-  /// 获取免打扰的群组列表id
+  @Deprecated("Switch to using EMPushConfig#noDisturbGroupsFromServer instead.")
   Future<List<String>?> getGroupsWithoutNotice() async {
     Map result = await _channel
-        .invokeMethod(EMSDKMethod.getGroupsWithoutPushNotification);
+        .invokeMethod(ChatMethodKeys.getGroupsWithoutPushNotification);
     EMError.hasErrorFromResult(result);
     var list =
-        result[EMSDKMethod.getGroupsWithoutPushNotification]?.cast<String>();
+        result[ChatMethodKeys.getGroupsWithoutPushNotification]?.cast<String>();
     return list;
   }
 
-  /// 从服务器获取已加入的群组列表
+  ///
+  /// Gets all groups of the current user from the server.
+  ///
+  /// This method returns a group list which does not contain member information. If you want to update information of a group to include its member information, call {@link #getGroupSpecificationFromServer(String groupId)}.
+  ///
+  /// **return** The list of groups that the current user joins.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<List<EMGroup>> getJoinedGroupsFromServer({
     int pageSize = 200,
     int pageNum = 1,
   }) async {
     Map req = {'pageSize': pageSize, 'pageNum': pageNum};
-    Map result =
-        await _channel.invokeMethod(EMSDKMethod.getJoinedGroupsFromServer, req);
+    Map result = await _channel.invokeMethod(
+        ChatMethodKeys.getJoinedGroupsFromServer, req);
     EMError.hasErrorFromResult(result);
     List<EMGroup> list = [];
-    result[EMSDKMethod.getJoinedGroupsFromServer]
+    result[ChatMethodKeys.getJoinedGroupsFromServer]
         ?.forEach((element) => list.add(EMGroup.fromJson(element)));
     return list;
   }
 
-  /// 从服务器获取公开群组列表
+  ///
+  /// Gets public groups from the server with pagination.
+  ///
+  ///
+  /// Param [pageSize] The number of public groups per page.
+  ///
+  /// Param [cursor] The cursor position from which to start to get data next time. Sets the parameter as null for the first time.
+  ///
+  /// **return** The result of {@link EMCursorResult}, including the cursor for getting data next time and the group list.
+  /// For the last page, the return value of cursor is an empty string.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<EMCursorResult<EMGroup>> getPublicGroupsFromServer({
     int pageSize = 200,
-    String cursor = '',
+    String? cursor,
   }) async {
-    Map req = {'pageSize': pageSize, 'cursor': cursor};
-    Map result =
-        await _channel.invokeMethod(EMSDKMethod.getPublicGroupsFromServer, req);
-    EMError.hasErrorFromResult(result);
-
-    return EMCursorResult<EMGroup>.fromJson(
-        result[EMSDKMethod.getPublicGroupsFromServer],
-        dataItemCallback: (value) {
-      return EMGroup.fromJson(value);
-    });
+    Map req = {'pageSize': pageSize};
+    req.setValueWithOutNull("cursor", cursor);
+    Map result = await _channel.invokeMethod(
+        ChatMethodKeys.getPublicGroupsFromServer, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return EMCursorResult<EMGroup>.fromJson(
+          result[ChatMethodKeys.getPublicGroupsFromServer],
+          dataItemCallback: (value) {
+        return EMGroup.fromJson(value);
+      });
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 创建群组
-  Future<EMGroup> createGroup(String groupName,
-      {required EMGroupOptions settings,
-      String desc = '',
-      List<String>? inviteMembers,
-      String inviteReason = ''}) async {
-    Map req = {
-      'groupName': groupName,
-      'desc': desc,
-      'inviteMembers': inviteMembers ?? [],
-      'inviteReason': inviteReason,
-      'options': settings.toJson()
-    };
-    Map result = await _channel.invokeMethod(EMSDKMethod.createGroup, req);
-    EMError.hasErrorFromResult(result);
-    return EMGroup.fromJson(result[EMSDKMethod.createGroup]);
+  ///
+  /// Creates a group instance.
+  ///
+  /// After the group is created, the data in the cache and database will be updated and multiple devices will receive the notification event and
+  /// update the group to the cache and database.
+  /// You can set {@link EMMultiDeviceListener} to listen on the event. The event callback function
+  /// is {@link EMMultiDeviceListener#onGroupEvent(EMContactGroupEvent, String, List)}, where the first parameter is the event,
+  /// for example, {@link EMContactGroupEvent#GROUP_CREATE} for the group creation event.
+  ///
+  /// Param [groupName] The group name.
+  ///
+  /// Param [desc] The group description.
+  ///
+  /// Param [inviteMembers] The group member array. The group owner ID is optional.
+  ///
+  /// Param [inviteReason] The group joining invitation.
+  ///
+  /// Param [options] The options for creating a group. See {@link EMGroupOptions}.
+  /// The options are as follows:
+  /// - The maximum number of group members. The default value is 200.
+  /// - The group style. See {@link EMGroupManager.EMGroupStyle}. The default value is {@link EMGroupStyle#PrivateOnlyOwnerInvite}.
+  /// - Whether to ask for permission when inviting a user to join the group. The default value is false, indicating that invitees are automaticall added to the group without their permission.
+  /// - The group detail extensions.
+  ///
+  /// **return** The created group instance.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<EMGroup> createGroup({
+    String? groupName,
+    String? desc,
+    List<String>? inviteMembers,
+    String? inviteReason,
+    required EMGroupOptions options,
+  }) async {
+    Map req = {'options': options.toJson()};
+    req.setValueWithOutNull("groupName", groupName);
+    req.setValueWithOutNull("desc", desc);
+    req.setValueWithOutNull("inviteMembers", inviteMembers);
+    req.setValueWithOutNull("inviteReason", inviteReason);
+
+    Map result = await _channel.invokeMethod(ChatMethodKeys.createGroup, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return EMGroup.fromJson(result[ChatMethodKeys.createGroup]);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 获取群组详情
+  ///
+  /// Gets group information from the server.
+  ///
+  /// This method does not get member information. If member information is required, call {@link #getGroupMemberListFromServer(String, int?, String?)}.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// **return** The group instance.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<EMGroup> getGroupSpecificationFromServer(String groupId) async {
     Map req = {'groupId': groupId};
     Map result = await _channel.invokeMethod(
-        EMSDKMethod.getGroupSpecificationFromServer, req);
-    EMError.hasErrorFromResult(result);
-    return EMGroup.fromJson(
-        result[EMSDKMethod.getGroupSpecificationFromServer]);
+        ChatMethodKeys.getGroupSpecificationFromServer, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return EMGroup.fromJson(
+          result[ChatMethodKeys.getGroupSpecificationFromServer]);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 获取群组成员列表
+  ///
+  /// Gets a group's member list with pagination.
+  ///
+  /// When EMCursorResult.cursor is an empty string ("") in the result, there is no more data.
+  ///
+  /// For example:
+  ///   ```dart
+  ///     EMCursorResult<String> result = await EMClient.getInstance.groupManager.getGroupMemberListFromServer(groupId); // search 1
+  ///     result = await EMClient.getInstance.groupManager.getGroupMemberListFromServer(groupId, cursor: result.cursor); // search 2
+  ///   ```
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [pageSize] The number of group members per page.
+  ///
+  /// Param [cursor] The cursor position from which to start to get data next time. Sets the parameter as null for the first time.
+  ///
+  /// **return** The result of {@link EMCursorResult}, including the cursor for getting data next time and the group member list.
+  /// For the last page, the return value of cursor is an empty string.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<EMCursorResult<String>> getGroupMemberListFromServer(
     String groupId, {
     int pageSize = 200,
-    String cursor = '',
+    String? cursor,
   }) async {
     Map req = {
       'groupId': groupId,
-      'cursor': cursor,
       'pageSize': pageSize,
     };
+    req.setValueWithOutNull("cursor", cursor);
     Map result = await _channel.invokeMethod(
-      EMSDKMethod.getGroupMemberListFromServer,
+      ChatMethodKeys.getGroupMemberListFromServer,
       req,
     );
-    EMError.hasErrorFromResult(result);
-    return EMCursorResult<String>.fromJson(
-        result[EMSDKMethod.getGroupMemberListFromServer],
-        dataItemCallback: (value) => value);
+    try {
+      EMError.hasErrorFromResult(result);
+      return EMCursorResult<String>.fromJson(
+          result[ChatMethodKeys.getGroupMemberListFromServer],
+          dataItemCallback: (value) => value);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 获取黑名单列表
-  Future<List<String>?> getGroupBlockListFromServer(
+  ///
+  /// Gets the group block list from server with pagination.
+  ///
+  /// Only the group owner or admin can call this method.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [pageSize] The number of groups per page.
+  ///
+  /// Param [pageNum] The page number, starting from 1.
+  ///
+  /// **return** The group block list.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<List<String>?> getBlockListFromServer(
     String groupId, {
     int pageSize = 200,
     int pageNum = 1,
   }) async {
     Map req = {'groupId': groupId, 'pageNum': pageNum, 'pageSize': pageSize};
     Map result = await _channel.invokeMethod(
-        EMSDKMethod.getGroupBlockListFromServer, req);
-    EMError.hasErrorFromResult(result);
-    return result[EMSDKMethod.getGroupBlockListFromServer]?.cast<String>();
+        ChatMethodKeys.getGroupBlockListFromServer, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return result[ChatMethodKeys.getGroupBlockListFromServer]?.cast<String>();
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 获取禁言列表
-  Future<List<String>?> getGroupMuteListFromServer(
+  ///
+  /// Gets the mute list of the group from the server.
+  ///
+  /// Only the group owner or admin can call this method.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [pageSize] The number of groups per page.
+  ///
+  /// Param [pageNum] The page number, starting from 1.
+  ///
+  /// **return** The group mute list.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<List<String>?> getMuteListFromServer(
     String groupId, {
     int pageSize = 200,
     int pageNum = 1,
   }) async {
     Map req = {'groupId': groupId, 'pageNum': pageNum, 'pageSize': pageSize};
     Map result = await _channel.invokeMethod(
-        EMSDKMethod.getGroupMuteListFromServer, req);
-    EMError.hasErrorFromResult(result);
-    return result[EMSDKMethod.getGroupMuteListFromServer]?.cast<String>();
+        ChatMethodKeys.getGroupMuteListFromServer, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return result[ChatMethodKeys.getGroupMuteListFromServer]?.cast<String>();
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 获取白名单列表
-  Future<List<String>?> getGroupWhiteListFromServer(String groupId) async {
+  ///
+  /// Gets the allow list of group from the server.
+  ///
+  /// Only the group owner or admin can call this method.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// **return** return the group allow list.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<List<String>?> getWhiteListFromServer(String groupId) async {
     Map req = {'groupId': groupId};
     Map result = await _channel.invokeMethod(
-        EMSDKMethod.getGroupWhiteListFromServer, req);
-    EMError.hasErrorFromResult(result);
-    return result[EMSDKMethod.getGroupWhiteListFromServer]?.cast<String>();
+        ChatMethodKeys.getGroupWhiteListFromServer, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return result[ChatMethodKeys.getGroupWhiteListFromServer]?.cast<String>();
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 判断自己是否在白名单中
+  ///
+  /// Gets whether the member is on the allow list.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// **return** returns a Boolean value to indicate whether the current user is on the group allow list;
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<bool> isMemberInWhiteListFromServer(String groupId) async {
     Map req = {'groupId': groupId};
     Map result = await _channel.invokeMethod(
-        EMSDKMethod.isMemberInWhiteListFromServer, req);
-    EMError.hasErrorFromResult(result);
-    return result.boolValue(EMSDKMethod.isMemberInWhiteListFromServer);
+        ChatMethodKeys.isMemberInWhiteListFromServer, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return result.boolValue(ChatMethodKeys.isMemberInWhiteListFromServer);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 获取群共享文件列表
-  Future<List<EMGroupSharedFile>> getGroupFileListFromServer(
+  ///
+  /// Gets the shared files of group from the server.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [pageSize] The number of groups per page.
+  ///
+  /// Param [pageNum] The page number, starting from 1.
+  ///
+  /// **return** The shared files.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<List<EMGroupSharedFile>?> getGroupFileListFromServer(
     String groupId, {
     int pageSize = 200,
     int pageNum = 1,
   }) async {
     Map req = {'groupId': groupId, 'pageNum': pageNum, 'pageSize': pageSize};
     Map result = await _channel.invokeMethod(
-        EMSDKMethod.getGroupFileListFromServer, req);
-    EMError.hasErrorFromResult(result);
-    List<EMGroupSharedFile> list = [];
-    result[EMSDKMethod.getGroupFileListFromServer]?.forEach((element) {
-      list.add(EMGroupSharedFile.fromJson(element));
-    });
-    return list;
+        ChatMethodKeys.getGroupFileListFromServer, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      List<EMGroupSharedFile> list = [];
+      result[ChatMethodKeys.getGroupFileListFromServer]?.forEach((element) {
+        list.add(EMGroupSharedFile.fromJson(element));
+      });
+      return list;
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 从服务器获取群公告
+  ///
+  /// Gets the group announcement from the server.
+  ///
+  /// Group members can call this method.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// **return** The group announcement.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<String?> getGroupAnnouncementFromServer(String groupId) async {
     Map req = {'groupId': groupId};
     Map result = await _channel.invokeMethod(
-        EMSDKMethod.getGroupAnnouncementFromServer, req);
-    EMError.hasErrorFromResult(result);
-    return result[EMSDKMethod.getGroupAnnouncementFromServer];
+        ChatMethodKeys.getGroupAnnouncementFromServer, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return result[ChatMethodKeys.getGroupAnnouncementFromServer];
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 邀请用户加入私有群，用于公开群: PublicJoinNeedApproval / PublicOpenJoin
+  ///
+  /// Adds users to the group.
+  ///
+  /// Only the group owner or admin can call this method.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [members] The array of new members to add.
+  ///
+  /// Param [welcome] The welcome message.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<void> addMembers(
     String groupId,
     List<String> members, [
-    String welcome = '',
+    String? welcome,
   ]) async {
-    Map req = {'welcome': welcome, 'groupId': groupId, 'members': members};
-    Map result = await _channel.invokeMethod(EMSDKMethod.addMembers, req);
-    EMError.hasErrorFromResult(result);
+    Map req = {'groupId': groupId, 'members': members};
+    req.setValueWithOutNull("welcome", welcome);
+    Map result = await _channel.invokeMethod(ChatMethodKeys.addMembers, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 邀请用户加入私有群，用于私有群: PrivateOnlyOwnerInvite / PrivateMemberCanInvite
+  ///
+  /// Adds users to the group.
+  ///
+  /// 群类型是 PrivateOnlyOwnerInvite / PrivateMemberCanInvite / PublicJoinNeedApproval 的群组可以邀请用户加入
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [members] The array of new members to invite.
+  ///
+  /// Param [reason] The invite reason.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<void> inviterUser(
     String groupId,
     List<String> members, [
@@ -232,347 +479,750 @@ class EMGroupManager {
     }
 
     Map result = await _channel.invokeMethod(
-      EMSDKMethod.inviterUser,
+      ChatMethodKeys.inviterUser,
       req,
     );
 
-    EMError.hasErrorFromResult(result);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 从群组中移除用户
+  ///
+  /// Removes a member from the group.
+  ///
+  /// Only the group owner or admin can call this method.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [members] The user IDs of members to be removed.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<void> removeMembers(
     String groupId,
     List<String> members,
   ) async {
     Map req = {'groupId': groupId, 'members': members};
-    Map result = await _channel.invokeMethod(EMSDKMethod.removeMembers, req);
-    EMError.hasErrorFromResult(result);
+    Map result = await _channel.invokeMethod(ChatMethodKeys.removeMembers, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 将用户加入到群组黑名单中
+  ///
+  /// Adds the user to the group block list.
+  ///
+  /// Users will be first removed from the group they have joined before being added to the group block list. The users on the group block list can not join the group again.
+  ///
+  /// Only the group owner or admin can call this method.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [members] The list of users to be added to the block list.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<void> blockMembers(
     String groupId,
     List<String> members,
   ) async {
     Map req = {'groupId': groupId, 'members': members};
-    Map result = await _channel.invokeMethod(EMSDKMethod.blockMembers, req);
-    EMError.hasErrorFromResult(result);
+    Map result = await _channel.invokeMethod(ChatMethodKeys.blockMembers, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 将用户从黑名单中移除
+  ///
+  /// Removes users from the group block list.
+  ///
+  /// Only the group owner or admin can call this method.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [members] The users to be removed from the group block list.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<void> unblockMembers(
     String groupId,
     List<String> members,
   ) async {
     Map req = {'groupId': groupId, 'members': members};
-    Map result = await _channel.invokeMethod(EMSDKMethod.unblockMembers, req);
-    EMError.hasErrorFromResult(result);
+    Map result =
+        await _channel.invokeMethod(ChatMethodKeys.unblockMembers, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 更新群组名称
-  Future<EMGroup> changeGroupName(
+  ///
+  /// Changes the group name.
+  ///
+  /// Only the group owner or admin can call this method.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [name] The new group name.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> changeGroupName(
     String groupId,
     String name,
   ) async {
     Map req = {'name': name, 'groupId': groupId};
     Map result =
-        await _channel.invokeMethod(EMSDKMethod.updateGroupSubject, req);
-    EMError.hasErrorFromResult(result);
-    return EMGroup.fromJson(result[EMSDKMethod.updateGroupSubject]);
+        await _channel.invokeMethod(ChatMethodKeys.updateGroupSubject, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 更新群描述
-  Future<EMGroup> changeGroupDescription(
+  ///
+  /// Changes the group description.
+  ///
+  /// Only the group owner or admin can call this method.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [desc] The new group description.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> changeGroupDescription(
     String groupId,
     String desc,
   ) async {
     Map req = {'desc': desc, 'groupId': groupId};
     Map result =
-        await _channel.invokeMethod(EMSDKMethod.updateDescription, req);
-    EMError.hasErrorFromResult(result);
-    return EMGroup.fromJson(result[EMSDKMethod.updateDescription]);
+        await _channel.invokeMethod(ChatMethodKeys.updateDescription, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 退出群组
+  ///
+  /// Leaves a group.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<void> leaveGroup(String groupId) async {
     Map req = {'groupId': groupId};
-    Map result = await _channel.invokeMethod(EMSDKMethod.leaveGroup, req);
-    EMError.hasErrorFromResult(result);
+    Map result = await _channel.invokeMethod(ChatMethodKeys.leaveGroup, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 解散群组
+  ///
+  /// Destroys the group instance.
+  ///
+  /// Only the group owner can call this method.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<void> destroyGroup(String groupId) async {
     Map req = {'groupId': groupId};
-    Map result = await _channel.invokeMethod(EMSDKMethod.destroyGroup, req);
-    EMError.hasErrorFromResult(result);
+    Map result = await _channel.invokeMethod(ChatMethodKeys.destroyGroup, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 不接收群消息
+  ///
+  /// Blocks group messages.
+  ///
+  /// The user that blocks group messages is still a group member, but can't receive group messages.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<void> blockGroup(String groupId) async {
     Map req = {'groupId': groupId};
-    Map result = await _channel.invokeMethod(EMSDKMethod.blockGroup, req);
-    EMError.hasErrorFromResult(result);
+    Map result = await _channel.invokeMethod(ChatMethodKeys.blockGroup, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 恢复接收群消息
+  ///
+  /// Unblocks group messages.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<void> unblockGroup(String groupId) async {
     Map req = {'groupId': groupId};
-    Map result = await _channel.invokeMethod(EMSDKMethod.unblockGroup, req);
-    EMError.hasErrorFromResult(result);
+    Map result = await _channel.invokeMethod(ChatMethodKeys.unblockGroup, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 将群转给其他人，需要群主调用
-  Future<EMGroup> changeGroupOwner(
+  ///
+  /// Transfers the group ownership.
+  ///
+  /// Only the group owner can call this method.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [newOwner] The new owner ID.
+  ///
+  /// **return** The updated group instance.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<EMGroup> changeOwner(
     String groupId,
     String newOwner,
   ) async {
     Map req = {'groupId': groupId, 'owner': newOwner};
-    Map result = await _channel.invokeMethod(EMSDKMethod.updateGroupOwner, req);
-    EMError.hasErrorFromResult(result);
-    return EMGroup.fromJson(result[EMSDKMethod.updateGroupOwner]);
+    Map result =
+        await _channel.invokeMethod(ChatMethodKeys.updateGroupOwner, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return EMGroup.fromJson(result[ChatMethodKeys.updateGroupOwner]);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 添加管理员
+  ///
+  /// Adds a group admin.
+  ///
+  /// Only the group owner can call this method and admin can not.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [memberId] The admin ID to add.
+  ///
+  /// **return** The updated group instance.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<EMGroup> addAdmin(
     String groupId,
     String memberId,
   ) async {
     Map req = {'groupId': groupId, 'admin': memberId};
-    Map result = await _channel.invokeMethod(EMSDKMethod.addAdmin, req);
-    EMError.hasErrorFromResult(result);
-    return EMGroup.fromJson(result[EMSDKMethod.addAdmin]);
+    Map result = await _channel.invokeMethod(ChatMethodKeys.addAdmin, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return EMGroup.fromJson(result[ChatMethodKeys.addAdmin]);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 移除管理员
+  ///
+  /// Removes a group admin.
+  ///
+  /// Only the group owner can call this method.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [adminId] The admin ID to remove.
+  ///
+  /// **return** The updated group instance.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<EMGroup> removeAdmin(
     String groupId,
     String adminId,
   ) async {
     Map req = {'groupId': groupId, 'admin': adminId};
-    Map result = await _channel.invokeMethod(EMSDKMethod.removeAdmin, req);
-    EMError.hasErrorFromResult(result);
-    return EMGroup.fromJson(result[EMSDKMethod.removeAdmin]);
+    Map result = await _channel.invokeMethod(ChatMethodKeys.removeAdmin, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return EMGroup.fromJson(result[ChatMethodKeys.removeAdmin]);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 对群成员禁言，白名单中的用户不会被限制
+  ///
+  /// Mutes group members.
+  ///
+  /// Only the group owner or admin can call this method.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [members] The list of members to be muted.
+  ///
+  /// Param [duration] The mute duration in milliseconds.
+  ///
+  /// **return** The updated group instance.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<EMGroup> muteMembers(
     String groupId,
     List<String> members, {
     int duration = -1,
   }) async {
     Map req = {'groupId': groupId, 'members': members, 'duration': duration};
-    Map result = await _channel.invokeMethod(EMSDKMethod.muteMembers, req);
-    EMError.hasErrorFromResult(result);
-    return EMGroup.fromJson(result[EMSDKMethod.muteMembers]);
+    Map result = await _channel.invokeMethod(ChatMethodKeys.muteMembers, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return EMGroup.fromJson(result[ChatMethodKeys.muteMembers]);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 对群成员取消禁言
-  Future<EMGroup> unMuteMembers(
+  ///
+  /// Unmutes group members.
+  ///
+  /// Only the group owner or admin can call this method.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [members] The list of members to be muted.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> unMuteMembers(
     String groupId,
     List<String> members,
   ) async {
     Map req = {'groupId': groupId, 'members': members};
-    Map result = await _channel.invokeMethod(EMSDKMethod.unMuteMembers, req);
-    EMError.hasErrorFromResult(result);
-    return EMGroup.fromJson(result[EMSDKMethod.unMuteMembers]);
+    Map result = await _channel.invokeMethod(ChatMethodKeys.unMuteMembers, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 对所有群成员禁言，白名单中的用户不会被限制
+  ///
+  /// Mutes all members.
+  ///
+  /// Only the group owner or admin can call this method.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<void> muteAllMembers(String groupId) async {
     Map req = {'groupId': groupId};
-    Map result = await _channel.invokeMethod(EMSDKMethod.muteAllMembers, req);
-    EMError.hasErrorFromResult(result);
+    Map result =
+        await _channel.invokeMethod(ChatMethodKeys.muteAllMembers, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 取消对所有群成员禁言
+  ///
+  /// Unmutes all members.
+  ///
+  /// Only the group owner or admin can call this method.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<void> unMuteAllMembers(String groupId) async {
     Map req = {'groupId': groupId};
-    Map result = await _channel.invokeMethod(EMSDKMethod.unMuteAllMembers, req);
-    EMError.hasErrorFromResult(result);
+    Map result =
+        await _channel.invokeMethod(ChatMethodKeys.unMuteAllMembers, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 将用户添加到白名单
-  Future<EMGroup> addWhiteList(
+  ///
+  /// Adds members to the allowlist.
+  ///
+  /// Only the group owner or admin can call this method.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [members] The members to be added to the allowlist.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> addWhiteList(
     String groupId,
     List<String> members,
   ) async {
     Map req = {'groupId': groupId, 'members': members};
-    Map result = await _channel.invokeMethod(EMSDKMethod.addWhiteList, req);
-    EMError.hasErrorFromResult(result);
-    return EMGroup.fromJson(result[EMSDKMethod.addWhiteList]);
+    Map result = await _channel.invokeMethod(ChatMethodKeys.addWhiteList, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 将用户移出白名单
-  Future<EMGroup> removeWhiteList(
+  ///
+  /// Removes members from the allowlist.
+  ///
+  /// Only the group owner or admin can call this method.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [members] The members to be removed from the allowlist.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> removeWhiteList(
     String groupId,
     List<String> members,
   ) async {
     Map req = {'groupId': groupId, 'members': members};
-    Map result = await _channel.invokeMethod(EMSDKMethod.removeWhiteList, req);
-    EMError.hasErrorFromResult(result);
-    return EMGroup.fromJson(result[EMSDKMethod.removeWhiteList]);
+    Map result =
+        await _channel.invokeMethod(ChatMethodKeys.removeWhiteList, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 上传群共享文件
-  Future<bool> uploadGroupSharedFile(
+  ///
+  /// Uploads the shared file to the group.
+  ///
+  /// Note: The callback is only used for progress callback.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [filePath] The local file path.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> uploadGroupSharedFile(
     String groupId,
     String filePath,
   ) async {
     Map req = {'groupId': groupId, 'filePath': filePath};
     Map result =
-        await _channel.invokeMethod(EMSDKMethod.uploadGroupSharedFile, req);
-    EMError.hasErrorFromResult(result);
-    return result.boolValue(EMSDKMethod.uploadGroupSharedFile);
+        await _channel.invokeMethod(ChatMethodKeys.uploadGroupSharedFile, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 下载群共享文件
-  Future<bool> downloadGroupSharedFile(
+  ///
+  /// Downloads the shared file of the group.
+  ///
+  /// Note: The callback is only used for progress callback.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [fileId] The ID of the shared file.
+  ///
+  /// Param [savePath] The local file path.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> downloadGroupSharedFile(
     String groupId,
     String fileId,
     String savePath,
   ) async {
     Map req = {'groupId': groupId, 'fileId': fileId, 'savePath': savePath};
-    Map result =
-        await _channel.invokeMethod(EMSDKMethod.downloadGroupSharedFile, req);
-    EMError.hasErrorFromResult(result);
-    return result.boolValue(EMSDKMethod.downloadGroupSharedFile);
+    Map result = await _channel.invokeMethod(
+        ChatMethodKeys.downloadGroupSharedFile, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 删除群共享文件
-  Future<EMGroup> removeGroupSharedFile(
+  ///
+  /// Removes a shared file of the group.
+  ///
+  /// Group members can delete their own uploaded files. The group owner or admin can delete all shared files.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [fileId] The shared file ID.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> removeGroupSharedFile(
     String groupId,
     String fileId,
   ) async {
     Map req = {'groupId': groupId, 'fileId': fileId};
     Map result =
-        await _channel.invokeMethod(EMSDKMethod.removeGroupSharedFile, req);
-    EMError.hasErrorFromResult(result);
-    return EMGroup.fromJson(result[EMSDKMethod.removeGroupSharedFile]);
+        await _channel.invokeMethod(ChatMethodKeys.removeGroupSharedFile, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 更新群公告
+  ///
+  /// Updates the group announcement.
+  ///
+  /// Only the group owner or admin can call this method.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [announcement] The group announcement.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<EMGroup> updateGroupAnnouncement(
     String groupId,
     String announcement,
   ) async {
     Map req = {'groupId': groupId, 'announcement': announcement};
-    Map result =
-        await _channel.invokeMethod(EMSDKMethod.updateGroupAnnouncement, req);
-    EMError.hasErrorFromResult(result);
-    return EMGroup.fromJson(result[EMSDKMethod.updateGroupAnnouncement]);
+    Map result = await _channel.invokeMethod(
+        ChatMethodKeys.updateGroupAnnouncement, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return EMGroup.fromJson(result[ChatMethodKeys.updateGroupAnnouncement]);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 更新群扩展
-  Future<EMGroup> updateGroupExt(
+  ///
+  /// Updates the group extension field.
+  ///
+  /// Only the group owner or admin can call this method.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [extension] The group extension field.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> updateGroupExtension(
     String groupId,
-    String ext,
+    String extension,
   ) async {
-    Map req = {'groupId': groupId, 'ext': ext};
-    Map result = await _channel.invokeMethod(EMSDKMethod.updateGroupExt, req);
-    EMError.hasErrorFromResult(result);
-    return EMGroup.fromJson(result[EMSDKMethod.updateGroupExt]);
+    Map req = {'groupId': groupId, 'ext': extension};
+    Map result =
+        await _channel.invokeMethod(ChatMethodKeys.updateGroupExt, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 加入公开群，用于加入不需要群主/管理员同意的公开群: EMGroupStyle.PublicOpenJoin
-  Future<EMGroup> joinPublicGroup(
+  ///
+  /// Joins a public group.
+  ///
+  /// For a group that requires no authentication，users can join it freely without the need of having permission.
+  /// For a group that requires authentication, users need to wait for the owner to agree before joining the group. For details, see {@link EMGroupStyle}.
+  ///
+  ///Param [groupId] The group ID.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> joinPublicGroup(
     String groupId,
   ) async {
     Map req = {'groupId': groupId};
-    Map result = await _channel.invokeMethod(EMSDKMethod.joinPublicGroup, req);
-    EMError.hasErrorFromResult(result);
-    return EMGroup.fromJson(result[EMSDKMethod.joinPublicGroup]);
-  }
-
-  /// 申请加入公开群，用于加入需要群主/管理员同意的公开群: EMGroupStyle.PublicJoinNeedApproval
-  Future<EMGroup> requestToJoinPublicGroup(
-    String groupId, [
-    String reason = '',
-  ]) async {
-    Map req = {'groupId': groupId, 'reason': reason};
     Map result =
-        await _channel.invokeMethod(EMSDKMethod.requestToJoinPublicGroup, req);
-    EMError.hasErrorFromResult(result);
-    return EMGroup.fromJson(result[EMSDKMethod.requestToJoinPublicGroup]);
+        await _channel.invokeMethod(ChatMethodKeys.joinPublicGroup, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 同意公开群组申请，当群类型是EMGroupStyle.PublicJoinNeedApproval，
-  /// 有人申请进群时，管理员和群主会收到申请，用该方法同意申请
-  Future<EMGroup> acceptJoinApplication(
+  ///
+  /// Requests to join a group.
+  ///
+  /// Note: The group style is {@link EMGroupStyle#PublicJoinNeedApproval}, which is a public group
+  /// requiring authentication.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [reason] The reason for requesting to join the group.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> requestToJoinPublicGroup(
+    String groupId, [
+    String? reason,
+  ]) async {
+    Map req = {'groupId': groupId};
+    req.setValueWithOutNull('reason', reason);
+    Map result = await _channel.invokeMethod(
+        ChatMethodKeys.requestToJoinPublicGroup, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
+  }
+
+  ///
+  /// Approves a group request.
+  ///
+  /// Only the group owner or admin can call this method.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [username] The ID of the user who sends a request to join the group.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> acceptJoinApplication(
     String groupId,
     String username,
   ) async {
     Map req = {'groupId': groupId, 'username': username};
     Map result =
-        await _channel.invokeMethod(EMSDKMethod.acceptJoinApplication, req);
-    EMError.hasErrorFromResult(result);
-    return EMGroup.fromJson(result[EMSDKMethod.acceptJoinApplication]);
+        await _channel.invokeMethod(ChatMethodKeys.acceptJoinApplication, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 拒绝公开群组申请，当群类型是EMGroupStyle.PublicJoinNeedApproval，
-  /// 有人申请进群时，管理员和群主会收到申请，用该方法拒绝申请
-  Future<EMGroup> declineJoinApplication(
+  ///
+  /// Declines a group request.
+  ///
+  /// Only the group owner or admin can call this method.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [username] The ID of the user who sends a request to join the group.
+  ///
+  /// Param [reason] The reason of declining.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> declineJoinApplication(
     String groupId,
     String username, [
-    String reason = '',
+    String? reason,
   ]) async {
-    Map req = {'groupId': groupId, 'username': username, 'reason': reason};
+    Map req = {'groupId': groupId, 'username': username};
+    req.setValueWithOutNull('reason', reason);
+
     Map result =
-        await _channel.invokeMethod(EMSDKMethod.declineJoinApplication, req);
-    EMError.hasErrorFromResult(result);
-    return EMGroup.fromJson(result[EMSDKMethod.declineJoinApplication]);
+        await _channel.invokeMethod(ChatMethodKeys.declineJoinApplication, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 同意群邀请，当群组是PrivateOnlyOwnerInvite / PrivateMemberCanInvite时，
-  /// 有人添加您入群时您会收到群邀请，用该方法同意群邀请
-  Future<EMGroup> acceptInvitationFromGroup(
+  ///
+  /// Accepts a group invitation.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [inviter] The user who initiates the invitation.
+  ///
+  /// **return** The group instance which the user has accepted the invitation to join.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<EMGroup> acceptInvitation(
     String groupId,
     String inviter,
   ) async {
     Map req = {'groupId': groupId, 'inviter': inviter};
-    Map result =
-        await _channel.invokeMethod(EMSDKMethod.acceptInvitationFromGroup, req);
-    EMError.hasErrorFromResult(result);
-    return EMGroup.fromJson(result[EMSDKMethod.acceptInvitationFromGroup]);
+    Map result = await _channel.invokeMethod(
+        ChatMethodKeys.acceptInvitationFromGroup, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return EMGroup.fromJson(result[ChatMethodKeys.acceptInvitationFromGroup]);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 拒绝群邀请，当群组是PrivateOnlyOwnerInvite / PrivateMemberCanInvite时，
-  /// 有人添加您入群时您会收到群邀请，用该方法拒绝群邀请
-  Future<EMGroup> declineInvitationFromGroup(
+  ///
+  /// Declines a group invitation.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [inviter] The inviter.
+  ///
+  /// Param [reason] The reason of declining.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> declineInvitation(
     String groupId,
     String inviter, [
-    String reason = '',
+    String? reason,
   ]) async {
-    Map req = {'groupId': groupId, 'inviter': inviter, 'reason': reason};
+    Map req = {'groupId': groupId, 'inviter': inviter};
+    req.setValueWithOutNull('reason', reason);
     Map result = await _channel.invokeMethod(
-        EMSDKMethod.declineInvitationFromGroup, req);
-    EMError.hasErrorFromResult(result);
-    return EMGroup.fromJson(result[EMSDKMethod.acceptInvitationFromGroup]);
+        ChatMethodKeys.declineInvitationFromGroup, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 设置群组免打扰，设置后，当您不在线时您不会收到群推送
-  Future<EMGroup> ignoreGroupPush(
-    String groupId, [
-    bool enable = true,
-  ]) async {
-    Map req = {'groupId': groupId, 'enable': enable};
-    Map result = await _channel.invokeMethod(EMSDKMethod.ignoreGroupPush, req);
-    EMError.hasErrorFromResult(result);
-    return EMGroup.fromJson(result[EMSDKMethod.ignoreGroupPush]);
-  }
-
-  /// @nodoc addGroupChangeListener - Adds [listener] to be aware of group change events.
+  ///
+  /// Registers a group event listener.
+  ///
+  /// The registered listener needs to be used together with {@link #removeGroupChangeListener(EMGroupEventListener)}.
+  ///
+  /// Param [listener] The group event listener to be registered.
+  ///
   void addGroupChangeListener(EMGroupEventListener listener) {
     _groupChangeListeners.add(listener);
   }
 
-  /// @nodoc removeGroupChangeListener - Remove [listener] from the listener list.
+  ///
+  /// Removes a group event listener.
+  ///
+  /// This method removes a group event listener registered with {@link #addGroupChangeListener(EMGroupEventListener)}.
+  ///
+  /// Param [listener] The group event listener to be removed.
+  ///
   void removeGroupChangeListener(EMGroupEventListener listener) {
     if (_groupChangeListeners.contains(listener)) {
       _groupChangeListeners.remove(listener);
     }
   }
 
-  /// @nodoc
   Future<void> _onGroupChanged(Map? map) async {
     for (EMGroupEventListener listener in _groupChangeListeners) {
       var type = map!['type'];

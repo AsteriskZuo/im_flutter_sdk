@@ -16,15 +16,18 @@ static NSString *const EMMethodKeyInit = @"init";
 static NSString *const EMMethodKeyCreateAccount = @"createAccount";
 static NSString *const EMMethodKeyLogin = @"login";
 static NSString *const EMMethodKeyLogout = @"logout";
+static NSString *const EMMethodKeyLoginWithAgoraToken = @"loginWithAgoraToken";
 static NSString *const EMMethodKeyChangeAppKey = @"changeAppKey";
-static NSString *const EMMethodKeyIsLoggedInBefore = @"isLoggedInBefore";
 static NSString *const EMMethodKeyUploadLog = @"uploadLog";
 static NSString *const EMMethodKeyCompressLogs = @"compressLogs";
 static NSString *const EMMethodKeyKickDevice = @"kickDevice";
 static NSString *const EMMethodKeyKickAllDevices = @"kickAllDevices";
-static NSString *const EMMethodKeyCurrentUser = @"currentUser";
 static NSString *const EMMethodKeyGetLoggedInDevicesFromServer = @"getLoggedInDevicesFromServer";
+
 static NSString *const EMMethodKeyGetToken = @"getToken";
+static NSString *const EMMethodKeyGetCurrentUser = @"getCurrentUser";
+static NSString *const EMMethodKeyIsLoggedInBefore = @"isLoggedInBefore";
+static NSString *const EMMethodKeyIsConnected = @"isConnected";
 
 #pragma mark - EMClientDelegate
 static NSString *const EMMethodKeyOnConnected = @"onConnected";
@@ -32,6 +35,9 @@ static NSString *const EMMethodKeyOnDisconnected = @"onDisconnected";
 static NSString *const EMMethodKeyOnMultiDeviceEvent = @"onMultiDeviceEvent";
 
 static NSString *const EMMethodKeySendDataToFlutter = @"onSendDataToFlutter";
+
+static NSString *const EMMethodKeyOnTokenWillExpire = @"onTokenWillExpire";
+static NSString *const EMMethodKeyOnTokenDidExpire = @"onTokenDidExpire";
 
 #pragma mark - EMContactManagerWrapper
 static NSString *const EMMethodKeyAddContact = @"addContact";
@@ -141,13 +147,13 @@ static NSString *const EMMethodKeyFetchChatroomBlockListFromServer = @"fetchChat
 static NSString *const EMMethodKeyUpdateChatRoomAnnouncement = @"updateChatRoomAnnouncement";
 static NSString *const EMMethodKeyFetchChatroomAnnouncement = @"fetchChatRoomAnnouncement";
 
-static const NSString *EMMethodKeyAddMembersToChatRoomWhiteList = @"addMembersToChatRoomWhiteList";
-static const NSString *EMMethodKeyRemoveMembersFromChatRoomWhiteList = @"removeMembersFromChatRoomWhiteList";
-static const NSString *EMMethodKeyFetchChatRoomWhiteListFromServer = @"fetchChatRoomWhiteListFromServer";
-static const NSString *EMMethodKeyIsMemberInChatRoomWhiteListFromServer = @"isMemberInChatRoomWhiteListFromServer";
+static NSString *const EMMethodKeyAddMembersToChatRoomWhiteList = @"addMembersToChatRoomWhiteList";
+static NSString *const EMMethodKeyRemoveMembersFromChatRoomWhiteList = @"removeMembersFromChatRoomWhiteList";
+static NSString *const EMMethodKeyFetchChatRoomWhiteListFromServer = @"fetchChatRoomWhiteListFromServer";
+static NSString *const EMMethodKeyIsMemberInChatRoomWhiteListFromServer = @"isMemberInChatRoomWhiteListFromServer";
 
-static const NSString *EMMethodKeyMuteAllChatRoomMembers = @"muteAllChatRoomMembers";
-static const NSString *EMMethodKeyUnMuteAllChatRoomMembers = @"umMuteAllChatRoomMembers";
+static NSString *const EMMethodKeyMuteAllChatRoomMembers = @"muteAllChatRoomMembers";
+static NSString *const EMMethodKeyUnMuteAllChatRoomMembers = @"umMuteAllChatRoomMembers";
 
 
 static NSString *const EMMethodKeyChatroomChanged = @"onChatRoomChanged";
@@ -207,13 +213,18 @@ static NSString *const EMMethodKeyOnGroupChanged = @"onGroupChanged";
 static NSString *const EMMethodKeyGetImPushConfig = @"getImPushConfig";
 static NSString *const EMMethodKeyGetImPushConfigFromServer = @"getImPushConfigFromServer";
 static NSString *const EMMethodKeyUpdatePushNickname = @"updatePushNickname";
+static NSString *const EMMethodKeyBindDeviceToken = @"updateAPNsPushToken";
+static NSString *const EMMethodKeyEnablePush = @"enableOfflinePush";
+static NSString *const EMMethodKeyDisablePush = @"disableOfflinePush";
+static NSString *const EMMethodKeyGetNoPushGroups = @"getNoPushGroups";
+
 
 static NSString *const EMMethodKeyImPushNoDisturb = @"imPushNoDisturb";
 static NSString *const EMMethodKeyUpdateImPushStyle = @"updateImPushStyle";
 static NSString *const EMMethodKeyUpdateGroupPushService = @"updateGroupPushService";
 static NSString *const EMMethodKeyGetNoDisturbGroups = @"getNoDisturbGroups";
-static NSString *const EMMethodKeyBindDeviceToken = @"updateAPNsPushToken";
-
+static NSString *const EMMethodKeySetNoDisturbUsers = @"setNoDisturbUsers";
+static NSString *const EMMethodKeyGetNoDisturbUsersFromServer = @"getNoDisturbUsersFromServer";
 
 #pragma mark - EMUserInfoManagerWrapper
 static NSString *const EMMethodKeyUpdateOwnUserInfo = @"updateOwnUserInfo";

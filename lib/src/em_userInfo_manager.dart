@@ -1,66 +1,85 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
-import 'package:im_flutter_sdk/im_flutter_sdk.dart';
+
 import 'em_channel.dart';
-import 'em_sdk_method.dart';
 import 'em_test.dart';
+import 'internal/chat_method_keys.dart';
+import 'em_client.dart';
+import 'models/em_error.dart';
 import 'models/em_userInfo.dart';
 
+///
+/// The user information manager for updating and getting user properties.
+///
 class EMUserInfoManager {
-  static MethodChannel _channel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'em_userInfo_manager' : 'dart_to_native');
-  static MethodChannel _recvChannel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'em_userInfo_manager' : 'native_to_dart');
+  static MethodChannel _channel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'chat_userInfo_manager' : 'dart_to_native');
+  // static MethodChannel _recvChannel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'chat_userInfo_manager' : 'native_to_dart');
 
   EMUserInfo? _ownUserInfo;
 
   //有效的联系人map
   Map<String, EMUserInfo> _effectiveUserInfoMap = Map();
 
-  EMUserInfoManager();
-
-  //更新自己的用户属性
-  Future<EMUserInfo?> updateOwnUserInfo(EMUserInfo userInfo) async {
+  ///
+  /// Modifies the current user's information.
+  ///
+  /// Param [userInfo] userInfo The user information to be modified.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> updateOwnInfo(EMUserInfo userInfo) async {
     Map req = {'userInfo': userInfo.toJson()};
     Map result =
-        await _channel.invokeMethod(EMSDKMethod.updateOwnUserInfo, req);
-    EMError.hasErrorFromResult(result);
-    return EMUserInfo.fromJson(result[EMSDKMethod.updateOwnUserInfo]);
+        await _channel.invokeMethod(ChatMethodKeys.updateOwnUserInfo, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 更新自己用户属性
-  Future<EMUserInfo?> updateOwnUserInfoWithType(
-      EMUserInfoType type, String userInfoValue) async {
-    Map req = {
-      'userInfoType': _userInfoTypeToInt(type),
-      'userInfoValue': userInfoValue
-    };
-    Map result =
-        await _channel.invokeMethod(EMSDKMethod.updateOwnUserInfoWithType, req);
-    EMError.hasErrorFromResult(result);
-    if (result[EMSDKMethod.updateOwnUserInfoWithType] != null) {
-      _ownUserInfo =
-          EMUserInfo.fromJson(result[EMSDKMethod.updateOwnUserInfoWithType]);
-      _effectiveUserInfoMap[_ownUserInfo!.userId] = _ownUserInfo!;
+  ///
+  /// Get the current user's information from server.
+  ///
+  /// Param [expireTime] expire time, Units are seconds. If the last fetch is less than the expiration time, it is directly fetched from the local cache;
+  /// otherwise, it is fetched from the server.
+  ///
+  /// **return**  user properties. See {@link EMUserInfo}
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<EMUserInfo?> fetchOwnInfo({int expireTime = 0}) async {
+    String? currentUser = await EMClient.getInstance.getCurrentUsername();
+    if (currentUser != null) {
+      try {
+        Map<String, EMUserInfo> ret = await fetchUserInfoById(
+          [currentUser],
+          expireTime: expireTime,
+        );
+        _ownUserInfo = ret.values.first;
+      } on EMError catch (e) {
+        throw e;
+      }
     }
-
     return _ownUserInfo;
   }
 
-  Future<EMUserInfo?> fetchOwnInfo({int expireTime = 3600}) async {
-    if (EMClient.getInstance.currentUsername != null) {
-      Map<String, EMUserInfo> ret = await fetchUserInfoByIdWithExpireTime(
-          [EMClient.getInstance.currentUsername!],
-          expireTime: expireTime);
-      _ownUserInfo = ret.values.first;
-    }
-    return _ownUserInfo;
-  }
-
-  /// 获取指定id的用户的用户属性,
-  /// `userIds` 需要获取的环信id;
-  /// `expireTime` 过期时间，单位秒。如果之前获取过, 如果距当前时间小于过期时间则不会重复获取
-  Future<Map<String, EMUserInfo>> fetchUserInfoByIdWithExpireTime(
-      List<String> userIds,
-      {int expireTime = 3600}) async {
+  ///
+  /// Gets user information with user ID.
+  ///
+  /// Param [userIds] The user ID array.
+  ///
+  /// Param [expireTime] expire time, Units are seconds. If the last fetch is less than the expiration time, it is directly fetched from the local cache;
+  /// otherwise, it is fetched from the server.
+  ///
+  /// **return** Map of User ids and user properties. key is user id and value is user properties.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<Map<String, EMUserInfo>> fetchUserInfoById(
+    List<String> userIds, {
+    int expireTime = 0,
+  }) async {
     List<String> needReqIds = userIds
         .where((element) =>
             !_effectiveUserInfoMap.containsKey(element) ||
@@ -82,149 +101,19 @@ class EMUserInfoManager {
 
     Map req = {'userIds': needReqIds};
     Map result =
-        await _channel.invokeMethod(EMSDKMethod.fetchUserInfoById, req);
-    EMError.hasErrorFromResult(result);
-    result[EMSDKMethod.fetchUserInfoById]?.forEach((key, value) {
-      EMUserInfo eUserInfo = EMUserInfo.fromJson(value);
-      resultMap[key] = eUserInfo;
-      _effectiveUserInfoMap[key] = eUserInfo;
-    });
+        await _channel.invokeMethod(ChatMethodKeys.fetchUserInfoById, req);
 
-    return resultMap;
-  }
-
-  /// 获取指定id的用户的指定类型的用户属性
-  /// `userIds` 需要获取的环信id;
-  /// `types` 需要获取的属性
-  /// `expireTime` 过期时间，单位秒。如果之前获取过, 如果距当前时间小于过期时间则不会重复获取
-  @Deprecated(
-      'Use userInfoManager.fetchUserInfoByIdWithExpireTime() method instead.')
-  Future<Map<String, EMUserInfo>> fetchUserInfoByIdWithType(
-      List<String> userIds, List<EMUserInfoType> types,
-      {int expireTime = 3600}) async {
-    List<int> userInfoTypes = [];
-    types.forEach((element) {
-      int type = _userInfoTypeToInt(element);
-      userInfoTypes.add(type);
-    });
-
-    List<String> reqIds = userIds
-        .where((element) =>
-            !_effectiveUserInfoMap.containsKey(element) ||
-            (_effectiveUserInfoMap.containsKey(element) &&
-                DateTime.now().millisecondsSinceEpoch -
-                        _effectiveUserInfoMap[element]!.expireTime >
-                    expireTime * 1000))
-        .toList();
-    Map resultMap = Map();
-
-    Map req = {'userIds': reqIds, 'userInfoTypes': userInfoTypes};
-    Map result =
-        await _channel.invokeMethod(EMSDKMethod.fetchUserInfoByIdWithType, req);
-
-    EMError.hasErrorFromResult(result);
-    result[EMSDKMethod.fetchUserInfoByIdWithType].forEach((key, value) {
-      EMUserInfo eUserInfo = EMUserInfo.fromJson(value);
-      resultMap[key] = eUserInfo;
-
-      _effectiveUserInfoMap[key] = eUserInfo;
-    });
-
-    return resultMap as FutureOr<Map<String, EMUserInfo>>;
-  }
-
-  // 整型转化用户属性类型 【int => EMUserInfoType】
-  static EMUserInfoType userInfoTypeFromInt(int type) {
-    EMUserInfoType ret = EMUserInfoType.NickName;
-    switch (type) {
-      case 0:
-        {
-          ret = EMUserInfoType.NickName;
-        }
-        break;
-      case 1:
-        {
-          ret = EMUserInfoType.AvatarURL;
-        }
-        break;
-      case 2:
-        {
-          ret = EMUserInfoType.Phone;
-        }
-        break;
-      case 3:
-        {
-          ret = EMUserInfoType.Mail;
-        }
-        break;
-      case 4:
-        {
-          ret = EMUserInfoType.Gender;
-        }
-        break;
-      case 5:
-        {
-          ret = EMUserInfoType.Sign;
-        }
-        break;
-      case 6:
-        {
-          ret = EMUserInfoType.Birth;
-        }
-        break;
-      case 7:
-        {
-          ret = EMUserInfoType.Ext;
-        }
+    try {
+      EMError.hasErrorFromResult(result);
+      result[ChatMethodKeys.fetchUserInfoById]?.forEach((key, value) {
+        EMUserInfo eUserInfo = EMUserInfo.fromJson(value);
+        resultMap[key] = eUserInfo;
+        _effectiveUserInfoMap[key] = eUserInfo;
+      });
+      return resultMap;
+    } on EMError catch (e) {
+      throw e;
     }
-    return ret;
-  }
-
-  // 用户属性类型转化整型 【EMUserInfoType => int】
-  static int _userInfoTypeToInt(EMUserInfoType type) {
-    int ret = 0;
-    switch (type) {
-      case EMUserInfoType.NickName:
-        {
-          ret = 0;
-        }
-        break;
-      case EMUserInfoType.AvatarURL:
-        {
-          ret = 1;
-        }
-        break;
-      case EMUserInfoType.Phone:
-        {
-          ret = 2;
-        }
-        break;
-      case EMUserInfoType.Mail:
-        {
-          ret = 3;
-        }
-        break;
-      case EMUserInfoType.Gender:
-        {
-          ret = 4;
-        }
-        break;
-      case EMUserInfoType.Sign:
-        {
-          ret = 5;
-        }
-        break;
-      case EMUserInfoType.Birth:
-        {
-          ret = 6;
-        }
-        break;
-      case EMUserInfoType.Ext:
-        {
-          ret = 7;
-        }
-    }
-    return ret;
   }
 
   void clearUserInfoCache() {

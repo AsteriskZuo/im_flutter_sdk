@@ -1,23 +1,32 @@
 import "dart:async";
 
 import 'package:flutter/services.dart';
-import 'package:im_flutter_sdk/src/models/em_domain_terms.dart';
 import 'em_channel.dart';
-import "em_listeners.dart";
-import 'em_sdk_method.dart';
-import 'package:im_flutter_sdk/src/models/em_cursor_result.dart';
-import 'package:im_flutter_sdk/src/models/em_page_result.dart';
-
 import 'em_test.dart';
+import 'internal/em_event_keys.dart';
+import 'tools/em_extension.dart';
+import 'internal/chat_method_keys.dart';
+import '../im_flutter_sdk.dart';
 
+///
+/// The chat room manager, which manages users joining and existing the chat room and getting the chat room list, and manages member privileges.
+///  For example, joining a chat room:
+///   ```dart
+///     try {
+///         await EMClient.getInstance.chatRoomManager.joinChatRoom(chatRoomId);
+///     } on EMError catch (e) {
+///         debugPrint(e.toString());
+///     }
+///   ```
 class EMChatRoomManager {
-  static MethodChannel _channel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'em_chat_room_manager' : 'dart_to_native');
-  static MethodChannel _recvChannel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'em_chat_room_manager' : 'native_to_dart');
+    static MethodChannel _channel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'chat_room_manager' : 'dart_to_native');
+  static MethodChannel _recvChannel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'chat_room_manager' : 'native_to_dart');
 
+  /// @nodoc
   EMChatRoomManager() {
     _recvChannel.setMethodCallHandler((MethodCall call) async {
       Map? argMap = call.arguments;
-      if (call.method == EMSDKMethod.chatRoomChange) {
+      if (call.method == ChatMethodKeys.chatRoomChange) {
         return _chatRoomChange(argMap!);
       }
       return null;
@@ -26,19 +35,31 @@ class EMChatRoomManager {
 
   final List<EMChatRoomEventListener> _chatRoomEventListeners = [];
 
-  /// 添加聊天室监听器
+  ///
+  /// Registers a chat room event listener.
+  /// Chat room destruction, member entry and exit, mute, and allowlist entry addition among other operations can be listened by setting
+  /// {@link EMChatRoomEventListener}.
+  ///
+  /// Chat room event listeners registered with this method can be removed by calling {@link #removeChatRoomListener(EMChatRoomEventListener)}.
+  ///
+  /// Param [listener] A chat room listener. See {@link EMChatRoomEventListener}.
+  ///
   void addChatRoomChangeListener(EMChatRoomEventListener listener) {
     _chatRoomEventListeners.add(listener);
   }
 
-  /// 移除聊天室监听器
+  ///
+  /// Removes a chat room event listener.
+  /// This method removes the chat room event listener registered with {@link #addChatRoomChangeListener(EMChatRoomEventListener)}.
+  ///
+  /// Param [listener] The chat room event listener to be removed.
+  ///
   void removeChatRoomListener(EMChatRoomEventListener listener) {
     if (_chatRoomEventListeners.contains(listener)) {
       _chatRoomEventListeners.remove(listener);
     }
   }
 
-  /// @nodoc
   Future<void> _chatRoomChange(Map event) async {
     String? type = event['type'];
     for (EMChatRoomEventListener listener in _chatRoomEventListeners) {
@@ -116,62 +137,163 @@ class EMChatRoomManager {
     }
   }
 
-  /// 加入聊天室[roomId].
+  ///
+  /// Joins the chat room.
+  ///
+  /// To exit the chat room, call {@link #leaveChatRoom(String)}.
+  ///
+  /// Param [roomId] The ID of the chat room to join.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<void> joinChatRoom(String roomId) async {
     Map result = await _channel
-        .invokeMethod(EMSDKMethod.joinChatRoom, {"roomId": roomId});
-    EMError.hasErrorFromResult(result);
+        .invokeMethod(ChatMethodKeys.joinChatRoom, {"roomId": roomId});
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 离开聊天室[roomId].
+  ///
+  /// Leaves a chat room.
+  ///
+  /// Param [roomId] The ID of the chat room to leave.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<void> leaveChatRoom(String roomId) async {
     Map result = await _channel
-        .invokeMethod(EMSDKMethod.leaveChatRoom, {"roomId": roomId});
-    EMError.hasErrorFromResult(result);
+        .invokeMethod(ChatMethodKeys.leaveChatRoom, {"roomId": roomId});
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 翻页从服务器获取聊天室 [pageNum] and [pageSize]
+  ///
+  /// Gets chat room data from the server with pagination.
+  ///
+  /// Param [pageNum] The page number, starting from 1.
+  ///
+  /// Param [pageSize] The number of records per page.
+  ///
+  /// **return** Chat room data. See {@link EMPageResult}.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<EMPageResult<EMChatRoom>> fetchPublicChatRoomsFromServer({
     int pageNum = 1,
     int pageSize = 200,
   }) async {
     Map result = await _channel.invokeMethod(
-        EMSDKMethod.fetchPublicChatRoomsFromServer,
+        ChatMethodKeys.fetchPublicChatRoomsFromServer,
         {"pageNum": pageNum, "pageSize": pageSize});
-    EMError.hasErrorFromResult(result);
-    return EMPageResult<EMChatRoom>.fromJson(
-        result[EMSDKMethod.fetchPublicChatRoomsFromServer],
-        dataItemCallback: (map) {
-      return EMChatRoom.fromJson(map);
-    });
+    try {
+      EMError.hasErrorFromResult(result);
+      return EMPageResult<EMChatRoom>.fromJson(
+          result[ChatMethodKeys.fetchPublicChatRoomsFromServer],
+          dataItemCallback: (map) {
+        return EMChatRoom.fromJson(map);
+      });
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 获取聊天室详情[roomId].
-  Future<EMChatRoom> fetchChatRoomInfoFromServer(String roomId) async {
-    Map result = await _channel.invokeMethod(
-        EMSDKMethod.fetchChatRoomInfoFromServer, {"roomId": roomId});
-    EMError.hasErrorFromResult(result);
-    return EMChatRoom.fromJson(result[EMSDKMethod.fetchChatRoomInfoFromServer]);
-  }
-
-  /// 从本地获取聊天室 [roomId].
-  Future<EMChatRoom> getChatRoomWithId(String roomId) async {
+  ///
+  /// Gets details of a chat room from the server, excluding the member list by default.
+  /// The member list, if required, can contain at most 200 members if need. For more members,
+  /// call {@link EMChatRoomManager#fetchChatRoomMembers(String, String?, int?)}.
+  ///
+  /// Param [roomId] The chat room ID.
+  ///
+  /// Param [fetchMembers] Whether to get chat room members, default is false.
+  ///
+  /// **return** The chat room instance.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<EMChatRoom> fetchChatRoomInfoFromServer(
+    String roomId, {
+    bool fetchMembers = false,
+  }) async {
     Map result = await _channel
-        .invokeMethod(EMSDKMethod.getChatRoom, {"roomId": roomId});
-    EMError.hasErrorFromResult(result);
-    return EMChatRoom.fromJson(result[EMSDKMethod.fetchChatRoomInfoFromServer]);
+        .invokeMethod(ChatMethodKeys.fetchChatRoomInfoFromServer, {
+      "roomId": roomId,
+      "fetchMembers": fetchMembers,
+    });
+    try {
+      EMError.hasErrorFromResult(result);
+      return EMChatRoom.fromJson(
+          result[ChatMethodKeys.fetchChatRoomInfoFromServer]);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 获取所有聊天室
+  ///
+  /// Gets the chat room in the cache.
+  ///
+  /// Param [roomId] The chat room ID.
+  ///
+  /// **return** The chat room instance. Returns null if the chat room is not found in the cache.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<EMChatRoom?> getChatRoomWithId(String roomId) async {
+    Map result = await _channel
+        .invokeMethod(ChatMethodKeys.getChatRoom, {"roomId": roomId});
+    try {
+      EMError.hasErrorFromResult(result);
+      if (result.containsKey(ChatMethodKeys.fetchChatRoomInfoFromServer)) {
+        return EMChatRoom.fromJson(
+            result[ChatMethodKeys.fetchChatRoomInfoFromServer]);
+      } else {
+        return null;
+      }
+    } on EMError catch (e) {
+      throw e;
+    }
+  }
+
+  ///
+  /// Gets the list of chat rooms in the cache.
+  ///
+  /// **return** The list of chat rooms maintained by EMChatRoomManager.
+  @Deprecated("")
   Future<List<EMChatRoom>> getAllChatRooms() async {
-    Map result = await _channel.invokeMethod(EMSDKMethod.getAllChatRooms);
-    EMError.hasErrorFromResult(result);
-    List<EMChatRoom> list = [];
-    result[EMSDKMethod.getAllChatRooms]
-        ?.forEach((element) => list.add(EMChatRoom.fromJson(element)));
-    return list;
+    Map result = await _channel.invokeMethod(ChatMethodKeys.getAllChatRooms);
+    try {
+      EMError.hasErrorFromResult(result);
+      List<EMChatRoom> list = [];
+      result[ChatMethodKeys.getAllChatRooms]
+          ?.forEach((element) => list.add(EMChatRoom.fromJson(element)));
+      return list;
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
+  ///
+  /// Creates a chat room.
+  ///
+  /// Param [subject] The chat room subject.
+  ///
+  /// Param [desc] The chat room description.
+  ///
+  /// Param [welcomeMsg] A welcome message inviting members to join the chat room.
+  ///
+  /// Param [maxUserCount] The maximum number of members allowed to join the chat room.
+  ///
+  /// Param [members] The list of members invited to join the chat room.
+  ///
+  /// **return** The chat room instance created successfully.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<EMChatRoom> createChatRoom(
     String subject, {
     String? desc,
@@ -185,62 +307,138 @@ class EMChatRoomManager {
     req['welcomeMsg'] = welcomeMsg;
     req['maxUserCount'] = maxUserCount;
     req['members'] = members;
-    Map result = await _channel.invokeMethod(EMSDKMethod.createChatRoom, req);
-    EMError.hasErrorFromResult(result);
-    return EMChatRoom.fromJson(result[EMSDKMethod.createChatRoom]);
+    Map result =
+        await _channel.invokeMethod(ChatMethodKeys.createChatRoom, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return EMChatRoom.fromJson(result[ChatMethodKeys.createChatRoom]);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// @nodoc 销毁聊天室，需要owner权限 [roomId]
+  ///
+  /// Destroys a chat room.
+  ///
+  /// Only the chat room owner can call this method.
+  ///
+  /// Param [roomId] The chat room ID.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<void> destroyChatRoom(
     String roomId,
   ) async {
     Map req = {"roomId": roomId};
-    Map result = await _channel.invokeMethod(EMSDKMethod.destroyChatRoom, req);
-    EMError.hasErrorFromResult(result);
+    Map result =
+        await _channel.invokeMethod(ChatMethodKeys.destroyChatRoom, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// @nodoc 修改聊天室标题，需要owner权限[roomId] [subject]
+  ///
+  /// Changes the chat room subject.
+  ///
+  /// Only the chat room owner can call this method.
+  ///
+  /// Param [roomId] The chat room ID.
+  ///
+  /// Param [subject] The new subject of the chat room.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<void> changeChatRoomSubject(
     String roomId,
     String subject,
   ) async {
     Map req = {"roomId": roomId, "subject": subject};
     Map result =
-        await _channel.invokeMethod(EMSDKMethod.changeChatRoomSubject, req);
-    EMError.hasErrorFromResult(result);
+        await _channel.invokeMethod(ChatMethodKeys.changeChatRoomSubject, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// @nodoc 修改聊天室描述信息，需要owner权限 [roomId] .[description]
+  ///
+  /// Modifies the chat room description.
+  ///
+  /// Only the chat room owner can call this method.
+  ///
+  /// Param [roomId] The chat room ID.
+  ///
+  /// Param [description] The new description of the chat room.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<void> changeChatRoomDescription(
     String roomId,
     String description,
   ) async {
     Map req = {"roomId": roomId, "description": description};
-    Map result =
-        await _channel.invokeMethod(EMSDKMethod.changeChatRoomDescription, req);
-    EMError.hasErrorFromResult(result);
+    Map result = await _channel.invokeMethod(
+        ChatMethodKeys.changeChatRoomDescription, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// @nodoc 获取聊天室成员列表，[roomId] [cursor] [pageSize]
+  ///
+  /// Gets the chat room member list.
+  ///
+  /// When EMCursorResult.cursor is an empty string ("") amid the result, all data is fetched.
+  ///
+  /// Param [roomId] The chat room ID.
+  ///
+  /// Param [cursor] The cursor position from which to start getting data.
+  ///
+  /// Param [pageSize] The number of members per page.
+  ///
+  /// **return** The list of chat room members. See {@link EMCursorResult}.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<EMCursorResult<String?>> fetchChatRoomMembers(
     String roomId, {
-    String cursor = '',
+    String? cursor,
     int pageSize = 200,
   }) async {
-    Map req = {"roomId": roomId, "cursor": cursor, "pageSize": pageSize};
+    Map req = {"roomId": roomId, "pageSize": pageSize};
+    req.setValueWithOutNull("cursor", cursor);
     Map result =
-        await _channel.invokeMethod(EMSDKMethod.fetchChatRoomMembers, req);
-    EMError.hasErrorFromResult(result);
-    return EMCursorResult<String?>.fromJson(
-        result[EMSDKMethod.fetchChatRoomMembers],
-        dataItemCallback: (obj) => obj);
+        await _channel.invokeMethod(ChatMethodKeys.fetchChatRoomMembers, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return EMCursorResult<String?>.fromJson(
+          result[ChatMethodKeys.fetchChatRoomMembers],
+          dataItemCallback: (obj) => obj);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// @nodoc 禁止聊天室成员发言，需要聊天室拥有者或者管理员权限
-  /// [roomId] 聊天室ID [duration] 禁言的时间，单位是毫秒 [muteMembers] 禁言的用户列表
+  ///
+  /// Mutes members in a chat room.
+  ///
+  /// Only the chat room owner or admin can call this method.
+  ///
+  /// Param [roomId] The chat room ID.
+  ///
+  /// Param [muteMembers] The list of members to be muted.
+  ///
+  /// Param [duration] The mute duration in milliseconds.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<void> muteChatRoomMembers(
     String roomId,
-    List muteMembers, {
+    List<String> muteMembers, {
     int duration = -1,
   }) async {
     Map req = {
@@ -249,57 +447,127 @@ class EMChatRoomManager {
       "duration": duration
     };
     Map result =
-        await _channel.invokeMethod(EMSDKMethod.muteChatRoomMembers, req);
-    EMError.hasErrorFromResult(result);
+        await _channel.invokeMethod(ChatMethodKeys.muteChatRoomMembers, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// @nodoc 取消禁言，需要聊天室拥有者或者管理员权限 [roomId].[muteMembers]
+  ///
+  /// Unmutes members in a chat room.
+  ///
+  /// Only the chat room owner or admin can call this method.
+  ///
+  /// Param [roomId] The chat room ID.
+  ///
+  /// Param [unMuteMembers] The list of members to be unmuted.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<void> unMuteChatRoomMembers(
     String roomId,
-    List unMuteMembers,
+    List<String> unMuteMembers,
   ) async {
     Map req = {"roomId": roomId, "unMuteMembers": unMuteMembers};
     Map result =
-        await _channel.invokeMethod(EMSDKMethod.unMuteChatRoomMembers, req);
-    EMError.hasErrorFromResult(result);
+        await _channel.invokeMethod(ChatMethodKeys.unMuteChatRoomMembers, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// @nodoc 转移聊天室的所有权，需要聊天室拥有者权限 [roomId] .[newOwner]
-  /// @nodoc 如果转移成功，请调用[onSuccess]，如果出现错误，请调用[onError]。
+  ///
+  /// Transfers the chat room ownership.
+  ///
+  /// Only the chat room owner can call this method.
+  ///
+  /// Param [roomId] A chat room ID.
+  ///
+  /// Param [newOwner] The ID of the new chat room owner.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<void> changeOwner(
     String roomId,
     String newOwner,
   ) async {
     Map req = {"roomId": roomId, "newOwner": newOwner};
     Map result =
-        await _channel.invokeMethod(EMSDKMethod.changeChatRoomOwner, req);
-    EMError.hasErrorFromResult(result);
+        await _channel.invokeMethod(ChatMethodKeys.changeChatRoomOwner, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 为聊天室添加管理员，需要拥有者权限 [roomId].[admin]
-  /// 如果添加成功，请调用[onSuccess]，如果出现错误，请调用[onError]。
+  ///
+  /// Adds a chat room admin.
+  ///
+  /// Only the chat room owner can call this method.
+  ///
+  /// Param [roomId] A chat room ID.
+  ///
+  /// Param [admin] The ID of the chat room admin to be added.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<void> addChatRoomAdmin(
     String roomId,
     String admin,
   ) async {
     Map req = {"roomId": roomId, "admin": admin};
-    Map result = await _channel.invokeMethod(EMSDKMethod.addChatRoomAdmin, req);
-    EMError.hasErrorFromResult(result);
+    Map result =
+        await _channel.invokeMethod(ChatMethodKeys.addChatRoomAdmin, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 删除聊天室管理员，需要拥有着权限[roomId].[admin]
-  /// 如果删除成功，请调用[onSuccess]，如果出现错误，请调用[onError]。
+  ///
+  /// Removes privileges of a chat room admin.
+  ///
+  /// Param [roomId] The chat room ID.
+  ///
+  /// Param [admin] The ID of admin whose privileges are to be removed.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<void> removeChatRoomAdmin(
     String roomId,
     String admin,
   ) async {
     Map req = {"roomId": roomId, "admin": admin};
     Map result =
-        await _channel.invokeMethod(EMSDKMethod.removeChatRoomAdmin, req);
-    EMError.hasErrorFromResult(result);
+        await _channel.invokeMethod(ChatMethodKeys.removeChatRoomAdmin, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// @nodoc 获取聊天室的禁言列表，需要拥有者或者管理员权限 [roomId].[pageNum].[pageSize]
+  ///
+  /// Gets the list of members who are muted in the chat room from the server.
+  ///
+  /// Only the chat room owner or admin can call this method.
+  ///
+  /// Param [roomId] The chat room ID
+  ///
+  /// Param [pageNum] The page number, starting from 1.
+  ///
+  /// Param [pageSize] The number of muted members per page.
+  ///
+  /// **return** The muted member list.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<List<String>?> fetchChatRoomMuteList(
     String roomId, {
     int pageNum = 1,
@@ -307,45 +575,110 @@ class EMChatRoomManager {
   }) async {
     Map req = {"roomId": roomId, "pageNum": pageNum, "pageSize": pageSize};
     Map result =
-        await _channel.invokeMethod(EMSDKMethod.fetchChatRoomMuteList, req);
-    EMError.hasErrorFromResult(result);
-    return result[EMSDKMethod.fetchChatRoomMuteList]?.cast<String>();
+        await _channel.invokeMethod(ChatMethodKeys.fetchChatRoomMuteList, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return result[ChatMethodKeys.fetchChatRoomMuteList]?.cast<String>();
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// @nodoc 删除聊天室成员，需要拥有者或者管理员权限[roomId].[members].
+  ///
+  /// Removes members from a chat room.
+  ///
+  /// Only the chat room owner or admin can call this method.
+  ///
+  /// Param [roomId] The chat room ID
+  ///
+  /// Param [members] The members list to be removed.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<void> removeChatRoomMembers(
     String roomId,
-    List members,
+    List<String> members,
   ) async {
     Map req = {"roomId": roomId, "members": members};
     Map result =
-        await _channel.invokeMethod(EMSDKMethod.removeChatRoomMembers, req);
-    EMError.hasErrorFromResult(result);
+        await _channel.invokeMethod(ChatMethodKeys.removeChatRoomMembers, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// @nodoc 添加成员到黑名单，禁止成员继续加入聊天室，需要拥有者或者管理员权限[roomId].[members].
+  ///
+  /// Adds members to the chat room's block list.
+  ///
+  /// Only the chat room owner or admin can call this method.
+  ///
+  /// For members added to block list, note the following:
+  /// 1. A member, once added to the chat room block list, will be removed from the chat room by the server.
+  /// 2. The method {@link EMChatRoomEventListener#onRemovedFromChatRoom(String, String?, String?)} occurs.
+  /// 3. Members added to the block list are banned from rejoining the chat room.
+  ///
+  /// Param [roomId] The chat room ID.
+  ///
+  /// Param [members] The list of members to be added to block list.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<void> blockChatRoomMembers(
     String roomId,
     List members,
   ) async {
     Map req = {"roomId": roomId, "members": members};
     Map result =
-        await _channel.invokeMethod(EMSDKMethod.blockChatRoomMembers, req);
-    EMError.hasErrorFromResult(result);
+        await _channel.invokeMethod(ChatMethodKeys.blockChatRoomMembers, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// @nodoc 将成员从黑名单种移除，需要拥有者或者管理员权限[roomId].[members].
+  ///
+  /// Removes members from the chat room's block list.
+  ///
+  /// Only the chat room owner or admin can call this method.
+  ///
+  /// Param [roomId] The chat room ID.
+  ///
+  /// Param [members] The list of members to be removed from the block list.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<void> unBlockChatRoomMembers(
     String roomId,
     List members,
   ) async {
     Map req = {"roomId": roomId, "members": members};
     Map result =
-        await _channel.invokeMethod(EMSDKMethod.unBlockChatRoomMembers, req);
-    EMError.hasErrorFromResult(result);
+        await _channel.invokeMethod(ChatMethodKeys.unBlockChatRoomMembers, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// @nodoc 获取群组黑名单列表，分页显示，需要拥有者或者管理员权限 [roomId].[pageNum].[pageSize]
+  ///
+  /// Gets the chat room block list with pagination.
+  ///
+  /// Only the chat room owner or admin can call this method.
+  ///
+  /// Param [roomId] The chat room ID.
+  ///
+  /// Param [pageNum] The page number, starting from 1.
+  ///
+  /// Param [pageSize] The number of users on the block list per page.
+  ///
+  /// **return** The chat room's block list.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<List<String>?> fetchChatRoomBlockList(
     String roomId, [
     int pageNum = 1,
@@ -353,76 +686,116 @@ class EMChatRoomManager {
   ]) async {
     Map req = {"roomId": roomId, "pageNum": pageNum, "pageSize": pageSize};
     Map result =
-        await _channel.invokeMethod(EMSDKMethod.fetchChatRoomBlockList, req);
-    EMError.hasErrorFromResult(result);
-    return result[EMSDKMethod.fetchChatRoomBlockList]?.cast<String>();
+        await _channel.invokeMethod(ChatMethodKeys.fetchChatRoomBlockList, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return result[ChatMethodKeys.fetchChatRoomBlockList]?.cast<String>();
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 更新聊天室公告[roomId].[announcement]
+  ///
+  /// Updates the chat room announcement.
+  ///
+  /// Only the chat room owner or admin can call this method.
+  ///
+  /// Param [roomId] The chat room ID.
+  ///
+  /// Param [announcement] The announcement content.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<void> updateChatRoomAnnouncement(
     String roomId,
     String announcement,
   ) async {
     Map req = {"roomId": roomId, "announcement": announcement};
     Map result = await _channel.invokeMethod(
-        EMSDKMethod.updateChatRoomAnnouncement, req);
-    EMError.hasErrorFromResult(result);
+        ChatMethodKeys.updateChatRoomAnnouncement, req);
+    try {
+      EMError.hasErrorFromResult(result);
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /// 从服务器获取聊天室公告内容[roomId]
+  ///
+  /// Gets the chat room announcement from the server.
+  ///
+  /// Param [roomId] The chat room ID.
+  ///
+  /// **return** The chat room announcement.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<String?> fetchChatRoomAnnouncement(
     String roomId,
   ) async {
     Map req = {"roomId": roomId};
-    Map result =
-        await _channel.invokeMethod(EMSDKMethod.fetchChatRoomAnnouncement, req);
-    EMError.hasErrorFromResult(result);
-    return result[EMSDKMethod.fetchChatRoomAnnouncement];
+    Map result = await _channel.invokeMethod(
+        ChatMethodKeys.fetchChatRoomAnnouncement, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return result[ChatMethodKeys.fetchChatRoomAnnouncement];
+    } on EMError catch (e) {
+      throw e;
+    }
   }
 
-  /*
-  /// 从服务器获取聊天室白名单列表 [roomId]: 聊天室id
-  Future<List<String>> fetchChatRoomWhiteListFromServer(String roomId) async {
+  ///
+  /// Gets the while list from the server.
+  ///
+  /// Only the chat room owner or admin can call this method.
+  ///
+  /// Param [roomId] The chat room ID.
+  ///
+  /// **return** The chat room while list.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<List<String>?> fetchChatRoomWhiteListFromServer(String roomId) async {
     Map req = {"roomId": roomId};
     Map result = await _channel.invokeMethod(
-        EMSDKMethod.fetchChatRoomWhiteListFromServer, req);
+        ChatMethodKeys.fetchChatRoomWhiteListFromServer, req);
     EMError.hasErrorFromResult(result);
     List<String> contacts = [];
-    result[EMSDKMethod.fetchChatRoomWhiteListFromServer]?.forEach((element) {
+    result[ChatMethodKeys.fetchChatRoomWhiteListFromServer]?.forEach((element) {
       contacts.add(element);
     });
     return contacts;
   }
 
-  /// 判断当前登录账号是否在聊天室白名单中 [roomId]: 聊天室id
+  ///
+  /// Checks whether the member is on the while list.
+  ///
+  /// Param [roomId] The chat room ID.
+  ///
+  /// **return** Current member is in while list.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
   Future<bool> isMemberInChatRoomWhiteList(String roomId) async {
     Map req = {"roomId": roomId};
     Map result = await _channel.invokeMethod(
-        EMSDKMethod.isMemberInChatRoomWhiteListFromServer, req);
+        ChatMethodKeys.isMemberInChatRoomWhiteListFromServer, req);
     EMError.hasErrorFromResult(result);
-    return result.boolValue(EMSDKMethod.isMemberInChatRoomWhiteListFromServer);
+    return result
+        .boolValue(ChatMethodKeys.isMemberInChatRoomWhiteListFromServer);
   }
 
-  /// 向聊天室白名单中添加用户[roomId]: 聊天室id, [members]: 需要添加到聊天室的用户id。
-  Future<EMChatRoom?> addMembersToChatRoomWhiteList(
-      String roomId, List<String> members) async {
-    Map req = {
-      "roomId": roomId,
-      "members": members,
-    };
-    Map result = await _channel.invokeMethod(
-      EMSDKMethod.addMembersToChatRoomWhiteList,
-      req,
-    );
-
-    EMError.hasErrorFromResult(result);
-
-    return EMChatRoom.fromJson(
-        result[EMSDKMethod.addMembersToChatRoomWhiteList]);
-  }
-
-  /// 从聊天室中移除白名单成员,[roomId]: 聊天室id, [members]: 需要移除的用户列表。
-  Future<EMChatRoom> removeMembersFromChatRoomWhiteList(
+  ///
+  /// Adds members to the allowlist.
+  ///
+  /// Only the chat room owner or admin can call this method.
+  ///
+  /// Param [roomId] The chat room ID.
+  ///
+  /// Param [members] The list of members to be added to the while list.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> addMembersToChatRoomWhiteList(
     String roomId,
     List<String> members,
   ) async {
@@ -431,22 +804,74 @@ class EMChatRoomManager {
       "members": members,
     };
     Map result = await _channel.invokeMethod(
-      EMSDKMethod.addMembersToChatRoomWhiteList,
+      ChatMethodKeys.addMembersToChatRoomWhiteList,
       req,
     );
 
     EMError.hasErrorFromResult(result);
-
-    return EMChatRoom.fromJson(
-        result[EMSDKMethod.removeMembersFromChatRoomWhiteList]);
   }
 
-  Future<bool> muteAllChatRoomMembers(String roomId) async {
-    return false;
+  ///
+  /// Removes members from the while list.
+  ///
+  /// Only the chat room owner or admin can call this method.
+  ///
+  /// Param [roomId] The chat room ID.
+  ///
+  /// Param [members] The list of members to be removed from the while list.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> removeMembersFromChatRoomWhiteList(
+    String roomId,
+    List<String> members,
+  ) async {
+    Map req = {
+      "roomId": roomId,
+      "members": members,
+    };
+    Map result = await _channel.invokeMethod(
+      ChatMethodKeys.addMembersToChatRoomWhiteList,
+      req,
+    );
+    EMError.hasErrorFromResult(result);
   }
 
-  Future<bool> unMuteAllChatRoomMembers(String roomId) async {
-    return false;
+  ///
+  /// Mutes all members.
+  ///
+  /// Only the chat room owner or admin can call this method.
+  ///
+  /// This method does not work for the chat room owner, admin, and members added to the block list.
+  ///
+  /// Param [roomId] The chat room ID.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> muteAllChatRoomMembers(String roomId) async {
+    Map req = {"roomId": roomId};
+    Map result = await _channel.invokeMethod(
+      ChatMethodKeys.muteAllChatRoomMembers,
+      req,
+    );
+    EMError.hasErrorFromResult(result);
   }
-  */
+
+  ///
+  /// Unmutes all members.
+  ///
+  /// Only the chat room owner or admin can call this method.
+  ///
+  /// Param [roomId] The chat room ID.
+  ///
+  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  ///
+  Future<void> unMuteAllChatRoomMembers(String roomId) async {
+    Map req = {"roomId": roomId};
+    Map result = await _channel.invokeMethod(
+      ChatMethodKeys.unMuteAllChatRoomMembers,
+      req,
+    );
+    EMError.hasErrorFromResult(result);
+  }
 }

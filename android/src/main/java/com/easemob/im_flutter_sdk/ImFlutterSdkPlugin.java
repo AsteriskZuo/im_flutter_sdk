@@ -46,8 +46,8 @@ public class ImFlutterSdkPlugin implements FlutterPlugin, MethodChannel.MethodCa
     @Override
     public void onAttachedToEngine(FlutterPlugin.FlutterPluginBinding flutterPluginBinding) {
         if (ExtSdkTest.TEST_TYPE == 1) {
-            final MethodChannel channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), "em_client");
-            channel.setMethodCallHandler(new EMClientWrapper(flutterPluginBinding, "em_client"));
+            final MethodChannel channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), "chat_client");
+            channel.setMethodCallHandler(new EMClientWrapper(flutterPluginBinding, "chat_client"));
         } else if (ExtSdkTest.TEST_TYPE == 2) {
             ExtSdkChannelManager.getInstance().add(flutterPluginBinding.getBinaryMessenger(), ExtSdkChannelManager.ExtSdkChannelName.SEND_CHANNEL);
             ExtSdkChannelManager.getInstance().get(ExtSdkChannelManager.ExtSdkChannelName.SEND_CHANNEL).setMethodCallHandler(ExtSdkApiFlutter.getInstance());

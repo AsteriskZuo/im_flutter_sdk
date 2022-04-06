@@ -140,7 +140,7 @@ class ContactSelectPageState extends State<ContactSelectPage> {
 
     count--;
     try {
-      List<String?> contacts =
+      List<String> contacts =
           await EMClient.getInstance.contactManager.getAllContactsFromServer();
       List<ContactModel>? list;
       if (contacts.isNotEmpty) {
@@ -193,8 +193,8 @@ class ContactSelectPageState extends State<ContactSelectPage> {
 
   Future<List<ContactModel>> _fetchUsersInfo(List<String> list) async {
     List<ContactModel> ret = [];
-    Map<String, EMUserInfo> map = await EMClient.getInstance.userInfoManager
-        .fetchUserInfoByIdWithExpireTime(list);
+    Map<String, EMUserInfo> map =
+        await EMClient.getInstance.userInfoManager.fetchUserInfoById(list);
     List<String> emIds = map.keys.toList();
     List<String> noInfoIds = list.toList();
     noInfoIds.removeWhere((element) {

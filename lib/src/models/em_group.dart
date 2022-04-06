@@ -1,291 +1,202 @@
-import 'em_domain_terms.dart';
+import '../internal/em_transform_tools.dart';
 
-enum EMGroupStyle {
-  PrivateOnlyOwnerInvite, // 私有群，只有群主能邀请他人进群，被邀请人会收到邀请信息，同意后可入群；
-  PrivateMemberCanInvite, // 私有群，所有人都可以邀请他人进群，被邀请人会收到邀请信息，同意后可入群；
-  PublicJoinNeedApproval, // 公开群，可以通过获取公开群列表api取的，申请加入时需要管理员以上权限用户同意；
-  PublicOpenJoin, // 公开群，可以通过获取公开群列表api取的，可以直接进入；
-}
+import '../tools/em_extension.dart';
+import 'em_chat_enums.dart';
+import 'em_group_options.dart';
 
-enum EMGroupPermissionType {
-  None,
-  Member,
-  Admin,
-  Owner,
-}
-
+///
+/// The group class.
+///
 class EMGroup {
   EMGroup._private();
 
   late String _groupId;
-  String? _name = '';
-  String? _description = '';
-  String? _owner = '';
-  String? _announcement = '';
+  String? _name;
+  String? _description;
+  String? _owner;
+  String? _announcement;
   int? _memberCount;
-  List? _memberList;
-  List? _adminList;
-  List? _blockList;
-  List? _muteList;
-  List? _sharedFileList;
+  List<String>? _memberList;
+  List<String>? _adminList;
+  List<String>? _blockList;
+  List<String>? _muteList;
+
   bool? _noticeEnable = true;
   bool? _messageBlocked = false;
   bool? _isAllMemberMuted = false;
   EMGroupOptions? _options;
   EMGroupPermissionType? _permissionType;
 
+  /// The group ID.
   String get groupId => _groupId;
+
+  /// The group name.
   String? get name => _name;
+
+  /// The group description.
   String? get description => _description;
+
+  /// The user ID of the group owner.
   String? get owner => _owner;
+
+  ///  The content of the group announcement.
   String? get announcement => _announcement;
+
+  /// The member count of the group.
   int? get memberCount => _memberCount;
   List? get memberList => _memberList;
+
+  ///
+  /// The admin list of the group.
+  ///
+  /// Be sure to fetch the detail specification of the group from the server first, see {@link EMGroupManager#getGroupSpecificationFromServer(String)}.
+  ///
   List? get adminList => _adminList;
+
+  ///
+  /// The block list of the group.
+  ///
+  /// If no block list is found from the server, the return may be empty.
+  ///
+  /// Reference:
+  /// To fetch the block list, call {@link EMGroupManager#getBlockListFromServer(String, int?, int?)}
+  ///
+  /// Only the group owner or admin can call this method.
+  ///
   List? get blockList => _blockList;
+
+  ///
+  /// The mute list of the group.
+  ///
+  /// Reference:
+  /// You can also fetch the mute list by calling {@link}
+  ///
+  /// And only the group owner or admin can call this method.
+  ///
   List? get muteList => _muteList;
-  List? get sharedFileList => _sharedFileList;
+
+  @Deprecated("")
   bool? get noticeEnable => _noticeEnable;
+
+  ///
+  /// Gets whether the group message is blocked.
+  ///
   bool? get messageBlocked => _messageBlocked;
+
+  ///
+  /// Whether all members are muted.
+  ///
+  /// This method has limitations and is recommended to be used with caution.
+  ///
+  /// The state is updated when a all-muted/all-unmuted callback is received, but only for the in-memory object.
+  /// After the in-memory object is collected and pulled again from the database or server, the state becomes unreliable.
+  ///
   bool? get isAllMemberMuted => _isAllMemberMuted;
+
+  @Deprecated(
+      "Switch to using isMemberOnly | isMemberAllowToInvite | maxUserCount to instead.")
   EMGroupOptions? get settings => _options;
+
+  /// The current user's role in group.
   EMGroupPermissionType? get permissionType => _permissionType;
 
+  ///
+  /// The max number of group members allowed in a group. The param is set when the group is created.
+  ///
+  /// Be sure to fetch the detail specification of the group from the server first, see {@link EMGroupManager#getGroupSpecificationFromServer(String)}. If not, the SDK returns nil.
+  ///
+  /// **return** The allowed max number of group members.
+  ///
+  int? get maxUserCount => _options?.maxCount;
+
+  ///
+  /// Fetches the group property: whether users can auto join the group VS need requesting or invitation from a group member to join the group.
+  ///
+  /// There are four types of group properties used to define the style of a group,
+  /// and `isMemberOnly` contains three types including:
+  /// PrivateOnlyOwnerInvite,
+  /// PrivateMemberCanInvite,
+  /// PublicJoinNeedApproval.
+  /// And do not include {@link EMGroupManager.EMGroupStyle#PublicOpenJoin}.
+  ///
+  /// **return**
+  /// `true`: Users can not join the group freely. Needs the invitation from the group owner or members, or the application been approved by the group owner or admins.
+  /// `false`: Users can join freely without the group owner or member‘s invitation or the new joiner’s application been approved.
+  bool get isMemberOnly {
+    if (_options == null) {
+      return true;
+    }
+
+    if (_options?.style == EMGroupStyle.PrivateMemberCanInvite ||
+        _options?.style == EMGroupStyle.PrivateOnlyOwnerInvite ||
+        _options?.style == EMGroupStyle.PublicJoinNeedApproval) {
+      return true;
+    }
+    return false;
+  }
+
+  ///
+  /// Gets whether the group member is allowed to invite other users to join the group.
+  ///
+  /// **return**
+  /// `true`: The group member can invite other users to join the group;
+  /// `false`: Do not allow the group member invite other users to join the group.
+  ///
+  bool get isMemberAllowToInvite {
+    if (_options == null) {
+      return true;
+    }
+    if (_options?.style == EMGroupStyle.PrivateMemberCanInvite) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /// @nodoc
   factory EMGroup.fromJson(Map map) {
     return EMGroup._private()
       .._groupId = map['groupId']
-      .._name = map['name']
-      .._description = map['desc']
-      .._owner = map['owner']
-      .._announcement = map['announcement']
+      .._name = map.stringValue("name")
+      .._description = map.stringValue("desc")
+      .._owner = map.stringValue("owner")
+      .._announcement = map.stringValue("announcement")
       .._memberCount = map['memberCount']
-      .._memberList = map['memberList']
-      .._adminList = map['adminList']
-      .._blockList = map['blockList']
-      .._muteList = map['muteList']
-      .._sharedFileList = map['sharedFileList']
+      .._memberList = map.listValue<String>("memberList")
+      .._adminList = map.listValue<String>("adminList")
+      .._blockList = map.listValue<String>("blockList")
+      .._muteList = map.listValue<String>("muteList")
       .._noticeEnable = map.boolValue('noticeEnable')
       .._messageBlocked = map.boolValue('messageBlocked')
       .._isAllMemberMuted = map.boolValue('isAllMemberMuted')
       .._options = EMGroupOptions.fromJson(map['options'])
-      .._permissionType = EMGroup.permissionTypeFromInt(map['permissionType']);
+      .._permissionType = permissionTypeFromInt(map['permissionType']);
   }
 
   Map toJson() {
     Map data = Map();
-    data['id'] = _groupId;
-    data['name'] = _name;
-    data['desc'] = _description;
-    data['owner'] = _owner;
-    data['announcement'] = _announcement;
-    data['memberCount'] = _memberCount;
-    data['memberList'] = _memberList;
-    data['adminList'] = _adminList;
-    data['blockList'] = _blockList;
-    data['muteList'] = _muteList;
-    data['sharedFileList'] = _sharedFileList;
-    data['noticeEnable'] = _noticeEnable;
-    data['messageBlocked'] = _messageBlocked;
-    data['isAllMemberMuted'] = _isAllMemberMuted;
-    data['options'] = _options!.toJson();
-    data['permissionType'] = EMGroup.permissionTypeToInt(_permissionType);
+    data.setValueWithOutNull("id", _groupId);
+    data.setValueWithOutNull("name", _name);
+    data.setValueWithOutNull("desc", _description);
+    data.setValueWithOutNull("owner", _owner);
+    data.setValueWithOutNull("announcement", _announcement);
+    data.setValueWithOutNull("memberCount", _memberCount);
+    data.setValueWithOutNull("memberList", _memberList);
+    data.setValueWithOutNull("adminList", _adminList);
+    data.setValueWithOutNull("blockList", _blockList);
+    data.setValueWithOutNull("muteList", _muteList);
+    data.setValueWithOutNull("owner", _owner);
+    data.setValueWithOutNull("noticeEnable", _noticeEnable);
+    data.setValueWithOutNull("messageBlocked", _messageBlocked);
+    data.setValueWithOutNull("isAllMemberMuted", _isAllMemberMuted);
+    data.setValueWithOutNull("options", _options?.toJson());
+    data.setValueWithOutNull(
+        "permissionType", permissionTypeToInt(_permissionType));
     return data;
-  }
-
-  static EMGroupPermissionType permissionTypeFromInt(int? type) {
-    EMGroupPermissionType ret = EMGroupPermissionType.Member;
-    switch (type) {
-      case -1:
-        {
-          ret = EMGroupPermissionType.None;
-        }
-        break;
-      case 0:
-        {
-          ret = EMGroupPermissionType.Member;
-        }
-        break;
-      case 1:
-        {
-          ret = EMGroupPermissionType.Admin;
-        }
-        break;
-      case 2:
-        {
-          ret = EMGroupPermissionType.Owner;
-        }
-        break;
-    }
-    return ret;
-  }
-
-  static int permissionTypeToInt(EMGroupPermissionType? type) {
-    int ret = 0;
-    if (type == null) return ret;
-    switch (type) {
-      case EMGroupPermissionType.None:
-        {
-          ret = -1;
-        }
-        break;
-      case EMGroupPermissionType.Member:
-        {
-          ret = 0;
-        }
-        break;
-      case EMGroupPermissionType.Admin:
-        {
-          ret = 1;
-        }
-        break;
-      case EMGroupPermissionType.Owner:
-        {
-          ret = 2;
-        }
-        break;
-    }
-    return ret;
   }
 
   @override
   String toString() {
     return this.toJson().toString();
-  }
-}
-
-class EMGroupOptions {
-  EMGroupOptions._private();
-
-  EMGroupOptions(
-      {required EMGroupStyle style,
-      int count = 200,
-      bool inviteNeedConfirm = false,
-      String extension = ''}) {
-    _style = style;
-    _maxCount = count;
-    _inviteNeedConfirm = inviteNeedConfirm;
-    _ext = extension;
-  }
-
-  EMGroupStyle? _style;
-  int? _maxCount;
-  bool? _inviteNeedConfirm;
-  String? _ext;
-
-  EMGroupStyle? get style => _style;
-  int? get maxCount => _maxCount;
-  bool? get inviteNeedConfirm => _inviteNeedConfirm;
-  String? get ext => _ext;
-
-  factory EMGroupOptions.fromJson(Map? map) {
-    return EMGroupOptions._private()
-      .._style = EMGroupOptions.styleTypeFromInt(map?['style'])
-      .._maxCount = map?['maxCount']
-      .._ext = map?['ext']
-      .._inviteNeedConfirm = map?.boolValue('inviteNeedConfirm');
-  }
-
-  Map toJson() {
-    Map data = Map();
-    data['style'] = EMGroupOptions.styleTypeToInt(_style);
-    data['maxCount'] = _maxCount;
-    data['inviteNeedConfirm'] = _inviteNeedConfirm;
-    data['ext'] = _ext;
-    return data;
-  }
-
-  static EMGroupStyle styleTypeFromInt(int? type) {
-    EMGroupStyle ret = EMGroupStyle.PrivateOnlyOwnerInvite;
-    switch (type) {
-      case 0:
-        {
-          ret = EMGroupStyle.PrivateOnlyOwnerInvite;
-        }
-        break;
-      case 1:
-        {
-          ret = EMGroupStyle.PrivateMemberCanInvite;
-        }
-        break;
-      case 2:
-        {
-          ret = EMGroupStyle.PublicJoinNeedApproval;
-        }
-        break;
-      case 3:
-        {
-          ret = EMGroupStyle.PublicOpenJoin;
-        }
-        break;
-    }
-    return ret;
-  }
-
-  static int styleTypeToInt(EMGroupStyle? type) {
-    int ret = 0;
-    if (type == null) return ret;
-    switch (type) {
-      case EMGroupStyle.PrivateOnlyOwnerInvite:
-        {
-          ret = 0;
-        }
-        break;
-      case EMGroupStyle.PrivateMemberCanInvite:
-        {
-          ret = 1;
-        }
-        break;
-      case EMGroupStyle.PublicJoinNeedApproval:
-        {
-          ret = 2;
-        }
-        break;
-      case EMGroupStyle.PublicOpenJoin:
-        {
-          ret = 3;
-        }
-        break;
-    }
-    return ret;
-  }
-
-  @override
-  String toString() {
-    return this.toJson().toString();
-  }
-}
-
-class EMGroupSharedFile {
-  EMGroupSharedFile._private();
-
-  String? _fileId;
-  String? _fileName;
-  String? _fileOwner;
-  int? _createTime;
-  int? _fileSize;
-
-  String? get fileId => _fileId;
-  String? get fileName => _fileName;
-  String? get fileOwner => _fileOwner;
-  int? get createTime => _createTime;
-  int? get fileSize => _fileSize;
-
-  factory EMGroupSharedFile.fromJson(Map? map) {
-    return EMGroupSharedFile._private()
-      .._fileId = map?["fileId"]
-      .._fileName = map?["name"]
-      .._fileOwner = map?["owner"]
-      .._createTime = map?["createTime"]
-      .._fileSize = map?["fileSize"];
-  }
-
-  Map toJson() {
-    Map data = Map();
-    data['fileId'] = _fileId;
-    data['name'] = _fileName;
-    data['owner'] = _fileOwner;
-    data['createTime'] = _createTime;
-    data['fileSize'] = _fileSize;
-    return data;
   }
 }
