@@ -32,6 +32,7 @@ void initSDK() async {
     deleteMessagesAsExitGroup: false,
     deleteMessagesAsExitChatRoom: false,
     debugModel: true,
+    autoLogin: false
   );
 
   options.enableAPNs("EaseIM_APNS_Product");
