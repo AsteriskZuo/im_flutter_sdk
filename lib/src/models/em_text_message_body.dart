@@ -4,19 +4,20 @@ import 'em_chat_enums.dart';
 import 'em_message_body.dart';
 
 ///
-/// Text message body.
+/// The text message class.
 ///
 class EMTextMessageBody extends EMMessageBody {
   ///
-  /// Creates a text message body.
+  /// Creates a text message.
   ///
   /// Param [content] The text content.
   ///
   EMTextMessageBody({required this.content}) : super(type: MessageType.TXT);
 
+  /// @nodoc
   EMTextMessageBody.fromJson({required Map map})
       : super.fromJson(map: map, type: MessageType.TXT) {
-    this.content = map.getValueWithOutNull("content", "");
+    this.content = map.getStringValue("content", defaultValue: "")!;
   }
 
   @override

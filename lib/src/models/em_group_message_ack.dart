@@ -1,9 +1,9 @@
 import '../tools/em_extension.dart';
 
 ///
-/// Returns read recipients for group messages.
+/// The class for group message read receipts.
 ///
-/// Calls {@link EMChatManager#fetchGroupAcks(String, String?, int)} to return the requested result, for example:
+/// To get the chat group message receipts, call {@link EMChatManager#fetchGroupAcks(String, String?, int)}.
 ///
 /// ```dart
 ///   EMCursorResult<EMGroupMessageAck?> result = await EMClient.getInstance.chatManager.fetchGroupAcks("msgId");
@@ -13,44 +13,44 @@ class EMGroupMessageAck {
   ///
   /// Gets the group message ID.
   ///
-  /// **return** The group message ID.
+  /// **Return** The group message ID.
   ///
   final String messageId;
 
   ///
-  /// Gets the read receipt ID of group messages.
+  /// Gets the ID of the  group message read receipt.
   ///
-  /// **return** The read receipt ID.
+  /// **Return** The read receipt ID.
   ///
   final String ackId;
 
   ///
-  /// Gets the ID of user who sends the read receipt.
+  /// Gets the username of the user who sends the read receipt.
   ///
-  /// **return** The read receipt sender ID.
+  /// **Return** The username of the read receipt sender.
   ///
   final String from;
 
   ///
   /// Gets the read receipt extension.
   ///
-  /// Sends the read receipt passed as the third parameter in {@link EMChatManager#sendGroupMessageReadAck(String, String, String?)}.
+  /// For how to set the extension, see {@link EMChatManager#sendGroupMessageReadAck(String, String, String?)}.
   ///
-  /// **return** The read receipt extension.
+  /// **Return** The read receipt extension.
   ///
   final String? content;
 
   ///
-  /// Gets the count in which read receipts of group messages are sent.
+  /// Gets the number read receipts of group messages.
   ///
-  /// **return** The count in which read receipts of group messages are sent.
+  /// **Return** The count in which read receipts of group messages are sent.
   ///
   final int readCount;
 
   ///
   /// Gets the timestamp of sending read receipts of group messages.
   ///
-  /// **return** The timestamp of sending read receipts of group messages.
+  /// **Return** The timestamp of sending read receipts of group messages.
   final int timestamp;
 
   /// @nodoc
@@ -59,9 +59,9 @@ class EMGroupMessageAck {
       ackId: map["ack_id"] as String,
       messageId: map["msg_id"] as String,
       from: map["from"] as String,
-      content: map.getValue("content"),
-      readCount: map.getValueWithOutNull("count", 0),
-      timestamp: map.getValueWithOutNull("timestamp", 0),
+      content: map["content"],
+      readCount: map.getIntValue("count", defaultValue: 0)!,
+      timestamp: map.getIntValue("timestamp", defaultValue: 0)!,
     );
 
     return ack;

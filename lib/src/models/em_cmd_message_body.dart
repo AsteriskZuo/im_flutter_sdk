@@ -13,13 +13,15 @@ class EMCmdMessageBody extends EMMessageBody {
   EMCmdMessageBody({required this.action, this.deliverOnlineOnly = false})
       : super(type: MessageType.CMD);
 
+  /// @nodoc
   EMCmdMessageBody.fromJson({required Map map})
       : super.fromJson(map: map, type: MessageType.CMD) {
-    this.action = map.getValue("action");
+    this.action = map["action"];
     this.deliverOnlineOnly =
-        map.getValueWithOutNull("deliverOnlineOnly", false);
+        map.getBoolValue("deliverOnlineOnly", defaultValue: false)!;
   }
 
+  /// @nodoc
   @override
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = super.toJson();
@@ -33,10 +35,10 @@ class EMCmdMessageBody extends EMMessageBody {
   late final String action;
 
   ///
-  /// Checks whether this cmd message is only delivered to online users.
+  /// Checks whether this command message is only delivered to online users.
   ///
-  /// `true`: Only delivers to online users.
-  /// `false`: Delivers to all users.
+  /// - `true`: Yes.
+  /// - `false`: No.
   ///
   bool deliverOnlineOnly = false;
 }

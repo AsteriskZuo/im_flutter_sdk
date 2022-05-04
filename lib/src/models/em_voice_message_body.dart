@@ -4,15 +4,15 @@ import 'em_file_message_body.dart';
 import 'em_chat_enums.dart';
 
 ///
-/// The voice message body.
+/// The voice message body class.
 ///
 class EMVoiceMessageBody extends EMFileMessageBody {
   ///
-  /// Creates a voice message body.
+  /// Creates a voice message.
   ///
-  /// Param [localPath] The path of the voice file.
+  /// Param [localPath] The local path of the voice file.
   ///
-  /// Param [displayName] The voice name. like "voice.mp3"
+  /// Param [displayName] The name of the voice file.
   ///
   /// Param [fileSize] The size of the voice file in bytes.
   ///
@@ -20,9 +20,9 @@ class EMVoiceMessageBody extends EMFileMessageBody {
   ///
   EMVoiceMessageBody({
     localPath,
+    this.duration = 0,
     String? displayName,
     int? fileSize,
-    this.duration,
   }) : super(
           localPath: localPath,
           displayName: displayName,
@@ -30,11 +30,13 @@ class EMVoiceMessageBody extends EMFileMessageBody {
           type: MessageType.VOICE,
         );
 
+  /// @nodoc
   EMVoiceMessageBody.fromJson({required Map map})
       : super.fromJson(map: map, type: MessageType.VOICE) {
-    this.duration = map.getValue("duration");
+    this.duration = map.getIntValue("duration", defaultValue: 0)!;
   }
 
+  /// @nodoc
   @override
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = super.toJson();
@@ -43,5 +45,5 @@ class EMVoiceMessageBody extends EMFileMessageBody {
   }
 
   /// The voice duration in seconds.
-  int? duration;
+  late final int duration;
 }

@@ -1,13 +1,12 @@
 typedef CursorResultCallback = Object Function(dynamic obj);
 
 ///
-/// This is a generic class with cursors and paging to get results.
-/// Returns an instance with the list and the cursor.
+/// The EMCursorResult class, which specifies the cursor from which to query results.
+/// When querying using this class, the SDK returns the queried instance and the cursor.
 ///
-/// For example:
 ///   ```dart
 ///     String? cursor;
-///     EMCursorResult<EMGroup> result = await EMClient.getInstance.groupManager.getPublicGroupsFromServer(pageSize: 10, cursor: cursor);
+///     EMCursorResult<EMGroup> result = await EMClient.getInstance.groupManager.fetchPublicGroupsFromServer(pageSize: 10, cursor: cursor);
 ///     List<EMGroup>? group = result.data;
 ///     cursor = result.cursor;
 ///   ```
@@ -18,6 +17,7 @@ class EMCursorResult<T> {
     this.data,
   );
 
+  /// @nodoc
   factory EMCursorResult.fromJson(Map<String, dynamic> map,
       {dataItemCallback: CursorResultCallback}) {
     List<T> list = [];
@@ -28,9 +28,9 @@ class EMCursorResult<T> {
     return result;
   }
 
-  /// The cursor.
+  /// Gets the cursor.
   final String? cursor;
 
-  /// The data;
+  /// Gets the data list.
   final List<T> data;
 }

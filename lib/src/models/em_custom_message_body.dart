@@ -10,15 +10,17 @@ class EMCustomMessageBody extends EMMessageBody {
   ///
   /// Creates a custom message.
   ///
-  EMCustomMessageBody({required this.event, this.params})
-      : super(type: MessageType.CUSTOM);
-
+  EMCustomMessageBody({
+    required this.event,
+    this.params,
+  }) : super(type: MessageType.CUSTOM);
   EMCustomMessageBody.fromJson({required Map map})
       : super.fromJson(map: map, type: MessageType.CUSTOM) {
-    this.event = map.getValue("event");
-    this.params = map.getValue("params")?.cast<String, String>();
+    this.event = map["event"];
+    this.params = map["params"]?.cast<String, String>();
   }
 
+  /// @nodoc
   @override
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = super.toJson();
@@ -31,6 +33,6 @@ class EMCustomMessageBody extends EMMessageBody {
   /// The event.
   late final String event;
 
-  /// The params map.
+  /// The custom params map.
   Map<String, String>? params;
 }

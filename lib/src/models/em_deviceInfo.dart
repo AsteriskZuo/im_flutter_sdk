@@ -1,7 +1,7 @@
 import '../tools/em_extension.dart';
 
 ///
-/// The Multi-device information.
+/// The EMDeviceInfo class, which contains the multi-device information.
 ///
 class EMDeviceInfo {
   EMDeviceInfo._private(
@@ -23,13 +23,13 @@ class EMDeviceInfo {
   /// @nodoc
   factory EMDeviceInfo.fromJson(Map map) {
     return EMDeviceInfo._private(
-      map.getValue("resource"),
-      map.getValue("deviceUUID"),
-      map.getValue("deviceName"),
+      map.getStringValue("resource"),
+      map.getStringValue("deviceUUID"),
+      map.getStringValue("deviceName"),
     );
   }
 
-  /// The other devices‘ information.
+  /// The information of other login devices.
   final String? resource;
 
   /// The UUID of the device.

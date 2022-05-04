@@ -4,11 +4,11 @@ import 'em_chat_enums.dart';
 import 'em_message_body.dart';
 
 ///
-/// The location message body.
+/// The location message class.
 ///
 class EMLocationMessageBody extends EMMessageBody {
   ///
-  /// Creates a location message body.
+  /// Creates a location message body instance.
   ///
   /// Param [latitude] The latitude.
   ///
@@ -28,14 +28,16 @@ class EMLocationMessageBody extends EMMessageBody {
     _buildingName = buildingName;
   }
 
+  /// @nodoc
   EMLocationMessageBody.fromJson({required Map map})
       : super.fromJson(map: map, type: MessageType.LOCATION) {
-    this.latitude = map.getValueWithOutNull("latitude", 0.0);
-    this.longitude = map.getValueWithOutNull("longitude", 0.0);
-    this._address = map.getValue("address");
-    this._buildingName = map.getValue("buildingName");
+    this.latitude = map.getDoubleValue("latitude", defaultValue: 0.0)!;
+    this.longitude = map.getDoubleValue("longitude", defaultValue: 0.0)!;
+    this._address = map.getStringValue("address");
+    this._buildingName = map.getStringValue("buildingName");
   }
 
+  /// @nodoc
   @override
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = super.toJson();

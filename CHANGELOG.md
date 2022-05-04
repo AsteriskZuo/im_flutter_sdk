@@ -1,6 +1,49 @@
 ## NEXT
 
+
+## 3.9.0+2
+
+- 修改用户退出/离线回调;
+  - EMConnectionListener#onConnected: 长连接恢复;
+  - EMConnectionListener#onDisconnected: 长连接断开;
+  - EMConnectionListener#onUserDidLoginFromOtherDevice: 当前账号在其他设备登录;
+  - EMConnectionListener#onUserDidRemoveFromServer: 当前账号被服务器删除;
+  - EMConnectionListener#onUserDidForbidByServer: 当前账号登录被服务器拒绝;
+  - EMConnectionListener#onUserDidChangePassword: 当前账号密码变更;
+  - EMConnectionListener#onUserDidLoginTooManyDevice: 当前账号登录太多设备;
+  - EMConnectionListener#onUserKickedByOtherDevice: 当前账号被登录的其他设备设置下线;
+  - EMConnectionListener#onUserAuthenticationFailed: 当前账号鉴权失败;
+
+## 3.9.0+1
+
+- 修复message.attribute不准;
+- 增加 EMClient.getInstance.startCallback() 方法
+  
+  ```dart
+  EMClient.getInstance.startCallback();
+  ```
+  
+  只有调用该方法后，`EMContactManagerListener`、 `EMGroupEventListener` 、 `EMChatRoomEventListener` 回调才会开始执行;
+- 修复删除聊天室白名单成员失败;
+
+## 3.9.0
+
+- 增加单人推送免打扰接口；
+
+- 增加api referance;
+
+- 增加renewToken api;
+
+- 修改消息callback方式；
+
+- iOS移除自动绑定deviceToken，如需使用，需要在iOS端单独增加；
+
+- android移除多余权限；
+
+- 修改已知bug；
+
 ## 3.8.9
+
 - 增加单聊消息免打扰；
 - 去除不必要的信息收集；
 - 修复安卓某些场景下数据库损坏导致崩溃；
@@ -14,16 +57,15 @@
 - 默认使用https；
 - 优化登录速度；
 
-
 ## 3.8.3+9
-- 将设置推送相关操作从EMPushConfigs中移到EMPushManager中；
 
+- 将设置推送相关操作从EMPushConfigs中移到EMPushManager中；
+- 修复已知bug；
 
 ## 3.8.3+8
 
 - 修复ios使用token登录失败；
 - 修改Login方法和Logout方法返回值；
-
 
 ## 3.8.3+6
 

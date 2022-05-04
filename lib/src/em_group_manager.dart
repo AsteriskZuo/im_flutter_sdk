@@ -15,7 +15,7 @@ import 'tools/em_extension.dart';
 import 'internal/chat_method_keys.dart';
 
 ///
-/// The group manager for management of group creation and deletion and member management.
+/// The group manager class, which manages group creation and deletion, user joining and exiting the group, etc.
 ///
 class EMGroupManager {
   static MethodChannel _channel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'chat_group_manager' : 'dart_to_native');
@@ -23,7 +23,7 @@ class EMGroupManager {
 
   /// @nodoc
   EMGroupManager() {
-    _recvChannel.setMethodCallHandler((MethodCall call) async {
+    _channel.setMethodCallHandler((MethodCall call) async {
       Map? argMap = call.arguments;
       print('[EMGroupChange:]' + argMap.toString());
       if (call.method == ChatMethodKeys.onGroupChanged) {
@@ -40,9 +40,9 @@ class EMGroupManager {
   ///
   /// Param [groupId] The group ID.
   ///
-  /// **return** The group instance. Returns null if the group does not exist.
+  /// **Return** The group instance. Returns null if the group does not exist.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<EMGroup?> getGroupWithId(String groupId) async {
     Map req = {'groupId': groupId};
@@ -61,11 +61,11 @@ class EMGroupManager {
   }
 
   ///
-  /// Gets all groups of the current user (from the cache).
+  /// Gets all groups of the current user from the cache.
   ///
-  /// **return** The group list.
+  /// **Return** The group list.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<List<EMGroup>> getJoinedGroups() async {
     Map result = await _channel.invokeMethod(ChatMethodKeys.getJoinedGroups);
@@ -89,13 +89,13 @@ class EMGroupManager {
   ///
   /// Gets all groups of the current user from the server.
   ///
-  /// This method returns a group list which does not contain member information. If you want to update information of a group to include its member information, call {@link #getGroupSpecificationFromServer(String groupId)}.
+  /// This method returns a group list which does not contain member information. If you want to update information of a group to include its member information, call {@link #fetchGroupInfoFromServer(String groupId)}.
   ///
-  /// **return** The list of groups that the current user joins.
+  /// **Return** The list of groups that the current user joins.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
-  Future<List<EMGroup>> getJoinedGroupsFromServer({
+  Future<List<EMGroup>> fetchJoinedGroupsFromServer({
     int pageSize = 200,
     int pageNum = 1,
   }) async {
@@ -112,17 +112,16 @@ class EMGroupManager {
   ///
   /// Gets public groups from the server with pagination.
   ///
-  ///
   /// Param [pageSize] The number of public groups per page.
   ///
   /// Param [cursor] The cursor position from which to start to get data next time. Sets the parameter as null for the first time.
   ///
-  /// **return** The result of {@link EMCursorResult}, including the cursor for getting data next time and the group list.
-  /// For the last page, the return value of cursor is an empty string.
+  /// **Return** The result of {@link EMCursorResult}, including the cursor for getting data next time and the group list.
+  /// If `EMCursorResult.cursor` is an empty string (""), all data is fetched.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
-  Future<EMCursorResult<EMGroup>> getPublicGroupsFromServer({
+  Future<EMCursorResult<EMGroup>> fetchPublicGroupsFromServer({
     int pageSize = 200,
     String? cursor,
   }) async {
@@ -145,11 +144,10 @@ class EMGroupManager {
   ///
   /// Creates a group instance.
   ///
-  /// After the group is created, the data in the cache and database will be updated and multiple devices will receive the notification event and
-  /// update the group to the cache and database.
-  /// You can set {@link EMMultiDeviceListener} to listen on the event. The event callback function
-  /// is {@link EMMultiDeviceListener#onGroupEvent(EMContactGroupEvent, String, List)}, where the first parameter is the event,
-  /// for example, {@link EMContactGroupEvent#GROUP_CREATE} for the group creation event.
+  /// After the group is created, the data in the cache and database will be updated and multiple devices will receive the notification event and update the group data to the cache and database.
+  /// You can set {@link com.EMMultiDeviceListener} to listen for the event. If an event occurs, the callback function
+  /// {@link EMMultiDeviceListener#onGroupEvent(int, String, List)} is triggered, where the first parameter is the event which is
+  /// {@link EMContactGroupEvent#GROUP_CREATE} for a group creation event.
   ///
   /// Param [groupName] The group name.
   ///
@@ -163,12 +161,12 @@ class EMGroupManager {
   /// The options are as follows:
   /// - The maximum number of group members. The default value is 200.
   /// - The group style. See {@link EMGroupManager.EMGroupStyle}. The default value is {@link EMGroupStyle#PrivateOnlyOwnerInvite}.
-  /// - Whether to ask for permission when inviting a user to join the group. The default value is false, indicating that invitees are automaticall added to the group without their permission.
+  /// - Whether to ask for permission when inviting a user to join the group. The default value is `false`, indicating that invitees are automatically added to the group without their permission.
   /// - The group detail extensions.
   ///
-  /// **return** The created group instance.
+  /// **Return** The created group instance.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<EMGroup> createGroup({
     String? groupName,
@@ -193,17 +191,17 @@ class EMGroupManager {
   }
 
   ///
-  /// Gets group information from the server.
+  /// Gets the group information from the server.
   ///
-  /// This method does not get member information. If member information is required, call {@link #getGroupMemberListFromServer(String, int?, String?)}.
+  /// This method does not get member information. If member information is required, call {@link #fetchMemberListFromServer(String, int?, String?)}.
   ///
   /// Param [groupId] The group ID.
   ///
-  /// **return** The group instance.
+  /// **Return** The group instance.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
-  Future<EMGroup> getGroupSpecificationFromServer(String groupId) async {
+  Future<EMGroup> fetchGroupInfoFromServer(String groupId) async {
     Map req = {'groupId': groupId};
     Map result = await _channel.invokeMethod(
         ChatMethodKeys.getGroupSpecificationFromServer, req);
@@ -217,14 +215,12 @@ class EMGroupManager {
   }
 
   ///
-  /// Gets a group's member list with pagination.
-  ///
-  /// When EMCursorResult.cursor is an empty string ("") in the result, there is no more data.
+  /// Gets the member list of the group with pagination.
   ///
   /// For example:
   ///   ```dart
-  ///     EMCursorResult<String> result = await EMClient.getInstance.groupManager.getGroupMemberListFromServer(groupId); // search 1
-  ///     result = await EMClient.getInstance.groupManager.getGroupMemberListFromServer(groupId, cursor: result.cursor); // search 2
+  ///     EMCursorResult<String> result = await EMClient.getInstance.groupManager.fetchMemberListFromServer(groupId); // search 1
+  ///     result = await EMClient.getInstance.groupManager.fetchMemberListFromServer(groupId, cursor: result.cursor); // search 2
   ///   ```
   ///
   /// Param [groupId] The group ID.
@@ -233,12 +229,12 @@ class EMGroupManager {
   ///
   /// Param [cursor] The cursor position from which to start to get data next time. Sets the parameter as null for the first time.
   ///
-  /// **return** The result of {@link EMCursorResult}, including the cursor for getting data next time and the group member list.
-  /// For the last page, the return value of cursor is an empty string.
+  /// **Return** The result of {@link EMCursorResult}, including the cursor for getting data next time and the group member list.
+  /// If `EMCursorResult.cursor` is an empty string (""), all data is fetched.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
-  Future<EMCursorResult<String>> getGroupMemberListFromServer(
+  Future<EMCursorResult<String>> fetchMemberListFromServer(
     String groupId, {
     int pageSize = 200,
     String? cursor,
@@ -273,11 +269,11 @@ class EMGroupManager {
   ///
   /// Param [pageNum] The page number, starting from 1.
   ///
-  /// **return** The group block list.
+  /// **Return** The group block list.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
-  Future<List<String>?> getBlockListFromServer(
+  Future<List<String>?> fetchBlockListFromServer(
     String groupId, {
     int pageSize = 200,
     int pageNum = 1,
@@ -300,15 +296,15 @@ class EMGroupManager {
   ///
   /// Param [groupId] The group ID.
   ///
-  /// Param [pageSize] The number of groups per page.
+  /// Param [pageSize] The number of muted members per page.
   ///
   /// Param [pageNum] The page number, starting from 1.
   ///
-  /// **return** The group mute list.
+  /// **Return** The group mute list.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
-  Future<List<String>?> getMuteListFromServer(
+  Future<List<String>?> fetchMuteListFromServer(
     String groupId, {
     int pageSize = 200,
     int pageNum = 1,
@@ -325,17 +321,17 @@ class EMGroupManager {
   }
 
   ///
-  /// Gets the allow list of group from the server.
+  /// Gets the allow list of the group from the server.
   ///
   /// Only the group owner or admin can call this method.
   ///
   /// Param [groupId] The group ID.
   ///
-  /// **return** return the group allow list.
+  /// **Return** The allow list of the group.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
-  Future<List<String>?> getWhiteListFromServer(String groupId) async {
+  Future<List<String>?> fetchWhiteListFromServer(String groupId) async {
     Map req = {'groupId': groupId};
     Map result = await _channel.invokeMethod(
         ChatMethodKeys.getGroupWhiteListFromServer, req);
@@ -348,13 +344,13 @@ class EMGroupManager {
   }
 
   ///
-  /// Gets whether the member is on the allow list.
+  /// Gets whether the member is on the allow list of the group.
   ///
   /// Param [groupId] The group ID.
   ///
-  /// **return** returns a Boolean value to indicate whether the current user is on the group allow list;
+  /// **Return** A Boolean value to indicate whether the current user is on the allow list of the group;
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<bool> isMemberInWhiteListFromServer(String groupId) async {
     Map req = {'groupId': groupId};
@@ -369,19 +365,19 @@ class EMGroupManager {
   }
 
   ///
-  /// Gets the shared files of group from the server.
+  /// Gets the shared files of the group from the server.
   ///
   /// Param [groupId] The group ID.
   ///
-  /// Param [pageSize] The number of groups per page.
+  /// Param [pageSize] The number of shared files per page.
   ///
   /// Param [pageNum] The page number, starting from 1.
   ///
-  /// **return** The shared files.
+  /// **Return** The shared files.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
-  Future<List<EMGroupSharedFile>?> getGroupFileListFromServer(
+  Future<List<EMGroupSharedFile>> fetchGroupFileListFromServer(
     String groupId, {
     int pageSize = 200,
     int pageNum = 1,
@@ -408,11 +404,11 @@ class EMGroupManager {
   ///
   /// Param [groupId] The group ID.
   ///
-  /// **return** The group announcement.
+  /// **Return** The group announcement.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
-  Future<String?> getGroupAnnouncementFromServer(String groupId) async {
+  Future<String?> fetchAnnouncementFromServer(String groupId) async {
     Map req = {'groupId': groupId};
     Map result = await _channel.invokeMethod(
         ChatMethodKeys.getGroupAnnouncementFromServer, req);
@@ -435,7 +431,7 @@ class EMGroupManager {
   ///
   /// Param [welcome] The welcome message.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<void> addMembers(
     String groupId,
@@ -453,17 +449,19 @@ class EMGroupManager {
   }
 
   ///
-  /// Adds users to the group.
+  /// Invites users to join the group.
   ///
-  /// 群类型是 PrivateOnlyOwnerInvite / PrivateMemberCanInvite / PublicJoinNeedApproval 的群组可以邀请用户加入
+  /// This method works only for groups with the style of `PrivateOnlyOwnerInvite`, `PrivateMemberCanInvite`, or `PublicJoinNeedApproval`.
+  /// For a group with the PrivateOnlyOwnerInvite style, only the group owner can invite users to join the group;
+  /// For a group with the PrivateMemberCanInvite style, each group member can invite users to join the group.
   ///
   /// Param [groupId] The group ID.
   ///
   /// Param [members] The array of new members to invite.
   ///
-  /// Param [reason] The invite reason.
+  /// Param [reason] The invitation reason.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<void> inviterUser(
     String groupId,
@@ -497,9 +495,9 @@ class EMGroupManager {
   ///
   /// Param [groupId] The group ID.
   ///
-  /// Param [members] The user IDs of members to be removed.
+  /// Param [members] The username of the member to be removed.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<void> removeMembers(
     String groupId,
@@ -515,9 +513,9 @@ class EMGroupManager {
   }
 
   ///
-  /// Adds the user to the group block list.
+  /// Adds the user to the block list of the group.
   ///
-  /// Users will be first removed from the group they have joined before being added to the group block list. The users on the group block list can not join the group again.
+  /// Users will be first removed from the group they have joined before being added to the block list of the group. The users on the group block list cannot join the group again.
   ///
   /// Only the group owner or admin can call this method.
   ///
@@ -525,7 +523,7 @@ class EMGroupManager {
   ///
   /// Param [members] The list of users to be added to the block list.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**   A description of the exception. See {@link EMError}.
   ///
   Future<void> blockMembers(
     String groupId,
@@ -549,7 +547,7 @@ class EMGroupManager {
   ///
   /// Param [members] The users to be removed from the group block list.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**   A description of the exception. See {@link EMError}.
   ///
   Future<void> unblockMembers(
     String groupId,
@@ -574,7 +572,7 @@ class EMGroupManager {
   ///
   /// Param [name] The new group name.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<void> changeGroupName(
     String groupId,
@@ -599,7 +597,7 @@ class EMGroupManager {
   ///
   /// Param [desc] The new group description.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<void> changeGroupDescription(
     String groupId,
@@ -620,7 +618,7 @@ class EMGroupManager {
   ///
   /// Param [groupId] The group ID.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<void> leaveGroup(String groupId) async {
     Map req = {'groupId': groupId};
@@ -639,7 +637,7 @@ class EMGroupManager {
   ///
   /// Param [groupId] The group ID.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<void> destroyGroup(String groupId) async {
     Map req = {'groupId': groupId};
@@ -658,7 +656,7 @@ class EMGroupManager {
   ///
   /// Param [groupId] The group ID.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<void> blockGroup(String groupId) async {
     Map req = {'groupId': groupId};
@@ -675,7 +673,7 @@ class EMGroupManager {
   ///
   /// Param [groupId] The group ID.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<void> unblockGroup(String groupId) async {
     Map req = {'groupId': groupId};
@@ -696,11 +694,11 @@ class EMGroupManager {
   ///
   /// Param [newOwner] The new owner ID.
   ///
-  /// **return** The updated group instance.
+  /// **Return** The updated group instance.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
-  Future<EMGroup> changeOwner(
+  Future<void> changeOwner(
     String groupId,
     String newOwner,
   ) async {
@@ -709,7 +707,6 @@ class EMGroupManager {
         await _channel.invokeMethod(ChatMethodKeys.updateGroupOwner, req);
     try {
       EMError.hasErrorFromResult(result);
-      return EMGroup.fromJson(result[ChatMethodKeys.updateGroupOwner]);
     } on EMError catch (e) {
       throw e;
     }
@@ -718,17 +715,17 @@ class EMGroupManager {
   ///
   /// Adds a group admin.
   ///
-  /// Only the group owner can call this method and admin can not.
+  /// Only the group owner can call this method and group admins cannot.
   ///
   /// Param [groupId] The group ID.
   ///
-  /// Param [memberId] The admin ID to add.
+  /// Param [memberId] The username of the admin to add.
   ///
-  /// **return** The updated group instance.
+  /// **Return** The updated group instance.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
-  Future<EMGroup> addAdmin(
+  Future<void> addAdmin(
     String groupId,
     String memberId,
   ) async {
@@ -736,7 +733,6 @@ class EMGroupManager {
     Map result = await _channel.invokeMethod(ChatMethodKeys.addAdmin, req);
     try {
       EMError.hasErrorFromResult(result);
-      return EMGroup.fromJson(result[ChatMethodKeys.addAdmin]);
     } on EMError catch (e) {
       throw e;
     }
@@ -749,13 +745,13 @@ class EMGroupManager {
   ///
   /// Param [groupId] The group ID.
   ///
-  /// Param [adminId] The admin ID to remove.
+  /// Param [adminId] The username of the admin to remove.
   ///
-  /// **return** The updated group instance.
+  /// **Return** The updated group instance.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
-  Future<EMGroup> removeAdmin(
+  Future<void> removeAdmin(
     String groupId,
     String adminId,
   ) async {
@@ -763,7 +759,6 @@ class EMGroupManager {
     Map result = await _channel.invokeMethod(ChatMethodKeys.removeAdmin, req);
     try {
       EMError.hasErrorFromResult(result);
-      return EMGroup.fromJson(result[ChatMethodKeys.removeAdmin]);
     } on EMError catch (e) {
       throw e;
     }
@@ -780,11 +775,9 @@ class EMGroupManager {
   ///
   /// Param [duration] The mute duration in milliseconds.
   ///
-  /// **return** The updated group instance.
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
-  ///
-  Future<EMGroup> muteMembers(
+  Future<void> muteMembers(
     String groupId,
     List<String> members, {
     int duration = -1,
@@ -793,7 +786,6 @@ class EMGroupManager {
     Map result = await _channel.invokeMethod(ChatMethodKeys.muteMembers, req);
     try {
       EMError.hasErrorFromResult(result);
-      return EMGroup.fromJson(result[ChatMethodKeys.muteMembers]);
     } on EMError catch (e) {
       throw e;
     }
@@ -808,7 +800,7 @@ class EMGroupManager {
   ///
   /// Param [members] The list of members to be muted.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<void> unMuteMembers(
     String groupId,
@@ -830,7 +822,7 @@ class EMGroupManager {
   ///
   /// Param [groupId] The group ID.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<void> muteAllMembers(String groupId) async {
     Map req = {'groupId': groupId};
@@ -850,7 +842,7 @@ class EMGroupManager {
   ///
   /// Param [groupId] The group ID.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<void> unMuteAllMembers(String groupId) async {
     Map req = {'groupId': groupId};
@@ -864,15 +856,15 @@ class EMGroupManager {
   }
 
   ///
-  /// Adds members to the allowlist.
+  /// Adds members to the allow list of the group.
   ///
   /// Only the group owner or admin can call this method.
   ///
   /// Param [groupId] The group ID.
   ///
-  /// Param [members] The members to be added to the allowlist.
+  /// Param [members] The members to be added to the allow list of the group.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<void> addWhiteList(
     String groupId,
@@ -888,15 +880,15 @@ class EMGroupManager {
   }
 
   ///
-  /// Removes members from the allowlist.
+  /// Removes members from the allow list of the group.
   ///
   /// Only the group owner or admin can call this method.
   ///
   /// Param [groupId] The group ID.
   ///
-  /// Param [members] The members to be removed from the allowlist.
+  /// Param [members] The members to be removed from the allow list of the group.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<void> removeWhiteList(
     String groupId,
@@ -915,13 +907,13 @@ class EMGroupManager {
   ///
   /// Uploads the shared file to the group.
   ///
-  /// Note: The callback is only used for progress callback.
+  /// When a shared file is uploaded, the upload progress callback will be triggered.
   ///
   /// Param [groupId] The group ID.
   ///
-  /// Param [filePath] The local file path.
+  /// Param [filePath] The local path of the shared file.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<void> uploadGroupSharedFile(
     String groupId,
@@ -946,9 +938,9 @@ class EMGroupManager {
   ///
   /// Param [fileId] The ID of the shared file.
   ///
-  /// Param [savePath] The local file path.
+  /// Param [savePath] The local path of the shared file.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<void> downloadGroupSharedFile(
     String groupId,
@@ -972,9 +964,9 @@ class EMGroupManager {
   ///
   /// Param [groupId] The group ID.
   ///
-  /// Param [fileId] The shared file ID.
+  /// Param [fileId] The ID of the shared file.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<void> removeGroupSharedFile(
     String groupId,
@@ -999,9 +991,9 @@ class EMGroupManager {
   ///
   /// Param [announcement] The group announcement.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
-  Future<EMGroup> updateGroupAnnouncement(
+  Future<void> updateGroupAnnouncement(
     String groupId,
     String announcement,
   ) async {
@@ -1010,7 +1002,6 @@ class EMGroupManager {
         ChatMethodKeys.updateGroupAnnouncement, req);
     try {
       EMError.hasErrorFromResult(result);
-      return EMGroup.fromJson(result[ChatMethodKeys.updateGroupAnnouncement]);
     } on EMError catch (e) {
       throw e;
     }
@@ -1025,7 +1016,7 @@ class EMGroupManager {
   ///
   /// Param [extension] The group extension field.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<void> updateGroupExtension(
     String groupId,
@@ -1044,12 +1035,12 @@ class EMGroupManager {
   ///
   /// Joins a public group.
   ///
-  /// For a group that requires no authentication，users can join it freely without the need of having permission.
-  /// For a group that requires authentication, users need to wait for the owner to agree before joining the group. For details, see {@link EMGroupStyle}.
+  /// For a group that requires no authentication，users can join it freely without obtaining permissions from the group owner.
+  /// For a group that requires authentication, users need to wait for the group owner to agree before joining the group. For details, see {@link EMGroupStyle}.
   ///
-  ///Param [groupId] The group ID.
+  /// Param [groupId] The group ID.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<void> joinPublicGroup(
     String groupId,
@@ -1067,14 +1058,13 @@ class EMGroupManager {
   ///
   /// Requests to join a group.
   ///
-  /// Note: The group style is {@link EMGroupStyle#PublicJoinNeedApproval}, which is a public group
-  /// requiring authentication.
+  /// This method works only for public groups requiring authentication, i.e., groups with the style of {@link EMGroupStyle#PublicJoinNeedApproval}.
   ///
   /// Param [groupId] The group ID.
   ///
   /// Param [reason] The reason for requesting to join the group.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<void> requestToJoinPublicGroup(
     String groupId, [
@@ -1098,9 +1088,9 @@ class EMGroupManager {
   ///
   /// Param [groupId] The group ID.
   ///
-  /// Param [username] The ID of the user who sends a request to join the group.
+  /// Param [username] The username of the user who sends a request to join the group.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<void> acceptJoinApplication(
     String groupId,
@@ -1123,11 +1113,11 @@ class EMGroupManager {
   ///
   /// Param [groupId] The group ID.
   ///
-  /// Param [username] The ID of the user who sends a request to join the group.
+  /// Param [username] The username of the user who sends a request to join the group.
   ///
   /// Param [reason] The reason of declining.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<void> declineJoinApplication(
     String groupId,
@@ -1153,9 +1143,9 @@ class EMGroupManager {
   ///
   /// Param [inviter] The user who initiates the invitation.
   ///
-  /// **return** The group instance which the user has accepted the invitation to join.
+  /// **Return** The group instance which the user has accepted the invitation to join.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<EMGroup> acceptInvitation(
     String groupId,
@@ -1177,11 +1167,11 @@ class EMGroupManager {
   ///
   /// Param [groupId] The group ID.
   ///
-  /// Param [inviter] The inviter.
+  /// Param [inviter] The username of the inviter.
   ///
   /// Param [reason] The reason of declining.
   ///
-  /// **Throws**  A description of the issue that caused this exception. See {@link EMError}
+  /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<void> declineInvitation(
     String groupId,
@@ -1220,6 +1210,279 @@ class EMGroupManager {
   void removeGroupChangeListener(EMGroupEventListener listener) {
     if (_groupChangeListeners.contains(listener)) {
       _groupChangeListeners.remove(listener);
+    }
+  }
+
+  ///
+  /// Gets the group information from the server.
+  ///
+  /// This method does not get member information. If member information is required, call {@link #fetchMemberListFromServer(String, int?, String?)}.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// **Return** The group instance.
+  ///
+  /// **Throws**  A description of the exception. See {@link EMError}.
+  ///
+  @Deprecated("Switch to using fetchGroupInfoFromServer instead.")
+  Future<EMGroup> getGroupSpecificationFromServer(String groupId) async {
+    Map req = {'groupId': groupId};
+    Map result = await _channel.invokeMethod(
+        ChatMethodKeys.getGroupSpecificationFromServer, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return EMGroup.fromJson(
+          result[ChatMethodKeys.getGroupSpecificationFromServer]);
+    } on EMError catch (e) {
+      throw e;
+    }
+  }
+
+  ///
+  /// Gets all groups of the current user from the server.
+  ///
+  /// This method returns a group list which does not contain member information. If you want to update information of a group to include its member information, call {@link #fetchGroupInfoFromServer(String groupId)}.
+  ///
+  /// **Return** The list of groups that the current user joins.
+  ///
+  /// **Throws**  A description of the exception. See {@link EMError}.
+  ///
+  @Deprecated("Switch to using fetchJoinedGroupsFromServer instead.")
+  Future<List<EMGroup>> getJoinedGroupsFromServer({
+    int pageSize = 200,
+    int pageNum = 1,
+  }) async {
+    Map req = {'pageSize': pageSize, 'pageNum': pageNum};
+    Map result = await _channel.invokeMethod(
+        ChatMethodKeys.getJoinedGroupsFromServer, req);
+    EMError.hasErrorFromResult(result);
+    List<EMGroup> list = [];
+    result[ChatMethodKeys.getJoinedGroupsFromServer]
+        ?.forEach((element) => list.add(EMGroup.fromJson(element)));
+    return list;
+  }
+
+  ///
+  /// Gets public groups from the server with pagination.
+  ///
+  /// Param [pageSize] The number of public groups per page.
+  ///
+  /// Param [cursor] The cursor position from which to start to get data next time. Sets the parameter as null for the first time.
+  ///
+  /// **Return** The result of {@link EMCursorResult}, including the cursor for getting data next time and the group list.
+  /// If `EMCursorResult.cursor` is an empty string (""), all data is fetched.
+  ///
+  /// **Throws**  A description of the exception. See {@link EMError}.
+  ///
+  @Deprecated("Switch to using fetchPublicGroupsFromServer instead.")
+  Future<EMCursorResult<EMGroup>> getPublicGroupsFromServer({
+    int pageSize = 200,
+    String? cursor,
+  }) async {
+    Map req = {'pageSize': pageSize};
+    req.setValueWithOutNull("cursor", cursor);
+    Map result = await _channel.invokeMethod(
+        ChatMethodKeys.getPublicGroupsFromServer, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return EMCursorResult<EMGroup>.fromJson(
+          result[ChatMethodKeys.getPublicGroupsFromServer],
+          dataItemCallback: (value) {
+        return EMGroup.fromJson(value);
+      });
+    } on EMError catch (e) {
+      throw e;
+    }
+  }
+
+  ///
+  /// Gets the group block list from server with pagination.
+  ///
+  /// Only the group owner or admin can call this method.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [pageSize] The number of groups per page.
+  ///
+  /// Param [pageNum] The page number, starting from 1.
+  ///
+  /// **Return** The group block list.
+  ///
+  /// **Throws**  A description of the exception. See {@link EMError}.
+  ///
+  @Deprecated("Switch to using fetchBlockListFromServer instead.")
+  Future<List<String>?> getBlockListFromServer(
+    String groupId, {
+    int pageSize = 200,
+    int pageNum = 1,
+  }) async {
+    Map req = {'groupId': groupId, 'pageNum': pageNum, 'pageSize': pageSize};
+    Map result = await _channel.invokeMethod(
+        ChatMethodKeys.getGroupBlockListFromServer, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return result[ChatMethodKeys.getGroupBlockListFromServer]?.cast<String>();
+    } on EMError catch (e) {
+      throw e;
+    }
+  }
+
+  ///
+  /// Gets the group announcement from the server.
+  ///
+  /// Group members can call this method.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// **Return** The group announcement.
+  ///
+  /// **Throws**  A description of the exception. See {@link EMError}.
+  ///
+  @Deprecated("Switch to using fetchAnnouncementFromServer instead.")
+  Future<String?> getGroupAnnouncementFromServer(String groupId) async {
+    Map req = {'groupId': groupId};
+    Map result = await _channel.invokeMethod(
+        ChatMethodKeys.getGroupAnnouncementFromServer, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return result[ChatMethodKeys.getGroupAnnouncementFromServer];
+    } on EMError catch (e) {
+      throw e;
+    }
+  }
+
+  ///
+  /// Gets the shared files of the group from the server.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [pageSize] The number of shared files per page.
+  ///
+  /// Param [pageNum] The page number, starting from 1.
+  ///
+  /// **Return** The shared files.
+  ///
+  /// **Throws**  A description of the exception. See {@link EMError}.
+  ///
+  @Deprecated("Switch to using fetchGroupFileListFromServer instead.")
+  Future<List<EMGroupSharedFile>?> getGroupFileListFromServer(
+    String groupId, {
+    int pageSize = 200,
+    int pageNum = 1,
+  }) async {
+    Map req = {'groupId': groupId, 'pageNum': pageNum, 'pageSize': pageSize};
+    Map result = await _channel.invokeMethod(
+        ChatMethodKeys.getGroupFileListFromServer, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      List<EMGroupSharedFile> list = [];
+      result[ChatMethodKeys.getGroupFileListFromServer]?.forEach((element) {
+        list.add(EMGroupSharedFile.fromJson(element));
+      });
+      return list;
+    } on EMError catch (e) {
+      throw e;
+    }
+  }
+
+  ///
+  /// Gets the member list of the group with pagination.
+  ///
+  /// For example:
+  ///   ```dart
+  ///     EMCursorResult<String> result = await EMClient.getInstance.groupManager.fetchMemberListFromServer(groupId); // search 1
+  ///     result = await EMClient.getInstance.groupManager.fetchMemberListFromServer(groupId, cursor: result.cursor); // search 2
+  ///   ```
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [pageSize] The number of group members per page.
+  ///
+  /// Param [cursor] The cursor position from which to start to get data next time. Sets the parameter as null for the first time.
+  ///
+  /// **Return** The result of {@link EMCursorResult}, including the cursor for getting data next time and the group member list.
+  /// If `EMCursorResult.cursor` is an empty string (""), all data is fetched.
+  ///
+  /// **Throws**  A description of the exception. See {@link EMError}.
+  ///
+  @Deprecated("Switch to using fetchMemberListFromServer instead.")
+  Future<EMCursorResult<String>> getGroupMemberListFromServer(
+    String groupId, {
+    int pageSize = 200,
+    String? cursor,
+  }) async {
+    Map req = {
+      'groupId': groupId,
+      'pageSize': pageSize,
+    };
+    req.setValueWithOutNull("cursor", cursor);
+    Map result = await _channel.invokeMethod(
+      ChatMethodKeys.getGroupMemberListFromServer,
+      req,
+    );
+    try {
+      EMError.hasErrorFromResult(result);
+      return EMCursorResult<String>.fromJson(
+          result[ChatMethodKeys.getGroupMemberListFromServer],
+          dataItemCallback: (value) => value);
+    } on EMError catch (e) {
+      throw e;
+    }
+  }
+
+  ///
+  /// Gets the mute list of the group from the server.
+  ///
+  /// Only the group owner or admin can call this method.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// Param [pageSize] The number of muted members per page.
+  ///
+  /// Param [pageNum] The page number, starting from 1.
+  ///
+  /// **Return** The group mute list.
+  ///
+  /// **Throws**  A description of the exception. See {@link EMError}.
+  ///
+  @Deprecated("Switch to using fetchMuteListFromServer instead.")
+  Future<List<String>?> getMuteListFromServer(
+    String groupId, {
+    int pageSize = 200,
+    int pageNum = 1,
+  }) async {
+    Map req = {'groupId': groupId, 'pageNum': pageNum, 'pageSize': pageSize};
+    Map result = await _channel.invokeMethod(
+        ChatMethodKeys.getGroupMuteListFromServer, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return result[ChatMethodKeys.getGroupMuteListFromServer]?.cast<String>();
+    } on EMError catch (e) {
+      throw e;
+    }
+  }
+
+  ///
+  /// Gets the allow list of the group from the server.
+  ///
+  /// Only the group owner or admin can call this method.
+  ///
+  /// Param [groupId] The group ID.
+  ///
+  /// **Return** The allow list of the group.
+  ///
+  /// **Throws**  A description of the exception. See {@link EMError}.
+  ///
+  @Deprecated("Switch to using fetchWhiteListFromServer instead.")
+  Future<List<String>?> getWhiteListFromServer(String groupId) async {
+    Map req = {'groupId': groupId};
+    Map result = await _channel.invokeMethod(
+        ChatMethodKeys.getGroupWhiteListFromServer, req);
+    try {
+      EMError.hasErrorFromResult(result);
+      return result[ChatMethodKeys.getGroupWhiteListFromServer]?.cast<String>();
+    } on EMError catch (e) {
+      throw e;
     }
   }
 

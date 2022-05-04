@@ -1,4 +1,5 @@
 import '../models/em_group_shared_file.dart';
+import 'dart:convert' as convert;
 
 Type typeOf<T>() => T;
 
@@ -50,11 +51,12 @@ extension MapExtension on Map {
         }
         return fileList as List<T>;
       }
-    } else {
-      return null;
     }
+    return null;
   }
 
+  ///
+  /// 如果给的value是null则不设置到map中。
   void setValueWithOutNull<T>(String key, T? value,
       {Object Function(T object)? callback, T? defaultValue}) {
     if (value != null) {
@@ -71,26 +73,74 @@ extension MapExtension on Map {
     }
   }
 
-  T getValueWithOutNull<T>(String key, T defaultValue) {
-    T ret = defaultValue;
+  int? getIntValue(String key, {int? defaultValue}) {
+    int? ret = defaultValue;
     if (this.containsKey(key)) {
       dynamic value = this[key];
-      if (value is T) {
+      if (value is int) {
         ret = value;
       }
     }
     return ret;
   }
 
-  T? getValue<T>(String key) {
-    T? ret;
+  bool? getBoolValue(String key, {bool? defaultValue}) {
+    bool? ret = defaultValue;
     if (this.containsKey(key)) {
       dynamic value = this[key];
-      if (value is T) {
+      if (value is bool) {
         ret = value;
-      } else {
-        ret = null;
       }
+    }
+    return ret;
+  }
+
+  String? getStringValue(String key, {String? defaultValue}) {
+    String? ret = defaultValue;
+    if (this.containsKey(key)) {
+      dynamic value = this[key];
+      if (value is String) {
+        ret = value;
+      }
+    }
+    return ret;
+  }
+
+  double? getDoubleValue(String key, {double? defaultValue}) {
+    double? ret = defaultValue;
+    if (this.containsKey(key)) {
+      dynamic value = this[key];
+      if (value is double) {
+        ret = value;
+      } else if (value is int) {
+        ret = value.toDouble();
+      }
+    }
+    return ret;
+  }
+
+  Map? getMapValue(String key, {Map? defaultValue}) {
+    Map? ret = {};
+    if (this.containsKey(key)) {
+      Map tmpMap = this[key];
+      for (var tmpKey in tmpMap.keys) {
+        dynamic value = tmpMap[tmpKey];
+        if (value is String) {
+          do {
+            try {
+              dynamic data = convert.jsonDecode(value);
+              value = data;
+              break;
+            } on FormatException {}
+          } while (false);
+          ret[tmpKey] = value;
+        } else {
+          ret[tmpKey] = value;
+        }
+      }
+    }
+    if (ret.length == 0) {
+      ret = defaultValue;
     }
     return ret;
   }

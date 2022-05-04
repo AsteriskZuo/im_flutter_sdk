@@ -1,12 +1,12 @@
 [submodule "ios/cpp"]
 	path = ios/cpp
-	url = git@github.com:AsteriskZuo/ext_sdk_cpp.git
-	branch = master
+	url = git@github.com:AsteriskZuo/im_ext_sdk_cpp.git
+	branch = dev
 [submodule "ios/objc"]
 	path = ios/objc
-	url = git@github.com:AsteriskZuo/ext_sdk_objc.git
-	branch = master
+	url = git@github.com:AsteriskZuo/im_ext_sdk_objc.git
+	branch = dev
 [submodule "ext_sdk/java"]
 	path = ext_sdk/java
-	url = git@github.com:AsteriskZuo/ext_sdk_java.git
-	branch = master
+	url = git@github.com:AsteriskZuo/im_ext_sdk_java.git
+	branch = dev

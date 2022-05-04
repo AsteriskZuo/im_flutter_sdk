@@ -5,15 +5,15 @@ import 'em_chat_enums.dart';
 import 'em_file_message_body.dart';
 
 ///
-/// The video message body.
+/// The video message body class.
 ///
 class EMVideoMessageBody extends EMFileMessageBody {
   ///
-  /// Creates a video message body.
+  /// Creates a video message.
   ///
-  /// Param [localPath] The path of the video file.
+  /// Param [localPath] The local path of the video file.
   ///
-  /// Param [displayName] The video name. like "video.mp4"
+  /// Param [displayName] The video name.
   ///
   /// Param [duration] The video duration in seconds.
   ///
@@ -21,14 +21,14 @@ class EMVideoMessageBody extends EMFileMessageBody {
   ///
   /// Param [thumbnailLocalPath] The local path of the video thumbnail.
   ///
-  /// Param [height] The video height.
+  /// Param [height] The video height in pixels.
   ///
-  /// Param [width] The video width.
+  /// Param [width] The video width in pixels.
   ///
   EMVideoMessageBody({
     required String localPath,
     String? displayName,
-    this.duration,
+    this.duration = 0,
     int? fileSize,
     this.thumbnailLocalPath,
     this.height,
@@ -40,18 +40,20 @@ class EMVideoMessageBody extends EMFileMessageBody {
           type: MessageType.VIDEO,
         );
 
+  /// @nodoc
   EMVideoMessageBody.fromJson({required Map map})
       : super.fromJson(map: map, type: MessageType.VIDEO) {
-    this.duration = map.getValue("duration");
-    this.thumbnailLocalPath = map.getValue("thumbnailLocalPath");
-    this.thumbnailRemotePath = map.getValue("thumbnailRemotePath");
-    this.thumbnailSecret = map.getValue("thumbnailSecret");
-    this.height = map.getValue("height");
-    this.width = map.getValue("width");
+    this.duration = map.getIntValue("duration", defaultValue: 0)!;
+    this.thumbnailLocalPath = map.getStringValue("thumbnailLocalPath");
+    this.thumbnailRemotePath = map.getStringValue("thumbnailRemotePath");
+    this.thumbnailSecret = map.getStringValue("thumbnailSecret");
+    this.height = map.getDoubleValue("height")?.toDouble();
+    this.width = map.getDoubleValue("width")?.toDouble();
     this.thumbnailStatus = EMFileMessageBody.downloadStatusFromInt(
-        map.getValue("thumbnailStatus"));
+        map.getIntValue("thumbnailStatus"));
   }
 
+  /// @nodoc
   @override
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = super.toJson();
@@ -82,9 +84,9 @@ class EMVideoMessageBody extends EMFileMessageBody {
   /// The download status of the video thumbnail.
   DownloadStatus thumbnailStatus = DownloadStatus.PENDING;
 
-  /// The video width.
+  /// The video width in pixels.
   double? width;
 
-  /// The video height.
+  /// The video height in pixels.
   double? height;
 }

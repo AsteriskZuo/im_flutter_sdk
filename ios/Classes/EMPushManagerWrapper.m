@@ -7,8 +7,8 @@
 
 #import "EMPushManagerWrapper.h"
 #import "EMSDKMethod.h"
-#import "EMPushOptions+Flutter.h"
-#import "EMGroup+Flutter.h"
+#import "EMPushOptions+Helper.h"
+#import "EMGroup+Helper.h"
 
 @implementation EMPushManagerWrapper
 
@@ -24,58 +24,50 @@
 
 - (void)handleMethodCall:(FlutterMethodCall*)call
                   result:(FlutterResult)result {
-    if ([EMMethodKeyGetImPushConfig isEqualToString:call.method]) {
+    if ([ChatGetImPushConfig isEqualToString:call.method]) {
         [self getImPushConfig:call.arguments
                    channelName:call.method
                         result:result];
-    } else if ([EMMethodKeyGetImPushConfigFromServer isEqualToString:call.method]) {
+    } else if ([ChatGetImPushConfigFromServer isEqualToString:call.method]) {
         [self getImPushConfigFromServer:call.arguments
                              channelName:call.method
                                   result:result];
-    } else if ([EMMethodKeyUpdatePushNickname isEqualToString:call.method]) {
+    } else if ([ChatUpdatePushNickname isEqualToString:call.method]) {
         [self updatePushNickname:call.arguments
                      channelName:call.method
                           result:result];
-    } else if ([EMMethodKeyImPushNoDisturb isEqualToString:call.method]) {
-        [self setImPushNoDisturb:call.arguments
-                     channelName:call.method
-                          result:result];
-    } else if ([EMMethodKeyUpdateImPushStyle isEqualToString:call.method]) {
+    } else if ([ChatUpdateImPushStyle isEqualToString:call.method]) {
         [self updateImPushStyle:call.arguments
                     channelName:call.method
                          result:result];
-    } else if ([EMMethodKeyUpdateGroupPushService isEqualToString:call.method]) {
+    } else if ([ChatUpdateGroupPushService isEqualToString:call.method]) {
         [self updateGroupPushService:call.arguments
-                         channelName:EMMethodKeyUpdateGroupPushService
+                         channelName:call.method
                               result:result];
-    } else if ([EMMethodKeyGetNoDisturbGroups isEqualToString:call.method]) {
-        [self getNoDisturbGroups:call.arguments
-                     channelName:call.method
-                          result:result];
-    } else if ([EMMethodKeyBindDeviceToken isEqualToString:call.method]) {
+    } else if ([ChatBindDeviceToken isEqualToString:call.method]) {
         [self  bindDeviceToken:call.arguments
                    channelName:call.method
                         result:result];
-    } else if ([EMMethodKeySetNoDisturbUsers isEqualToString:call.method]) {
-        [self setNoDisturbUsers:call.arguments
-                    channelName:EMMethodKeySetNoDisturbUsers
-                         result:result];
-    } else if ([EMMethodKeyGetNoDisturbUsersFromServer isEqualToString:call.method]) {
-        [self getNoDisturbUsersFromServer:call.arguments
-                              channelName:EMMethodKeyGetNoDisturbUsersFromServer
-                                   result:result];
-    } else if ([EMMethodKeyEnablePush isEqualToString:call.method]) {
+    } else if ([ChatEnablePush isEqualToString:call.method]) {
         [self enablePush:call.arguments
              channelName:call.method
                   result:result];
-    } else if ([EMMethodKeyDisablePush isEqualToString:call.method]) {
+    } else if ([ChatDisablePush isEqualToString:call.method]) {
         [self disablePush:call.arguments
               channelName:call.method
                    result:result];
-    } else if ([EMMethodKeyGetNoPushGroups isEqualToString:call.method]) {
+    } else if ([ChatGetNoPushGroups isEqualToString:call.method]) {
         [self getNoPushGroups:call.arguments
                   channelName:call.method
                        result:result];
+    } else if ([ChatUpdateUserPushService isEqualToString:call.method]){
+        [self updateUserPushService:call.arguments
+                        channelName:call.method
+                             result:result];
+    } else if ([ChatGetNoPushUsers isEqualToString:call.method]){
+        [self getNoPushUsers:call.arguments
+                 channelName:call.method
+                      result:result];
     }
     else{
         [super handleMethodCall:call result:result];
@@ -123,33 +115,6 @@
     
 }
 
-- (void)setImPushNoDisturb:(NSDictionary *)param
-               channelName:(NSString *)aChannelName
-                    result:(FlutterResult)result {
-    __weak typeof(self) weakSelf = self;
-    
-    bool noDisturb = [param[@"noDisturb"] boolValue];
-    int startTime = [param[@"startTime"] intValue];
-    int endTime = [param[@"endTime"] intValue];
-    
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        EMError *aError = nil;
-        if (noDisturb) {
-            aError = [EMClient.sharedClient.pushManager disableOfflinePushStart:startTime end:endTime];
-        }else {
-            aError = [EMClient.sharedClient.pushManager enableOfflinePush];
-        }
-        
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [weakSelf wrapperCallBack:result
-                          channelName:aChannelName
-                                error:aError
-                               object:@(!aError)];
-        });
-    });
-    
-    
-}
 
 - (void)updateImPushStyle:(NSDictionary *)param
               channelName:(NSString *)aChannelName
@@ -187,61 +152,6 @@
     }];
 }
 
-- (void)getNoDisturbGroups:(NSDictionary *)param
-               channelName:(NSString *)aChannelName
-                    result:(FlutterResult)result {
-    __weak typeof(self) weakSelf = self;
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        EMError *aError = nil;
-        [EMClient.sharedClient.pushManager getPushOptionsFromServerWithError:&aError];
-        NSArray *list = [EMClient.sharedClient.pushManager noPushGroups];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [weakSelf wrapperCallBack:result
-                          channelName:aChannelName
-                                error:aError
-                               object:list];
-        });
-    });
-}
-
-- (void)setNoDisturbUsers:(NSDictionary *)param
-              channelName:(NSString *)aChannelName
-                   result:(FlutterResult)result {
-    __weak typeof(self) weakSelf = self;
-    NSArray *members = param[@"members"];
-    BOOL disablePush = [param[@"disable"] boolValue];
-    [EMClient.sharedClient.pushManager updatePushServiceForUsers:members
-                                                     disablePush:disablePush
-                                                      completion:^(EMError * _Nonnull aError)
-     {
-        [EMClient.sharedClient.pushManager updatePushServiceForUsers:members
-                                                         disablePush:disablePush
-                                                          completion:^(EMError * _Nonnull aError)
-         {
-            [weakSelf wrapperCallBack:result
-                          channelName:aChannelName
-                                error:aError
-                               object:nil];
-        }];
-    }];
-}
-
-- (void)getNoDisturbUsersFromServer:(NSDictionary *)param
-                      channelName:(NSString *)aChannelName
-                           result:(FlutterResult)result {
-    __weak typeof(self) weakSelf = self;
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        EMError *aError = nil;
-        [EMClient.sharedClient.pushManager getPushOptionsFromServerWithError:&aError];
-        NSArray *list = [EMClient.sharedClient.pushManager noPushUIds];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [weakSelf wrapperCallBack:result
-                          channelName:aChannelName
-                                error:aError
-                               object:list];
-        });
-    });
-}
 
 - (void)bindDeviceToken:(NSDictionary *)param
             channelName:(NSString *)aChannelName
@@ -303,6 +213,37 @@
                           channelName:aChannelName
                                 error:nil
                                object:groups];
+        });
+    });
+}
+
+
+- (void)updateUserPushService:(NSDictionary *)param
+                   channelName:(NSString *)aChannelName
+                        result:(FlutterResult)result {
+    __weak typeof(self) weakSelf = self;
+    NSArray *userIds = param[@"user_ids"];
+    bool noPush = [param[@"noPush"] boolValue];
+    
+    [EMClient.sharedClient.pushManager updatePushServiceForUsers:userIds disablePush:noPush completion:^(EMError * _Nonnull aError) {
+        [weakSelf wrapperCallBack:result
+                      channelName:aChannelName
+                            error:aError
+                           object:nil];
+    }];
+}
+
+- (void)getNoPushUsers:(NSDictionary *)param
+            channelName:(NSString *)aChannelName
+                 result:(FlutterResult)result {
+    __weak typeof(self) weakSelf = self;
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        NSArray<NSString *>* userIds = [EMClient.sharedClient.pushManager noPushUIds];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [weakSelf wrapperCallBack:result
+                          channelName:aChannelName
+                                error:nil
+                               object:userIds];
         });
     });
 }

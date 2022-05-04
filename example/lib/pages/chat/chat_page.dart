@@ -53,7 +53,7 @@ class _ChatPageState extends State<ChatPage>
   @override
   void initState() {
     super.initState();
-
+    EMClient.getInstance.startCallback();
     items = [
       ChatMoreViewItem(
           'images/chat_input_more_photo.png', '相册', _moreViewPhotoBtnOnTap),
@@ -380,7 +380,7 @@ class _ChatPageState extends State<ChatPage>
   }
 
   /// 发送图片消息
-  _sendImageMessage(String imagePath, [String fileName = '']) {
+  _sendImageMessage(String imagePath, {String? fileName}) {
     Image.file(
       File(imagePath),
       fit: BoxFit.contain,
@@ -447,7 +447,7 @@ class _ChatPageState extends State<ChatPage>
     print('_moreCameraBtnOnTap');
 
     var curser = await EMClient.getInstance.groupManager
-        .getGroupMemberListFromServer(widget.conversation.id);
+        .fetchMemberListFromServer(widget.conversation.id);
 
     debugPrint(curser.data.toString());
   }
