@@ -1,4 +1,5 @@
 import '../im_flutter_sdk.dart';
+import 'models/em_presence.dart';
 
 ///
 /// The chat connection listener.
@@ -911,4 +912,16 @@ abstract class EMChatManagerListener {
   /// Param [to]   The user who receives the read receipt.
   ///
   void onConversationRead(String from, String to) {}
+}
+
+///
+/// The delegate protocol that defines presence callbacks.
+///
+class EMPresenceManagerListener {
+  ///
+  /// Occurs when the presence state of a subscribed user changes.
+  ///
+  /// Param [list] The new presence state of a subscribed user.
+  ///
+  void onPresenceStatusChanged(List<EMPresence> list) {}
 }

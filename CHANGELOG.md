@@ -1,5 +1,8 @@
 ## NEXT
 
+## 3.9.1
+- 增加 用户在线状态 (Presence) 订阅功能；
+- 增加 翻译 功能更新，增加自动翻译接口。用户可以按需翻译，和发消息自动翻译。
 
 ## 3.9.0+2
 
@@ -17,6 +20,7 @@
 ## 3.9.0+1
 
 - 修复message.attribute不准;
+
 - 增加 EMClient.getInstance.startCallback() 方法
   
   ```dart
@@ -24,6 +28,7 @@
   ```
   
   只有调用该方法后，`EMContactManagerListener`、 `EMGroupEventListener` 、 `EMChatRoomEventListener` 回调才会开始执行;
+
 - 修复删除聊天室白名单成员失败;
 
 ## 3.9.0

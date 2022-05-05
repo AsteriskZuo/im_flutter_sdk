@@ -78,6 +78,9 @@ class ChatMethodKeys {
   static const String asyncFetchGroupAcks = "asyncFetchGroupAcks";
   static const String deleteRemoteConversation = "deleteRemoteConversation";
 
+  static const String translateMessage = "translateMessage";
+  static const String fetchSupportLanguages = "fetchSupportLanguages";
+
   /// EMChatManager listener
   static const String onMessagesReceived = "onMessagesReceived";
   static const String onCmdMessagesReceived = "onCmdMessagesReceived";
@@ -96,6 +99,9 @@ class ChatMethodKeys {
   static const String onMessageSuccess = "onMessageSuccess";
   static const String onMessageReadAck = "onMessageReadAck";
   static const String onMessageDeliveryAck = "onMessageDeliveryAck";
+
+  /// EMPresenceManagerDelegate
+  static const String onPresenceStatusChanged = "onPresenceStatusChanged";
 
   /// EMConversation
   static const String getUnreadMsgCount = "getUnreadMsgCount";
@@ -242,6 +248,15 @@ class ChatMethodKeys {
   static const String updateOwnUserInfoWithType = "updateOwnUserInfoWithType";
   static const String fetchUserInfoById = "fetchUserInfoById";
   static const String fetchUserInfoByIdWithType = "fetchUserInfoByIdWithType";
+
+  /// EMPresenceManager methods
+  static const String presenceWithDescription =
+      "publishPresenceWithDescription";
+  static const String presenceSubscribe = "presenceSubscribe";
+  static const String presenceUnsubscribe = "presenceUnsubscribe";
+  static const String fetchSubscribedMembersWithPageNum =
+      "fetchSubscribedMembersWithPageNum";
+  static const String fetchPresenceStatus = "fetchPresenceStatus";
 
   /// HandleAction
   static const String startCallback = "startCallback";

@@ -41,7 +41,6 @@ static NSString *const ChatOnUserKickedByOtherDevice = @"onUserKickedByOtherDevi
 static NSString *const ChatOnUserAuthenticationFailed = @"onUserAuthenticationFailed";
 
 static NSString *const ChatSendDataToFlutter = @"onSendDataToFlutter";
-
 static NSString *const ChatOnTokenWillExpire = @"onTokenWillExpire";
 static NSString *const ChatOnTokenDidExpire = @"onTokenDidExpire";
 
@@ -85,6 +84,9 @@ static NSString *const ChatGetMessage = @"getMessage";
 static NSString *const ChatAsyncFetchGroupAcks = @"asyncFetchGroupAcks";
 static NSString *const ChatDeleteRemoteConversation = @"deleteRemoteConversation";
 
+static NSString *const ChatTranslateMessage = @"translateMessage";
+static NSString *const ChatFetchSupportedLanguages = @"fetchSupportLanguages";
+
 #pragma mark - EMChatManagerDelegate
 static NSString *const ChatOnMessagesReceived = @"onMessagesReceived";
 static NSString *const ChatOnCmdMessagesReceived = @"onCmdMessagesReceived";
@@ -103,6 +105,9 @@ static NSString *const ChatOnMessageError = @"onMessageError";
 static NSString *const ChatOnMessageReadAck = @"onMessageReadAck";
 static NSString *const ChatOnMessageDeliveryAck = @"onMessageDeliveryAck";
 
+
+#pragma mark - EMPresenceManagerDelegate
+static NSString *const ChatOnPresenceStatusChanged = @"onPresenceStatusChanged";
 
 #pragma mark - EMConversationWrapper
 
@@ -234,6 +239,13 @@ static NSString *const ChatUpdateOwnUserInfoWithType = @"updateOwnUserInfoWithTy
 static NSString *const ChatFetchUserInfoById = @"fetchUserInfoById";
 static NSString *const ChatFetchUserInfoByIdWithType = @"fetchUserInfoByIdWithType";
 
+
+#pragma make - EMPresenceManagerWrapper
+static NSString *const ChatPublishPresenceWithDescription = @"publishPresenceWithDescription";
+static NSString *const ChatPresenceSubscribe = @"presenceSubscribe";
+static NSString *const ChatPresenceUnsubscribe = @"presenceUnsubscribe";
+static NSString *const ChatFetchSubscribedMembersWithPageNum = @"fetchSubscribedMembersWithPageNum";
+static NSString *const ChatFetchPresenceStatus = @"fetchPresenceStatus";
 
 #pragma mark - HandleAction
 static NSString *const ChatStartCallback = @"startCallback";
