@@ -1,8 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/services.dart';
-import 'em_channel.dart';
-import 'em_test.dart';
 import 'internal/chat_method_keys.dart';
 import 'models/em_error.dart';
 import 'models/em_push_configs.dart';
@@ -23,8 +21,9 @@ enum DisplayStyle {
 ///  The message push configuration options.
 ///
 class EMPushManager {
-  static MethodChannel _channel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'chat_push_manager' : 'dart_to_native');
-  // static MethodChannel _recvChannel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'chat_push_manager' : 'native_to_dart');
+  static const _channelPrefix = 'com.chat.im';
+  static const MethodChannel _channel = const MethodChannel(
+      '$_channelPrefix/chat_push_manager', JSONMethodCodec());
 
   Future<EMPushConfigs?> getPushConfigsFromCache() async {
     Map result = await _channel.invokeMethod(ChatMethodKeys.getImPushConfig);

@@ -2,9 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 
-import 'em_channel.dart';
 import 'em_listeners.dart';
-import 'em_test.dart';
 import 'internal/chat_method_keys.dart';
 import 'internal/em_event_keys.dart';
 import 'models/em_error.dart';
@@ -13,8 +11,9 @@ import 'models/em_error.dart';
 /// The contact manager class, which manages chat contacts such as adding, deleting, retrieving, and modifying contacts.
 ///
 class EMContactManager {
-  static MethodChannel _channel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'chat_contact_manager' : 'dart_to_native');
-  static MethodChannel _recvChannel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'chat_contact_manager' : 'native_to_dart');
+  static const _channelPrefix = 'com.chat.im';
+  static const MethodChannel _channel = const MethodChannel(
+      '$_channelPrefix/chat_contact_manager', JSONMethodCodec());
 
   /// @nodoc
   EMContactManager() {

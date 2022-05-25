@@ -129,8 +129,6 @@ public class EMGroupManagerWrapper extends EMWrapper implements MethodCallHandle
                 acceptInvitationFromGroup(param, call.method, result);
             } else if (EMSDKMethod.declineInvitationFromGroup.equals(call.method)) {
                 declineInvitationFromGroup(param, call.method, result);
-            } else if (EMSDKMethod.ignoreGroupPush.equals(call.method)) {
-                ignoreGroupPush(param, call.method, result);
             } else {
                 super.onMethodCall(call, result);
             }
@@ -321,7 +319,7 @@ public class EMGroupManagerWrapper extends EMWrapper implements MethodCallHandle
                 channelName) {
             @Override
             public void onSuccess(Map<String, Long> object) {
-                updateObject(object.keySet().toArray());
+                updateObject(object);
             }
         };
 
@@ -710,7 +708,11 @@ public class EMGroupManagerWrapper extends EMWrapper implements MethodCallHandle
         }
 
         EMClient.getInstance().groupManager().asyncDownloadGroupSharedFile(groupId, fileId, savePath,
-                new EMWrapperCallBack(result, channelName, true));
+                new EMDownloadCallback(fileId, savePath));
+
+        post(()->{
+            onSuccess(result, channelName, true);
+        });
     }
 
     private void removeGroupSharedFile(JSONObject param, String channelName, Result result) throws JSONException {
@@ -868,23 +870,6 @@ public class EMGroupManagerWrapper extends EMWrapper implements MethodCallHandle
         };
 
         EMClient.getInstance().groupManager().asyncDeclineInvitation(groupId, username, reason, callBack);
-    }
-
-    private void ignoreGroupPush(JSONObject param, String channelName, Result result) throws JSONException {
-        String groupId = param.getString("groupId");
-        boolean ignore = param.getBoolean("ignore");
-        List<String> list = new ArrayList<>();
-        list.add(groupId);
-
-        asyncRunnable(() -> {
-            try {
-                EMClient.getInstance().pushManager().updatePushServiceForGroup(list, !ignore);
-                EMGroup group = EMClient.getInstance().groupManager().getGroup(groupId);
-                onSuccess(result, channelName, EMGroupHelper.toJson(group));
-            } catch (HyphenateException e) {
-                onError(result, e);
-            }
-        });
     }
 
     private void registerEaseListener() {

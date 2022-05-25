@@ -247,4 +247,10 @@ class ConversationPageState extends State<ConversationPage>
 
   @override
   void onGroupMessageRead(List<EMGroupMessageAck> groupMessageAcks) {}
+
+  @override
+  void messageReactionDidChange(List<EMMessageReactionChange> list) {}
+
+  @override
+  void onReadAckForGroupMessageUpdated() {}
 }

@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
 
-import 'em_channel.dart';
-import 'em_test.dart';
 import 'internal/chat_method_keys.dart';
 import 'em_client.dart';
 import 'models/em_error.dart';
@@ -12,8 +10,9 @@ import 'models/em_userInfo.dart';
 /// The user attribute manager class, which gets and sets the user attributes.
 ///
 class EMUserInfoManager {
-  static MethodChannel _channel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'chat_userInfo_manager' : 'dart_to_native');
-  // static MethodChannel _recvChannel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'chat_userInfo_manager' : 'native_to_dart');
+  static const _channelPrefix = 'com.chat.im';
+  static const MethodChannel _channel = const MethodChannel(
+      '$_channelPrefix/chat_userInfo_manager', JSONMethodCodec());
 
   EMUserInfo? _ownUserInfo;
 

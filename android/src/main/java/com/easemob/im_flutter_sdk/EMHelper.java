@@ -20,6 +20,8 @@ import com.hyphenate.chat.EMLanguage;
 import com.hyphenate.chat.EMLocationMessageBody;
 import com.hyphenate.chat.EMMessage;
 import com.hyphenate.chat.EMMessage.Type;
+import com.hyphenate.chat.EMMessageReaction;
+import com.hyphenate.chat.EMMessageReactionChange;
 import com.hyphenate.chat.EMMucSharedFile;
 import com.hyphenate.chat.EMNormalFileMessageBody;
 import com.hyphenate.chat.EMOptions;
@@ -128,41 +130,27 @@ class EMOptionsHelper {
      */
 }
 
+
 class EMGroupHelper {
     static Map<String, Object> toJson(EMGroup group) {
         Map<String, Object> data = new HashMap<>();
-        data.put("groupId", group.getGroupId());
-        data.put("name", group.getGroupName());
-        data.put("desc", group.getDescription());
-        data.put("owner", group.getOwner());
-        data.put("announcement", group.getAnnouncement());
-        data.put("memberCount", group.getMemberCount());
-        data.put("memberList", group.getMembers());
-        data.put("adminList", group.getAdminList());
-        data.put("blockList", group.getBlackList());
-        data.put("muteList", group.getMuteList());
-        data.put("messageBlocked", group.isMsgBlocked());
-        data.put("isAllMemberMuted", group.isAllMemberMuted());
-        data.put("permissionType", intTypeFromGroupPermissionType(group.getGroupPermissionType()));
-
-        EMGroupOptions options = new EMGroupOptions();
-        options.extField = group.getExtension();
-        options.maxUsers = group.getMaxUserCount();
-
-        if (group.isPublic()) {
-            if (group.isMemberOnly()) {
-                options.style = EMGroupManager.EMGroupStyle.EMGroupStylePublicJoinNeedApproval;
-            } else {
-                options.style = EMGroupManager.EMGroupStyle.EMGroupStylePublicOpenJoin;
-            }
-        } else {
-            if (group.isMemberAllowToInvite()) {
-                options.style = EMGroupManager.EMGroupStyle.EMGroupStylePrivateMemberCanInvite;
-            } else {
-                options.style = EMGroupManager.EMGroupStyle.EMGroupStylePrivateOnlyOwnerInvite;
-            }
-        }
-        data.put("options", EMGroupOptionsHelper.toJson(options));
+        EMCommonUtil.putObjectToMap(data, "groupId", group.getGroupId());
+        EMCommonUtil.putObjectToMap(data, "name", group.getGroupName());
+        EMCommonUtil.putObjectToMap(data, "desc", group.getDescription());
+        EMCommonUtil.putObjectToMap(data, "owner", group.getOwner());
+        EMCommonUtil.putObjectToMap(data, "announcement", group.getAnnouncement());
+        EMCommonUtil.putObjectToMap(data, "memberCount", group.getMemberCount());
+        EMCommonUtil.putObjectToMap(data, "memberList", group.getMembers());
+        EMCommonUtil.putObjectToMap(data, "adminList", group.getAdminList());
+        EMCommonUtil.putObjectToMap(data, "blockList", group.getBlackList());
+        EMCommonUtil.putObjectToMap(data, "muteList", group.getMuteList());
+        EMCommonUtil.putObjectToMap(data, "messageBlocked", group.isMsgBlocked());
+        EMCommonUtil.putObjectToMap(data, "isAllMemberMuted", group.isAllMemberMuted());
+        EMCommonUtil.putObjectToMap(data, "permissionType", intTypeFromGroupPermissionType(group.getGroupPermissionType()));
+        EMCommonUtil.putObjectToMap(data, "maxUserCount", group.getMaxUserCount());
+        EMCommonUtil.putObjectToMap(data, "isMemberOnly", group.isMemberOnly());
+        EMCommonUtil.putObjectToMap(data, "isMemberAllowToInvite", group.isMemberAllowToInvite());
+        EMCommonUtil.putObjectToMap(data, "ext", group.getExtension());
         return data;
     }
 
@@ -282,7 +270,7 @@ class EMChatRoomHelper {
         data.put("memberCount", chatRoom.getMemberCount());
         data.put("adminList", chatRoom.getAdminList());
         data.put("memberList", chatRoom.getMemberList());
-        data.put("blockList", chatRoom.getBlackList());
+        data.put("blockList", chatRoom.getBlacklist());
         data.put("muteList", chatRoom.getMuteList().values());
         data.put("isAllMemberMuted", chatRoom.isAllMemberMuted());
         data.put("announcement", chatRoom.getAnnouncement());
@@ -471,48 +459,37 @@ class EMMessageHelper {
     }
 
     static Map<String, Object> toJson(EMMessage message) {
-        if (message == null)
-            return null;
         Map<String, Object> data = new HashMap<>();
-        String type = "";
         switch (message.getType()) {
         case TXT: {
-            type = "txt";
             data.put("body", EMMessageBodyHelper.textBodyToJson((EMTextMessageBody) message.getBody()));
         }
             break;
         case IMAGE: {
-            type = "img";
             data.put("body", EMMessageBodyHelper.imageBodyToJson((EMImageMessageBody) message.getBody()));
         }
             break;
         case LOCATION: {
-            type = "loc";
             data.put("body", EMMessageBodyHelper.localBodyToJson((EMLocationMessageBody) message.getBody()));
         }
             break;
         case CMD: {
-            type = "cmd";
             data.put("body", EMMessageBodyHelper.cmdBodyToJson((EMCmdMessageBody) message.getBody()));
         }
             break;
         case CUSTOM: {
-            type = "custom";
             data.put("body", EMMessageBodyHelper.customBodyToJson((EMCustomMessageBody) message.getBody()));
         }
             break;
         case FILE: {
-            type = "file";
             data.put("body", EMMessageBodyHelper.fileBodyToJson((EMNormalFileMessageBody) message.getBody()));
         }
             break;
         case VIDEO: {
-            type = "video";
             data.put("body", EMMessageBodyHelper.videoBodyToJson((EMVideoMessageBody) message.getBody()));
         }
             break;
         case VOICE: {
-            type = "voice";
             data.put("body", EMMessageBodyHelper.voiceBodyToJson((EMVoiceMessageBody) message.getBody()));
         }
             break;
@@ -808,7 +785,7 @@ class EMMessageBodyHelper {
         if (json.has("thumbnailRemotePath")){
             body.setThumbnailUrl(json.getString("thumbnailRemotePath"));
         }
-        if (json.getString("thumbnailLocalPath") != null) {
+        if (json.has("thumbnailLocalPath")) {
             body.setLocalThumb(json.getString("thumbnailLocalPath"));
         }
         if (json.has("thumbnailSecret")){
@@ -936,14 +913,15 @@ class EMConversationHelper {
         Map<String, Object> data = new HashMap<>();
         data.put("con_id", conversation.conversationId());
         data.put("type", typeToInt(conversation.getType()));
-        data.put("unreadCount", conversation.getUnreadMsgCount());
         try {
             data.put("ext", jsonStringToMap(conversation.getExtField()));
         } catch (JSONException e) {
 
         } finally {
-            data.put("latestMessage", EMMessageHelper.toJson(conversation.getLastMessage()));
-            data.put("lastReceivedMessage", EMMessageHelper.toJson(conversation.getLatestMessageFromOthers()));
+            // 不返回，每次取得时候都从原生取最新的
+//            data.put("unreadCount", conversation.getUnreadMsgCount());
+//            data.put("latestMessage", EMMessageHelper.toJson(conversation.getLastMessage()));
+//            data.put("lastReceivedMessage", EMMessageHelper.toJson(conversation.getLatestMessageFromOthers()));
             return data;
         }
     }
@@ -1024,7 +1002,7 @@ class EMDeviceInfoHelper {
     }
 }
 
-class EMCursorResultHelper {
+class                                                                                                                                                                                                                                                                    EMCursorResultHelper {
 
     static Map<String, Object> toJson(EMCursorResult result) {
         Map<String, Object> data = new HashMap<>();
@@ -1054,13 +1032,11 @@ class EMCursorResultHelper {
                 }
 
                 if (obj instanceof EMGroupInfo) {
-                    EMGroup group = EMClient.getInstance().groupManager().getGroup(((EMGroupInfo) obj).getGroupId());
-                    if (group != null) {
-                        jsonList.add(EMGroupHelper
-                                .toJson(EMClient.getInstance().groupManager().getGroup(((EMGroupInfo) obj).getGroupId())));
-                    } else {
-                        jsonList.add(EMGroupInfoHelper.toJson((EMGroupInfo) obj));
-                    }
+                    jsonList.add(EMGroupInfoHelper.toJson((EMGroupInfo) obj));
+                }
+
+                if (obj instanceof EMMessageReaction) {
+                    jsonList.add(EMMessageReactionHelper.toJson((EMMessageReaction) obj));
                 }
             }
         }
@@ -1164,7 +1140,7 @@ class EMUserInfoHelper {
     static Map<String, Object> toJson(EMUserInfo userInfo) {
         Map<String, Object> data = new HashMap<>();
         data.put("userId", userInfo.getUserId());
-        data.put("nickName", userInfo.getNickName());
+        data.put("nickName", userInfo.getNickname());
         data.put("avatarUrl", userInfo.getAvatarUrl());
         data.put("mail", userInfo.getEmail());
         data.put("phone", userInfo.getPhoneNumber());
@@ -1184,8 +1160,10 @@ class EMPresenceHelper {
         data.put("publisher", presence.getPublisher());
         data.put("statusDescription", presence.getExt());
         data.put("lastTime", presence.getLatestTime());
-        data.put("expirytime", presence.getExpiryTime());
-        data.put("statusDetails", presence.getStatusList());
+        data.put("expiryTime", presence.getExpiryTime());
+        Map<String, Integer> statusList = new HashMap<String, Integer>();
+        statusList.putAll(presence.getStatusList());
+        data.put("statusDetails", statusList);
         return data;
     }
 
@@ -1199,4 +1177,38 @@ class EMLanguageHelper {
         data.put("nativeName", language.LanguageLocalName);
         return data;
     }
+}
+
+class EMMessageReactionHelper {
+    static Map<String, Object> toJson(EMMessageReaction reaction) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("reaction", reaction.getReaction());
+        data.put("count", reaction.getUserCount());
+        data.put("isAddedBySelf", reaction.isAddedBySelf());
+        data.put("userList", reaction.getUserList());
+        return data;
+    }
+}
+
+class EMMessageReactionChangeHelper {
+    static Map<String, Object> toJson(EMMessageReactionChange change) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("conversationId", change.getConversionID());
+        data.put("messageId", change.getMessageId());
+        ArrayList<Map<String, Object>> list = new ArrayList<>();
+        for (int i = 0; i < change.getMessageReactionList().size(); i++) {
+            list.add(EMMessageReactionHelper.toJson(change.getMessageReactionList().get(i)));
+        }
+        data.put("reactions", list);
+
+        return data;
+    }
+}
+
+class EMChatThreadHelper {
+
+}
+
+class EMChatThreadEventHelper {
+
 }

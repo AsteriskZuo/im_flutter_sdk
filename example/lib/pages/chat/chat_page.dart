@@ -637,4 +637,10 @@ class _ChatPageState extends State<ChatPage>
   @override
   void onRemovedFromChatRoom(
       String roomId, String? roomName, String? participant) {}
+
+  @override
+  void messageReactionDidChange(List<EMMessageReactionChange> list) {}
+
+  @override
+  void onReadAckForGroupMessageUpdated() {}
 }

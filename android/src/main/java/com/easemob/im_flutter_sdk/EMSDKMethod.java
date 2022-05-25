@@ -78,16 +78,25 @@ public class EMSDKMethod {
     static final String translateMessage = "translateMessage";
     static final String fetchSupportedLanguages = "fetchSupportLanguages";
 
+    static final String addReaction = "addReaction";
+    static final String removeReaction = "removeReaction";
+    static final String fetchReactionList = "fetchReactionList";
+    static final String fetchReactionDetail = "fetchReactionDetail";
+    static final String reportMessage = "reportMessage";
+
     /// EMChatManager listener
     static final String onMessagesReceived = "onMessagesReceived";
     static final String onCmdMessagesReceived = "onCmdMessagesReceived";
     static final String onMessagesRead = "onMessagesRead";
     static final String onGroupMessageRead = "onGroupMessageRead";
+    static final String onReadAckForGroupMessageUpdated = "onReadAckForGroupMessageUpdated";
     static final String onMessagesDelivered = "onMessagesDelivered";
     static final String onMessagesRecalled = "onMessagesRecalled";
 
     static final String onConversationUpdate = "onConversationUpdate";
     static final String onConversationHasRead = "onConversationHasRead";
+
+    static final String onMessageReactionDidChange = "messageReactionDidChange";
 
     /// EMMessage listener
     static final String onMessageProgressUpdate = "onMessageProgressUpdate";
@@ -108,17 +117,15 @@ public class EMSDKMethod {
     static final String insertMessage = "insertMessage";
     static final String appendMessage = "appendMessage";
     static final String updateConversationMessage = "updateConversationMessage";
-
-    // 根据消息id获取消息
     static final String loadMsgWithId = "loadMsgWithId";
-    // 根据起始消息id获取消息
     static final String loadMsgWithStartId = "loadMsgWithStartId";
-    // 根据关键字获取消息
     static final String loadMsgWithKeywords = "loadMsgWithKeywords";
-    // 根据消息类型获取消息
     static final String loadMsgWithMsgType = "loadMsgWithMsgType";
-    // 通过时间获取消息
     static final String loadMsgWithTime = "loadMsgWithTime";
+
+    // EMMessage method
+    static final String getReactionList = "getReactionList";
+    static final String groupAckCount = "groupAckCount";
 
     // EMChatRoomManager
     static final String joinChatRoom = "joinChatRoom";
@@ -203,7 +210,6 @@ public class EMSDKMethod {
     static final String declineJoinApplication = "declineJoinApplication";
     static final String acceptInvitationFromGroup = "acceptInvitationFromGroup";
     static final String declineInvitationFromGroup = "declineInvitationFromGroup";
-    static final String ignoreGroupPush = "ignoreGroupPush";
 
     /// EMGroupManagerListener
     static final String onGroupChanged = "onGroupChanged";
@@ -239,6 +245,23 @@ public class EMSDKMethod {
 
     /// EMPresenceManagerListener
     static final String onPresenceStatusChanged = "onPresenceStatusChanged";
+
+    /// EMChatThreadManager methods
+    static final String fetchChatThread = "fetchChatThread";
+    static final String fetchChatThreadDetail = "fetchChatThreadDetail";
+    static final String fetchJoinedChatThreads = "fetchJoinedChatThreads";
+    static final String fetchChatThreadsWithParentId = "fetchChatThreadsWithParentId";
+    static final String fetchChatThreadMember = "fetchChatThreadMember";
+    static final String fetchLastMessageWithChatThreads = "fetchLastMessageWithChatThreads";
+    static final String removeMemberFromChatThread = "removeMemberFromChatThread";
+    static final String updateChatThreadSubject = "updateChatThreadSubject";
+    static final String createChatThread = "createChatThread";
+    static final String joinChatThread = "joinChatThread";
+    static final String leaveChatThread = "leaveChatThread";
+    static final String destroyChatThread = "destroyChatThread";
+
+    // TODO: EMChatThreadManagerListener
+
 
     /// HandleAction
     static final String startCallback = "startCallback";

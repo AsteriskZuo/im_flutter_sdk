@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/services.dart';
-import 'em_channel.dart';
+import 'models/em_download_callback.dart';
 import 'em_listeners.dart';
-import 'em_test.dart';
 import 'internal/em_event_keys.dart';
 import 'models/em_cursor_result.dart';
 import 'models/em_error.dart';
 import 'models/em_group.dart';
+import 'models/em_group_info.dart';
 import 'models/em_group_options.dart';
 import 'models/em_group_shared_file.dart';
 import 'tools/em_extension.dart';
@@ -18,8 +18,9 @@ import 'internal/chat_method_keys.dart';
 /// The group manager class, which manages group creation and deletion, user joining and exiting the group, etc.
 ///
 class EMGroupManager {
-  static MethodChannel _channel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'chat_group_manager' : 'dart_to_native');
-  static MethodChannel _recvChannel = EMChannel.getInstance.getChannel(EMTest.TEST_TYPE == 1 ? 'chat_group_manager' : 'native_to_dart');
+  static const _channelPrefix = 'com.chat.im';
+  static const MethodChannel _channel = const MethodChannel(
+      '$_channelPrefix/chat_group_manager', JSONMethodCodec());
 
   /// @nodoc
   EMGroupManager() {
@@ -34,6 +35,8 @@ class EMGroupManager {
   }
 
   final _groupChangeListeners = [];
+
+  EMDownloadCallback? downloadCallback;
 
   ///
   /// Gets the group instance from the cache by group ID.
@@ -121,7 +124,7 @@ class EMGroupManager {
   ///
   /// **Throws**  A description of the exception. See {@link EMError}.
   ///
-  Future<EMCursorResult<EMGroup>> fetchPublicGroupsFromServer({
+  Future<EMCursorResult<EMGroupInfo>> fetchPublicGroupsFromServer({
     int pageSize = 200,
     String? cursor,
   }) async {
@@ -131,10 +134,10 @@ class EMGroupManager {
         ChatMethodKeys.getPublicGroupsFromServer, req);
     try {
       EMError.hasErrorFromResult(result);
-      return EMCursorResult<EMGroup>.fromJson(
+      return EMCursorResult<EMGroupInfo>.fromJson(
           result[ChatMethodKeys.getPublicGroupsFromServer],
           dataItemCallback: (value) {
-        return EMGroup.fromJson(value);
+        return EMGroupInfo.fromJson(value);
       });
     } on EMError catch (e) {
       throw e;
@@ -300,11 +303,11 @@ class EMGroupManager {
   ///
   /// Param [pageNum] The page number, starting from 1.
   ///
-  /// **Return** The group mute list.
+  /// **Return** The group mute map, key is memberId and value is mute time.
   ///
   /// **Throws**  A description of the exception. See {@link EMError}.
   ///
-  Future<List<String>?> fetchMuteListFromServer(
+  Future<Map<String, int>?> fetchMuteListFromServer(
     String groupId, {
     int pageSize = 200,
     int pageNum = 1,
@@ -314,7 +317,8 @@ class EMGroupManager {
         ChatMethodKeys.getGroupMuteListFromServer, req);
     try {
       EMError.hasErrorFromResult(result);
-      return result[ChatMethodKeys.getGroupMuteListFromServer]?.cast<String>();
+      return result[ChatMethodKeys.getGroupMuteListFromServer]
+          ?.cast<Map<String, int>>();
     } on EMError catch (e) {
       throw e;
     }
@@ -694,8 +698,6 @@ class EMGroupManager {
   ///
   /// Param [newOwner] The new owner ID.
   ///
-  /// **Return** The updated group instance.
-  ///
   /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<void> changeOwner(
@@ -721,8 +723,6 @@ class EMGroupManager {
   ///
   /// Param [memberId] The username of the admin to add.
   ///
-  /// **Return** The updated group instance.
-  ///
   /// **Throws**  A description of the exception. See {@link EMError}.
   ///
   Future<void> addAdmin(
@@ -746,8 +746,6 @@ class EMGroupManager {
   /// Param [groupId] The group ID.
   ///
   /// Param [adminId] The username of the admin to remove.
-  ///
-  /// **Return** The updated group instance.
   ///
   /// **Throws**  A description of the exception. See {@link EMError}.
   ///
@@ -942,11 +940,11 @@ class EMGroupManager {
   ///
   /// **Throws**  A description of the exception. See {@link EMError}.
   ///
-  Future<void> downloadGroupSharedFile(
-    String groupId,
-    String fileId,
-    String savePath,
-  ) async {
+  Future<void> downloadGroupSharedFile({
+    required String groupId,
+    required String fileId,
+    required String savePath,
+  }) async {
     Map req = {'groupId': groupId, 'fileId': fileId, 'savePath': savePath};
     Map result = await _channel.invokeMethod(
         ChatMethodKeys.downloadGroupSharedFile, req);

@@ -18,6 +18,7 @@ import io.flutter.plugin.common.PluginRegistry;
 import com.hyphenate.EMConnectionListener;
 import com.hyphenate.EMMultiDeviceListener;
 import com.hyphenate.chat.EMClient;
+import com.hyphenate.chat.EMMessage;
 import com.hyphenate.chat.EMOptions;
 import com.hyphenate.chat.EMDeviceInfo;
 import com.hyphenate.exceptions.HyphenateException;
@@ -30,6 +31,7 @@ import org.json.JSONObject;
 public class EMClientWrapper extends EMWrapper implements MethodCallHandler {
 
     static EMClientWrapper wrapper;
+    public EMProgressManager progressManager;
 
     EMClientWrapper(FlutterPlugin.FlutterPluginBinding flutterPluginBinding, String channelName) {
         super(flutterPluginBinding, channelName);
@@ -46,6 +48,7 @@ public class EMClientWrapper extends EMWrapper implements MethodCallHandler {
         }
         post(()-> channel.invokeMethod(EMSDKMethod.onSendDataToFlutter, data));
     }
+
 
     @Override
     public void onMethodCall(MethodCall call, @NonNull Result result) {
@@ -307,6 +310,9 @@ public class EMClientWrapper extends EMWrapper implements MethodCallHandler {
         new EMPushManagerWrapper(binging, "chat_push_manager");
         new EMUserInfoManagerWrapper(binging, "chat_userInfo_manager");
         new EMPresenceManagerWrapper(binging, "chat_presence_manager");
+        new EMMessageWrapper(binging, "chat_message");
+        new EMChatThreadManagerWrapper(binging, "chat_thread_manager");
+        progressManager = new EMProgressManager(binging, "file_progress_manager");
     }
 
 

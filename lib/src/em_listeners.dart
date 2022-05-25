@@ -1,3 +1,5 @@
+import 'package:im_flutter_sdk/src/models/em_chat_thread_event.dart';
+
 import '../im_flutter_sdk.dart';
 import 'models/em_presence.dart';
 
@@ -185,23 +187,6 @@ abstract class EMContactManagerListener {
   void onFriendRequestDeclined(String userName);
 }
 
-// abstract class EMConversationListener {
-//   void onConversationUpdate();
-// }
-
-///
-/// The chat room change listener.
-///
-/// Register the chat room change listener:
-/// ```dart
-///   EMClient.getInstance.chatRoomManager.addChatRoomChangeListener(listener);
-/// ```
-///
-///Unregister the chat room change listener:
-/// ```dart
-///   EMClient.getInstance.chatRoomManager.removeChatRoomListener(listener);
-/// ```
-///
 abstract class EMChatRoomEventListener {
   ///
   /// Occurs when the chat room is destroyed.
@@ -879,6 +864,8 @@ abstract class EMChatManagerListener {
   ///
   void onGroupMessageRead(List<EMGroupMessageAck> groupMessageAcks) {}
 
+  void onReadAckForGroupMessageUpdated() {}
+
   ///
   /// Occurs when a delivery receipt is received.
   ///
@@ -912,6 +899,13 @@ abstract class EMChatManagerListener {
   /// Param [to]   The user who receives the read receipt.
   ///
   void onConversationRead(String from, String to) {}
+
+  ///
+  /// Occurs when the Reaction data changes.
+  ///
+  /// Param [list] The Reaction which is changed
+  ///
+  void messageReactionDidChange(List<EMMessageReactionChange> list) {}
 }
 
 ///
@@ -924,4 +918,11 @@ class EMPresenceManagerListener {
   /// Param [list] The new presence state of a subscribed user.
   ///
   void onPresenceStatusChanged(List<EMPresence> list) {}
+}
+
+class EMChatThreadManagerListener {
+  void onChatThreadCreated(EMChatThreadEvent event) {}
+  void onChatThreadUpdated(EMChatThreadEvent event) {}
+  void onChatThreadDestroyed(EMChatThreadEvent event) {}
+  void onChatThreadUserRemoved(EMChatThreadEvent event) {}
 }
