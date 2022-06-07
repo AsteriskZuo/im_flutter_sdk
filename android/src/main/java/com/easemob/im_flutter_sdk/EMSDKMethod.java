@@ -247,10 +247,10 @@ public class EMSDKMethod {
     static final String onPresenceStatusChanged = "onPresenceStatusChanged";
 
     /// EMChatThreadManager methods
-    static final String fetchChatThread = "fetchChatThread";
     static final String fetchChatThreadDetail = "fetchChatThreadDetail";
     static final String fetchJoinedChatThreads = "fetchJoinedChatThreads";
     static final String fetchChatThreadsWithParentId = "fetchChatThreadsWithParentId";
+    static final String fetchJoinedChatThreadsWithParentId = "fetchJoinedChatThreadsWithParentId";
     static final String fetchChatThreadMember = "fetchChatThreadMember";
     static final String fetchLastMessageWithChatThreads = "fetchLastMessageWithChatThreads";
     static final String removeMemberFromChatThread = "removeMemberFromChatThread";
@@ -260,7 +260,11 @@ public class EMSDKMethod {
     static final String leaveChatThread = "leaveChatThread";
     static final String destroyChatThread = "destroyChatThread";
 
-    // TODO: EMChatThreadManagerListener
+    // EMChatThreadManagerListener
+    static final String onChatThreadCreate = "onChatThreadCreate";
+    static final String onChatThreadUpdate = "onChatThreadUpdate";
+    static final String onChatThreadDestroy = "onChatThreadDestroy";
+    static final String onUserKickOutOfChatThread = "onUserKickOutOfChatThread";
 
 
     /// HandleAction

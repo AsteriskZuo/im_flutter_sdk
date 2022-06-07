@@ -26,7 +26,7 @@ A new flutter plugin project.
   s.exclude_files = ['cpp/java/**/*', 'cpp/android/**/*', 'objc/rn/**/*']
 
   s.dependency 'Flutter'
-  s.dependency 'HyphenateChat','3.9.2'
+  s.dependency 'HyphenateChat','3.9.3.1'
 
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',

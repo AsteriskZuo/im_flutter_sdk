@@ -3,7 +3,8 @@ package com.easemob.im_flutter_sdk;
 import android.content.Context;
 
 import com.hyphenate.chat.EMChatRoom;
-import com.hyphenate.chat.EMClient;
+import com.hyphenate.chat.EMChatThread;
+import com.hyphenate.chat.EMChatThreadEvent;
 import com.hyphenate.chat.EMCmdMessageBody;
 import com.hyphenate.chat.EMConversation;
 import com.hyphenate.chat.EMCursorResult;
@@ -147,7 +148,7 @@ class EMGroupHelper {
         EMCommonUtil.putObjectToMap(data, "messageBlocked", group.isMsgBlocked());
         EMCommonUtil.putObjectToMap(data, "isAllMemberMuted", group.isAllMemberMuted());
         EMCommonUtil.putObjectToMap(data, "permissionType", intTypeFromGroupPermissionType(group.getGroupPermissionType()));
-        EMCommonUtil.putObjectToMap(data, "maxUserCount", group.getMaxUserCount());
+        EMCommonUtil.putObjectToMap(data, "maxUserCount", group.getMemberCount());
         EMCommonUtil.putObjectToMap(data, "isMemberOnly", group.isMemberOnly());
         EMCommonUtil.putObjectToMap(data, "isMemberAllowToInvite", group.isMemberAllowToInvite());
         EMCommonUtil.putObjectToMap(data, "ext", group.getExtension());
@@ -1038,6 +1039,10 @@ class                                                                           
                 if (obj instanceof EMMessageReaction) {
                     jsonList.add(EMMessageReactionHelper.toJson((EMMessageReaction) obj));
                 }
+
+                if (obj instanceof EMChatThread) {
+                    jsonList.add(EMChatThreadHelper.toJson((EMChatThread) obj));
+                }
             }
         }
         data.put("list", jsonList);
@@ -1206,9 +1211,50 @@ class EMMessageReactionChangeHelper {
 }
 
 class EMChatThreadHelper {
-
+    static Map<String, Object> toJson(EMChatThread thread) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("threadId", thread.getChatThreadId());
+        if (thread.getChatThreadName() != null) {
+            data.put("threadName", thread.getChatThreadName());
+        }
+        data.put("owner", thread.getOwner());
+        data.put("msgId", thread.getMessageId());
+        data.put("parentId", thread.getParentId());
+        data.put("memberCount", thread.getMemberCount());
+        data.put("messageCount", thread.getMessageCount());
+        data.put("createAt", thread.getCreateAt());
+        if (thread.getLastMessage() != null) {
+            data.put("lastMessage", EMMessageHelper.toJson(thread.getLastMessage()));
+        }
+        return data;
+    }
 }
 
 class EMChatThreadEventHelper {
-
+    static Map<String, Object> toJson(EMChatThreadEvent event) {
+        Map<String, Object> data = new HashMap<>();
+        switch (event.getType()) {
+            case UNKNOWN:
+                data.put("type", 0);
+                break;
+            case CREATE:
+                data.put("type", 1);
+                break;
+            case UPDATE:
+                data.put("type", 2);
+                break;
+            case DELETE:
+                data.put("type", 3);
+                break;
+            case UPDATE_MSG:
+                data.put("type", 4);
+                break;
+        }
+        data.put("from", event.getFrom());
+        if (event.getChatThread() != null) {
+            data.put("thread", EMChatThreadHelper.toJson(event.getChatThread()));
+        }
+        return data;
+    }
 }
+

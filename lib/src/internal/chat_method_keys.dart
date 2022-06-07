@@ -266,11 +266,12 @@ class ChatMethodKeys {
   static const String fetchPresenceStatus = "fetchPresenceStatus";
 
   /// EMChatThreadManager methods
-  static const String fetchChatThread = "fetchChatThread";
   static const String fetchChatThreadDetail = "fetchChatThreadDetail";
   static const String fetchJoinedChatThreads = "fetchJoinedChatThreads";
   static const String fetchChatThreadsWithParentId =
       "fetchChatThreadsWithParentId";
+  static const String fetchJoinedChatThreadsWithParentId =
+      "fetchJoinedChatThreadsWithParentId";
   static const String fetchChatThreadMember = "fetchChatThreadMember";
   static const String fetchLastMessageWithChatThreads =
       "fetchLastMessageWithChatThreads";
@@ -280,6 +281,12 @@ class ChatMethodKeys {
   static const String joinChatThread = "joinChatThread";
   static const String leaveChatThread = "leaveChatThread";
   static const String destroyChatThread = "destroyChatThread";
+
+  // EMChatThreadManagerListener
+  static const String onChatThreadCreate = "onChatThreadCreate";
+  static const String onChatThreadUpdate = "onChatThreadUpdate";
+  static const String onChatThreadDestroy = "onChatThreadDestroy";
+  static const String onUserKickOutOfChatThread = "onUserKickOutOfChatThread";
 
   /// HandleAction
   static const String startCallback = "startCallback";
