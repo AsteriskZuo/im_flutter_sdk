@@ -135,6 +135,15 @@ flutter pub add agora_chat_sdk
 flutter pub get
 ```
 
+To select version `1.4.0+1` explicitly, set the following dependency in your `pubspec.yaml`:
+
+```yaml
+dependencies:
+  agora_chat_sdk: 1.4.0+1
+```
+
+The `+1` suffix is valid build metadata for a stable Dart/Flutter package version. Use `^1.4.0+1` instead if you want to allow later compatible releases below `2.0.0`.
+
 
 ## Implement peer-to-peer messaging
 

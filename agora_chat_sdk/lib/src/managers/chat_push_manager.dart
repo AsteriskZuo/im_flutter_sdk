@@ -219,7 +219,7 @@ class ChatPushManager {
     }
   }
 
-  // 1.4.1
+  // 1.4.0+1
 
   /// ~english
   /// Binds the Apple PushKit token, which is used for VoIP push notifications.

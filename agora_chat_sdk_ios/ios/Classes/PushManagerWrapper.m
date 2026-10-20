@@ -102,7 +102,7 @@
     else if([bindDeviceToken isEqualToString:call.method]) {
         [self bindDeviceToken:call.arguments channelName:call.method result:result];
     }
-    // 1.4.1
+    // 1.4.0+1
     else if([bindPushKitToken isEqualToString:call.method]) {
         [self bindPushKitToken:call.arguments channelName:call.method result:result];
     }
@@ -417,7 +417,7 @@
     });
 }
 
-#pragma mark - 1.4.1
+#pragma mark - 1.4.0+1
 
 - (void)bindPushKitToken:(NSDictionary *)param
              channelName:(NSString *)aChannelName

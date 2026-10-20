@@ -93,7 +93,7 @@
     // 4.10
     options.workPathCopiable = [aJson[@"workPathCopiable"] boolValue];
     
-    // 1.4.1
+    // 1.4.0+1
     // The PushKit certificate name is an initialization option: the native SDK reads it when a
     // PushKit token is registered, and an empty certificate name makes the registration fail with
     // EMErrorUserIllegalArgument. The assignment is skipped when the option is absent.

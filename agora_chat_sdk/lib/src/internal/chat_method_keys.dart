@@ -419,7 +419,7 @@ class ChatMethodKeys {
 
   static const String bindDeviceToken = 'bindDeviceToken';
 
-  // 1.4.1
+  // 1.4.0+1
   static const String bindPushKitToken = 'bindPushKitToken';
   static const String unbindPushKitToken = 'unbindPushKitToken';
 

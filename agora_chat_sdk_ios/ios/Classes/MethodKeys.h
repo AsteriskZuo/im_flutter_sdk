@@ -383,7 +383,7 @@ static NSString *const ChatUpdateRegradeMessagesSetting =
     @"updateRegradeMessagesSetting";
 static NSString *const bindDeviceToken = @"bindDeviceToken";
 
-// 1.4.1
+// 1.4.0+1
 static NSString *const bindPushKitToken = @"bindPushKitToken";
 static NSString *const unbindPushKitToken = @"unbindPushKitToken";
 

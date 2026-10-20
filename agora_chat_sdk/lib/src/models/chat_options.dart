@@ -1391,7 +1391,7 @@ class ChatOptions {
     // 4.10
     data.putIfNotNull('workPathCopiable', workPathCopiable);
 
-    // 1.4.1
+    // 1.4.0+1
     data.putIfNotNull('pushKitCertName', pushKitCertName);
 
     return data;
