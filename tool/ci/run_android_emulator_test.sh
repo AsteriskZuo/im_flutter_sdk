@@ -13,6 +13,7 @@ log_name="${2:?usage: run_android_emulator_test.sh TEST_TARGET LOG_NAME}"
 app_id="com.example.example"
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+bash "$repo_root/tool/use_local_packages.sh"
 mkdir -p "$repo_root/artifacts"
 
 # The example app only compiles with the gitignored lib/env.dart in place.

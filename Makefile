@@ -10,7 +10,7 @@ PODLOCK     := $(IOS_DIR)/Podfile.lock
 
 .DEFAULT_GOAL := help
 
-.PHONY: help setup config env-gettoken auto-report auto-compare scan-deprecated deps pods clean
+.PHONY: help setup config env-gettoken auto-report auto-compare scan-deprecated local-deps deps pods clean
 
 help: ## Show this help
 	@echo "im_flutter_sdk - project setup"
@@ -27,7 +27,7 @@ config: ## Create local config and placeholder env.dart if missing
 env-gettoken: ## Fetch user tokens for the configured environment and write example/lib/env.dart
 	dart run $(ENV_TOOL) gettoken
 
-auto-report: ## Run 5.0.0 auto mode and write a local report: make auto-report PLATFORM=android [DEVICE=...] [SCRIPT=...]
+auto-report: local-deps ## Run 5.0.0 auto mode and write a local report: make auto-report PLATFORM=android [DEVICE=...] [SCRIPT=...]
 	@test "$(PLATFORM)" = "android" || test "$(PLATFORM)" = "ios" || (echo "Usage: make auto-report PLATFORM=<android|ios> [DEVICE=<id>] [SCRIPT=<json>]" && exit 2)
 	dart run tool/auto_report.dart --platform "$(PLATFORM)" $(if $(DEVICE),--device "$(DEVICE)",) $(if $(SCRIPT),--script "$(SCRIPT)",)
 
@@ -39,7 +39,10 @@ scan-deprecated: ## Scan wrapper code for deprecated native APIs: make scan-depr
 	@test -z "$(PLATFORM)" || test "$(PLATFORM)" = "android" || test "$(PLATFORM)" = "ios" || (echo "Usage: make scan-deprecated [PLATFORM=<android|ios>]" && exit 2)
 	bash tool/ci/scan_deprecated.sh $(PLATFORM)
 
-deps: ## flutter pub get
+local-deps: ## Create gitignored pubspec_overrides.yaml files for local SDK packages
+	bash tool/use_local_packages.sh
+
+deps: local-deps ## flutter pub get with local SDK packages
 	@echo "Running flutter pub get..."
 	cd $(EXAMPLE_DIR) && flutter pub get
 	@echo "Done: dependencies resolved"

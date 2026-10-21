@@ -65,6 +65,7 @@ mkdir -p "$REPORT_DIR"
 # Resolves the example's plugins: Gradle needs .flutter-plugins-dependencies and
 # CocoaPods needs Flutter/Generated.xcconfig, both written by pub get.
 resolve_dependencies() {
+  bash "$REPO_ROOT/tool/use_local_packages.sh"
   (
     cd "$EXAMPLE_DIR"
     flutter pub get

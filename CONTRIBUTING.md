@@ -4,7 +4,7 @@ This document is for developers and maintainers of im_flutter_sdk; it covers rep
 
 ## Repository Structure
 
-Federated Plugin architecture; the four packages are linked via local `path:` dependencies:
+Federated Plugin architecture; package pubspecs declare hosted version dependencies for publishing, with gitignored local overrides for development:
 
 | Package | Responsibility |
 |---|---|
@@ -30,7 +30,8 @@ The `Makefile` at the project root is the local development entry point; run `ma
 | `make setup` | Runs `config` + `deps` + `pods` in sequence |
 | `make config` | Generates `example/config.local.json` (from `example/templates/config.local.example.json`) and a placeholder `example/lib/env.dart` (from `example/templates/env.example.dart`); skipped if they already exist |
 | `make env-gettoken` | Exchanges user tokens for each account on the host per `config.local.json` and writes `example/lib/env.dart` directly; exits non-zero when required fields are missing or still `TODO` |
-| `make deps` | Runs `flutter pub get` in the example directory, resolving the path dependencies of the 4 sub-packages |
+| `make local-deps` | Generates gitignored local dependency overrides for the main package, Android, iOS, and example; preserves existing files |
+| `make deps` | Runs `make local-deps`, then `flutter pub get` in the example directory |
 | `make pods` | Runs `deps` first, then uses mtime to check whether Podfile/podspec is newer than Podfile.lock, running `pod install` in `example/ios` only when needed |
 | `make auto-report PLATFORM=<android\|ios> [DEVICE=<id>] [SCRIPT=<json>]` | Runs the 5.0.0 auto script and writes a traceable report to `reports/5.0.0/<run-id>/` (on Android it first ensures the debug build is installed, then pushes the script into the app's internal directory by App uid) |
 | `make auto-compare ANDROID=<run-dir> IOS=<run-dir>` | Compares two Android/iOS runs of the same path; exits non-zero when steps diverge |
@@ -38,6 +39,16 @@ The `Makefile` at the project root is the local development entry point; run `ma
 | `make help` | Shows all commands |
 
 > **Important**: after changing the native dependency version (e.g. HyphenateChat) in `im_flutter_sdk_ios.podspec`, you must run `make pods`. `flutter run` does not track podspec changes and will skip pod install, causing iOS to compile against the old native SDK and fail with compilation errors.
+
+### Local Dependencies and Publishing
+
+Run `make local-deps` (or `bash tool/use_local_packages.sh`) to create `pubspec_overrides.yaml` beside the pubspecs of the main package, Android, iOS, and example. The interface package has no sibling dependencies and needs no override. The repository's `.gitignore` already excludes these files at every depth; only the generator is committed. Existing override files are preserved.
+
+Overrides apply to the package being resolved, not to packages that depend on it. The example therefore needs its own overrides for interface, Android, and iOS, even though its main SDK dependency already uses `path: ../`. `make deps`, `make auto-report`, and the CI quality/build/device-test entry points generate the local files before resolving dependencies.
+
+The published Android/iOS `5.0.0` packages depend on `im_flutter_sdk_interface: ^4.15.0+1`. Keep this hosted constraint in the three dependent packages for this release: changing only the main package to interface `5.0.0` would conflict with the published platform packages. Local overrides intentionally select the checked-out interface `5.0.0`. Package versions and dependency compatibility ranges are separate concerns.
+
+For release validation, use a checkout without overrides, or temporarily move the four override files out of the checkout and restore them afterward. Run `dart pub publish --dry-run` inside each publishable package; do not invoke the local-development setup during this check. A successful check with overrides does not establish that the hosted dependency graph resolves. Publish new versions in dependency order: interface, Android/iOS, then the main package. An already-published version cannot be uploaded again.
 
 ## Test Data Preparation
 
@@ -83,7 +94,7 @@ Each run writes `run.json`, `events.jsonl`, `crash.log`, `steps.json`, `summary.
 
 ### Quality Gate
 
-`tool/ci/run_quality.sh` is CI's quality job — locally and in CI the same gate applies. It first calls `tool/ci/ensure_example_env.sh`: if `im_flutter_sdk/example/lib/env.dart` does not exist, it generates an empty placeholder from `example/templates/env.example.dart`; if it already exists, it is kept as-is. This file is gitignored; without it a fresh checkout of the example cannot compile at all, and `flutter analyze` directly reports `Target of URI doesn't exist: '../env.dart'`. The script fills in only this one file — it **does not generate `example/config.local.json`**: the credentials in that file belong to each user's own environment configuration, read only by local `make env-gettoken`; CI does not fabricate one for anyone. It then runs in order:
+`tool/ci/run_quality.sh` is CI's quality job — locally and in CI the same gate applies. It first generates local SDK overrides with `tool/use_local_packages.sh`, then calls `tool/ci/ensure_example_env.sh`: if `im_flutter_sdk/example/lib/env.dart` does not exist, it generates an empty placeholder from `example/templates/env.example.dart`; if it already exists, it is kept as-is. This file is gitignored; without it a fresh checkout of the example cannot compile at all, and `flutter analyze` directly reports `Target of URI doesn't exist: '../env.dart'`. The script fills in only this one file — it **does not generate `example/config.local.json`**: the credentials in that file belong to each user's own environment configuration, read only by local `make env-gettoken`; CI does not fabricate one for anyone. It then runs in order:
 
 1. `flutter pub get` in the 5 packages in sequence;
 2. `dart format --set-exit-if-changed`: checks only changed `.dart` files; the baseline is specified by `FORMAT_BASE_SHA` (CI passes the PR base / pre-push sha), falling back to `HEAD^` when unset locally;

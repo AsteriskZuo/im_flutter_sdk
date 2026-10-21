@@ -35,6 +35,7 @@ max_attempts="${MAX_ATTEMPTS:-2}"
 app_id="com.example.example"
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+bash "$repo_root/tool/use_local_packages.sh"
 mkdir -p "$repo_root/artifacts"
 log_file="$repo_root/artifacts/$log_name"
 

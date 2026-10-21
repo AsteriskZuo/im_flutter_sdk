@@ -26,7 +26,7 @@ Document split: this document is the only must-read for AI. Procedural content s
 
 Call chain: `Dart API → MethodChannel (interface) → Native Wrapper → HyphenateChat SDK`
 
-Dependency direction: `im_flutter_sdk` → `im_flutter_sdk_android` / `im_flutter_sdk_ios` → `im_flutter_sdk_interface`. The interface is the contract shared by all platform packages; changing it affects every upper-layer package. All inter-package dependencies are local `path:` dependencies, so cross-package changes take effect without publishing.
+Dependency direction: `im_flutter_sdk` → `im_flutter_sdk_android` / `im_flutter_sdk_ios` → `im_flutter_sdk_interface`. The interface is the contract shared by all platform packages; changing it affects every upper-layer package. Package pubspecs use hosted version dependencies for publishing. Run `make local-deps` to generate gitignored `pubspec_overrides.yaml` files for local development; `make deps` and CI do this automatically. Overrides belong to each resolution root, including the example, and are not inherited from dependency packages. See `CONTRIBUTING.md` for release validation.
 
 ## Development Environment Setup
 
@@ -44,7 +44,8 @@ make setup   # config + deps + pods
 | `make env-gettoken` | Fetches a User Token for each account per `config.local.json` and generates `example/lib/env.dart` directly (the project configures only one environment; switching environments = editing this file) |
 | `make auto-report PLATFORM=<android\|ios> [DEVICE=<id>] [SCRIPT=<json>]` | Runs the 5.0.0 auto script (defaults to the positive path `script_500_apis_positive.json`; use `SCRIPT=` to specify the negative script), explicitly boots the emulator, and produces sanitized events, crash evidence, and issue candidates under the Git-ignored `reports/5.0.0/<run-id>/` |
 | `make auto-compare ANDROID=<run-dir> IOS=<run-dir>` | Compares two Android/iOS runs of the same path, writes `reports/5.0.0/comparison-<path>-<timestamp>.md`, and exits non-zero when steps diverge |
-| `make deps` | `flutter pub get` (in the example directory; resolves path dependencies automatically) |
+| `make local-deps` | Creates local dependency overrides for the main package, Android, iOS, and example; preserves existing override files |
+| `make deps` | Creates local overrides, then runs `flutter pub get` in the example directory |
 | `make pods` | `pod install` (runs only when Podfile/podspec changed, detected via mtime) |
 | `make clean` | Cleans build artifacts and Pods |
 
