@@ -666,7 +666,7 @@ class ChatClient {
   /// ~end
   Future<void> loginWithAgoraToken(String userId, String agoraToken) async {
     try {
-      return login(userId, agoraToken, false);
+      return await login(userId, agoraToken, false);
     } catch (e) {
       rethrow;
     }
@@ -704,7 +704,7 @@ class ChatClient {
   ) async {
     try {
       // ignore: deprecated_member_use_from_same_package
-      return login(userId, token, false);
+      return await login(userId, token, false);
     } catch (e) {
       rethrow;
     }
@@ -742,7 +742,7 @@ class ChatClient {
   ) async {
     try {
       // ignore: deprecated_member_use_from_same_package
-      return login(userId, password, true);
+      return await login(userId, password, true);
     } catch (e) {
       rethrow;
     }

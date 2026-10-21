@@ -11,14 +11,11 @@ dependencies:
   flutter:
     sdk: flutter
 
-  agora_chat_sdk_interface:
-    path: ../agora_chat_sdk_interface
+  agora_chat_sdk_interface: 1.4.0+1
 
-  agora_chat_sdk_ios:
-    path: ../agora_chat_sdk_ios
+  agora_chat_sdk_ios: 1.4.0+1
 
-  agora_chat_sdk_android:
-    path: ../agora_chat_sdk_android
+  agora_chat_sdk_android: 1.4.0+1
 
 
 dev_dependencies:

@@ -8,27 +8,6 @@ packages:
       relative: true
     source: path
     version: "1.4.0+1"
-  agora_chat_sdk_android:
-    dependency: transitive
-    description:
-      path: "../../agora_chat_sdk_android"
-      relative: true
-    source: path
-    version: "1.4.0+1"
-  agora_chat_sdk_interface:
-    dependency: transitive
-    description:
-      path: "../../agora_chat_sdk_interface"
-      relative: true
-    source: path
-    version: "1.4.0+1"
-  agora_chat_sdk_ios:
-    dependency: transitive
-    description:
-      path: "../../agora_chat_sdk_ios"
-      relative: true
-    source: path
-    version: "1.4.0+1"
   async:
     dependency: transitive
     description:
@@ -167,14 +146,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.9.1"
-  plugin_platform_interface:
-    dependency: transitive
-    description:
-      name: plugin_platform_interface
-      sha256: "4820fbfdb9478b1ebae27888254d445073732dae3d6ea81f0b7e06d5dedc3f02"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.1.8"
   sky_engine:
     dependency: transitive
     description: flutter
