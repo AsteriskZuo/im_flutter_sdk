@@ -2,6 +2,9 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
+bash "$repo_root/tool/use_local_packages.sh"
+
 packages=(
   im_flutter_sdk_interface
   im_flutter_sdk_android

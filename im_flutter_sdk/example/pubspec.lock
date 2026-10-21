@@ -170,21 +170,21 @@ packages:
     source: path
     version: "4.25.0"
   im_flutter_sdk_android:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
       path: "../../im_flutter_sdk_android"
       relative: true
     source: path
     version: "4.25.0"
   im_flutter_sdk_interface:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
       path: "../../im_flutter_sdk_interface"
       relative: true
     source: path
     version: "4.25.0"
   im_flutter_sdk_ios:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
       path: "../../im_flutter_sdk_ios"
       relative: true
