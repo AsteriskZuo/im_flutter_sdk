@@ -73,6 +73,9 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Use local SDK packages
+        run: bash tool/use_local_packages.sh
+
       - name: Build Android example
         working-directory: im_flutter_sdk/example
         run: |
@@ -95,6 +98,9 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
+
+      - name: Use local SDK packages
+        run: bash tool/use_local_packages.sh
 
       - name: Build iOS example
         working-directory: im_flutter_sdk/example

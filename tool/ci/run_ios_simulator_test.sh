@@ -32,6 +32,7 @@ watchdog_seconds="${WATCHDOG_SECONDS:-720}"
 max_attempts="${MAX_ATTEMPTS:-2}"
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+bash "$repo_root/tool/use_local_packages.sh"
 mkdir -p "$repo_root/artifacts"
 log_file="$repo_root/artifacts/$log_name"
 

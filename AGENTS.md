@@ -26,7 +26,7 @@
 
 调用链：`Dart API → MethodChannel (interface) → Native Wrapper → HyphenateChat SDK`
 
-依赖方向：`im_flutter_sdk` → `im_flutter_sdk_android` / `im_flutter_sdk_ios` → `im_flutter_sdk_interface`。interface 是各平台包共享的契约，改动它会波及所有上层包。包间依赖均为本地 `path:` 依赖，跨包改动无需发布即可生效。
+依赖方向：`im_flutter_sdk` → `im_flutter_sdk_android` / `im_flutter_sdk_ios` → `im_flutter_sdk_interface`。interface 是各平台包共享的契约，改动它会波及所有上层包。各包的 pubspec 保持发布用的版本依赖；本地开发运行 `make local-deps` 生成被 Git 忽略的 `pubspec_overrides.yaml`，`make deps` 和 CI 会自动执行。override 仅对当前解析的根包生效，example 也需要自己的文件，不会继承依赖包的 override。发布验证方式见 `CONTRIBUTING.md`。
 
 ## 开发环境初始化
 
@@ -39,7 +39,8 @@ make setup   # config + deps + pods
 | target | 作用 |
 |--------|------|
 | `make config` | 拷贝 `example/templates/config.example.json` → `example/scripts/config.json`（含敏感信息，已 gitignore） |
-| `make deps` | `flutter pub get`（example 目录，自动解析 path 依赖） |
+| `make local-deps` | 为主包、Android、iOS 和 example 生成本地依赖 override，保留已有文件 |
+| `make deps` | 生成本地 override，再在 example 目录执行 `flutter pub get` |
 | `make pods` | `pod install`（仅 Podfile/podspec 变更时执行，通过 mtime 检测） |
 | `make clean` | 清理 build 产物和 Pods |
 

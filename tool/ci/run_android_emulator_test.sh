@@ -10,6 +10,7 @@ test_target="${1:?usage: run_android_emulator_test.sh TEST_TARGET LOG_NAME}"
 log_name="${2:?usage: run_android_emulator_test.sh TEST_TARGET LOG_NAME}"
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+bash "$repo_root/tool/use_local_packages.sh"
 mkdir -p "$repo_root/artifacts"
 
 cd "$repo_root/im_flutter_sdk/example"

@@ -4,7 +4,7 @@
 
 ## 仓库结构
 
-Federated Plugin 架构，四个包通过本地 `path:` 依赖关联：
+Federated Plugin 架构，各包的 pubspec 使用发布用的版本依赖，本地开发通过被 Git 忽略的 override 切换为 `path:` 依赖：
 
 | 包 | 职责 |
 |---|---|
@@ -28,12 +28,23 @@ make setup   # 依次执行 config + deps + pods
 | target | 作用 |
 |--------|------|
 | `make config` | 拷贝 `im_flutter_sdk/example/templates/config.example.json` → `im_flutter_sdk/example/scripts/config.json`（已存在则跳过） |
-| `make deps` | 在 example 目录执行 `flutter pub get`，解析 4 个子包的 path 依赖 |
+| `make local-deps` | 为主包、Android、iOS 和 example 生成被 Git 忽略的本地依赖 override，保留已有文件 |
+| `make deps` | 先执行 `make local-deps`，再在 example 目录执行 `flutter pub get` |
 | `make pods` | 在 `example/ios` 执行 `pod install`（仅 Podfile/podspec 变更时执行，mtime 检测） |
 | `make clean` | 清理 build 产物和 Pods |
 | `make help` | 查看所有命令 |
 
 > **重要**：修改 `im_flutter_sdk_ios.podspec` 中的 native 依赖版本（如 HyphenateChat）后，必须执行 `make pods`。`flutter run` 不会追踪 podspec 变更，会跳过 pod install，导致 iOS 使用旧版本 native SDK 引发编译错误。
+
+### 本地依赖与发布
+
+运行 `make local-deps`（或 `bash tool/use_local_packages.sh`），会在主包、Android、iOS 和 example 的 pubspec 旁生成 `pubspec_overrides.yaml`。interface 没有其他子包依赖，无需 override。仓库 `.gitignore` 已在所有层级忽略这些文件，生成脚本纳入版本管理，已有 override 文件不会被覆盖。
+
+override 只对当前解析的根包生效，不会从依赖包继承。因此，example 虽然已经通过 `path: ../` 依赖主包，仍需要自己的文件覆盖 interface、Android 和 iOS。`make deps`、CI 质量检查、双端构建和设备测试入口都会在依赖解析前生成本地文件。
+
+发布配置与已发布的 `4.25.0` 保持一致：主包精确依赖 Android/iOS `4.25.0`，三个依赖 interface 的包使用 `^4.15.0+1`；该范围包含 interface `4.25.0`。本地 override 则统一使用当前工作树中的四个包。
+
+发布验证应在没有 override 的检出目录执行，或先将四份 override 移出工作树，检查后再恢复。在各个可发布包内运行 `dart pub publish --dry-run`，期间不要调用本地开发初始化入口。有 override 时解析成功，不能证明正式版本依赖可解析。新版本按 interface → Android/iOS → 主包的顺序发布；已发布的版本不能重复上传。
 
 ## 测试数据准备
 

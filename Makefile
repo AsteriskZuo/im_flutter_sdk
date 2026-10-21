@@ -11,7 +11,7 @@ PODLOCK     := $(IOS_DIR)/Podfile.lock
 
 .DEFAULT_GOAL := help
 
-.PHONY: help setup config deps pods clean
+.PHONY: help setup config local-deps deps pods clean
 
 help: ## Show this help
 	@echo "im_flutter_sdk - project setup"
@@ -32,7 +32,10 @@ config: ## Copy config template if not exists
 		echo "Skip: $(CONFIG_DST) already exists"; \
 	fi
 
-deps: ## flutter pub get
+local-deps: ## Create gitignored pubspec_overrides.yaml files for local SDK packages
+	bash tool/use_local_packages.sh
+
+deps: local-deps ## flutter pub get with local SDK packages
 	@echo "Running flutter pub get..."
 	cd $(EXAMPLE_DIR) && flutter pub get
 	@echo "Done: dependencies resolved"
