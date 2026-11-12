@@ -689,7 +689,9 @@ Flutter 4.25.0 侧该 channel **无任何方法/事件 key**（`ChatMethodKeys` 
   - #20 `startCallback`：Flutter 框架内部机制，ArkTS 侧空实现保协议。
   - #23 `onSendDataToFlutter`：自定义透传管道，保留 channel 不实现。
   - #25 `resendMessage`：保留，复用 `sendMessage` 重发同一消息对象实现（对齐 android wrapper 既有做法）。
-- **记 backlog（本期不补）**：#40 五个孤儿常量 `uploadLog`/`updateOwnUserInfoWithType`/`fetchUserInfoByIdWithType`/`onMessageChanged`/`removeMsgFromServerWithTimeStamp`——chatsdk 有能力但 Flutter Dart 侧从未引用，常量保留不删，后续按需补移植。
+- **记 backlog（本期不补）**：#40 五个孤儿常量 `uploadLog`/`updateOwnUserInfoWithType`/`fetchUserInfoByIdWithType`/`onMessageChanged`/`removeMsgFromServerWithTimeStamp`——chatsdk 有能力但 Flutter Dart 侧从未引用，常量保留不删，后续按需补移植。（补记 2026-11-12 T2.0：`uploadLog` 虽为孤儿常量但属现存 Dart key，ArkTS 已实现。）
+
+> 勘误（2026-11-12 T2.0 发现）：#21 判定 chatsdk 无"聊天室所有者可退出"开关，实际 1.15.0 `ChatOptions.d.ets` 有 `allowChatroomOwnerLeave(boolean)`（`01-chatsdk-api-surface.md` §12 漏列）；仅 init 初始值可设、无运行时更新接口，**维持 `updateRoomOwnerCanLeaveSetting` 移除结论不变**，T2.0 已在 init 的 ChatOptions 映射中保留该字段（对齐 android）。
 
 ## 17. Dart 移除清单（ohos 分支，2026-11-12 确认）
 
