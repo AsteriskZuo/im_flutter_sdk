@@ -603,9 +603,9 @@ Flutter 4.25.0 侧该 channel **无任何方法/事件 key**（`ChatMethodKeys` 
 5. **`PushListener` 在 Flutter 侧无对应**：chatsdk 推送 token 绑定结果经 `PushListener.onBindTokenSuccess`/`onError` 回调（且两个回调均必选），而 Flutter 侧 push 完全走方法调用返回值，无 push 事件。适配层需把该 Listener 内部消化（转成 Promise 成败）。
 6. **`resendMessage` 与 `reportMessage` 在 chatsdk 无任何形式的对应**（Android/iOS 原生 SDK 有），属于 chatsdk 能力缺口而非命名差异。
 
-## 16. 待用户确认清单
+## 16. 用户确认清单（2026-11-12 已全部确认，结论见 §16.1 与 §17）
 
-以下聚拢全部**签名差异**与**缺失**条目（已按家族合并相关项），每条一句话说明影响，供批量确认。编号按 channel 分组。
+以下聚拢全部**签名差异**与**缺失**条目（已按家族合并相关项），每条一句话说明影响。编号按 channel 分组。2026-11-12 用户逐项确认完毕，最终处置结论见 §16.1（签名差异）与 §17（缺失 → Dart 移除清单）。
 
 ### A. 签名差异（16 项）
 
@@ -656,3 +656,76 @@ Flutter 4.25.0 侧该 channel **无任何方法/事件 key**（`ChatMethodKeys` 
 ### C. 统计
 
 - 待确认条目：**40 项**（签名差异 16 + 缺失/孤儿决策 24），覆盖 16 个签名差异方法 key、9 个签名差异事件项、40 个缺失方法 key、9 个缺失事件项与 11 个孤儿常量的全部处置决策。
+
+## 16.1 确认结论（2026-11-12 用户逐项确认）
+
+**总原则（用户定，2026-11-12）**：chatsdk 没有的能力**不在 Dart 代码中体现**——核心迁移思路是将 ios/android 的 Dart 直接迁移使用，因此缺失 API 的处理是**从 ohos 分支 Dart 代码中移除**（方法、MethodKey 常量、事件回调、关联 Model 一并清理），而非在 ArkTS 侧标记不支持；每一次移除在本清单 §17 留痕。签名差异项一律在**鸿蒙（ArkTS）层适配吸收，保证 Dart 公开 API 不修改**。
+
+### A. 签名差异（16 项）结论
+
+| # | 项 | 结论 |
+|---|---|---|
+| 1 | `init` | 接受。Context 插件层注入对 Dart 透明；`ChatOptions` 推送证书类字段鸿蒙忽略（留痕） |
+| 2 | `changeAppKey`/`changeAppId` | 接受，鸿蒙层保异步语义：MethodChannel 本身异步，Dart `Future<bool>` 不变；ArkTS 执行同步调用后经 channel 回调结果（必要时 taskpool  offload 防阻塞 UI 线程），成功返 `true`、失败抛 `ChatError`；仅未登录态可调的约束保留 |
+| 3 | `isLoggedInBefore` | **移除**（用户裁定：`isAutoLogin` 语义不同，不可替代；chatsdk 无其他等价接口）→ §17 |
+| 4 | 7 个登出原因事件 | 接受。**鸿蒙层处理，保证 Dart 不修改**：按 `onLogout`/`onDisconnected` 的 errorCode 二次分发为 7 个事件；P2 实现时逐一对照 chatsdk 114 个错误码核对覆盖性，缺码导致某事件无法触发的单独汇报用户 |
+| 5 | `sendMessage` | 接受，**对齐 android 两步语义**（用户明确）：第一步 channel 调用立即返回消息对象（android 侧 `ChatManagerWrapper.sendMessage` 即此行为），第二步发送结果经 `setMessageStatusCallback` 以 channel 事件异步送达；Dart 不修改 |
+| 6 | `getUnreadMessageCount` | 接受。遍历会话求和 |
+| 7 | `downloadMessageAttachmentInCombine`/`ThumbnailInCombine` | 接受。先 `downloadAndParseCombineMessage` 再对子消息下载；子消息 ID 对应关系实现时验证 |
+| 8 | `fetchConversationsFromServerWithPage`（Deprecated） | **移除**（用户确认"建议合理"）→ §17 |
+| 9 | `deleteMessageByIds` | **移除**（用户改判：不做循环单删适配）→ §17 |
+| 10 | `fetchPublicChatRoomsFromServer` | 接受。**鸿蒙层兜底，保证 Dart 不修改**：`ChatPageResult` 结构保留，总数字段 chatsdk 无来源，按约定降级值填充 |
+| 11 | `onRoomDestroyed`/`onRoomRemoved` | 接受。按 `LEAVE_REASON` 分发；`BE_KICKED_FOR_OFFLINE` 无对应事件不触发 |
+| 12 | `getJoinedGroupsFromServer` | 接受。`needMemberCount`/`needRole` 参数鸿蒙忽略（留痕） |
+| 13 | `getPublicGroupsFromServer` | 接受。完整 `Group` 裁剪为 `ChatGroupInfo` |
+| 14 | `updateHMSPushToken`（Deprecated） | **移除**（用户确认"建议合理"）→ §17 |
+| 15 | `setConversationSilentMode` | 接受。会话级仅映射 `PushRemindType`，时段/时长参数鸿蒙忽略（留痕） |
+| 16 | `fetchUserInfoById` | 接受。放弃 `expireTime`，按 chatsdk 默认缓存策略 |
+
+### B. 缺失（24 项）结论
+
+- **转为 Dart 移除 → §17**：#17（孤儿常量清理）、#18、#19、#21、#22（事件）、#24（事件）、#26、#27（子区整体 19 key）、#28、#29、#30（并入 #27）、#31（孤儿常量清理）、#32、#33（含 1 孤儿常量）、#34、#35（含 1 孤儿常量）、#36、#37（孤儿常量清理）、#38、#39。
+- **保留但特殊处理**（非 chatsdk 能力缺口，Dart 不动）：
+  - #20 `startCallback`：Flutter 框架内部机制，ArkTS 侧空实现保协议。
+  - #23 `onSendDataToFlutter`：自定义透传管道，保留 channel 不实现。
+  - #25 `resendMessage`：保留，复用 `sendMessage` 重发同一消息对象实现（对齐 android wrapper 既有做法）。
+- **记 backlog（本期不补）**：#40 五个孤儿常量 `uploadLog`/`updateOwnUserInfoWithType`/`fetchUserInfoByIdWithType`/`onMessageChanged`/`removeMsgFromServerWithTimeStamp`——chatsdk 有能力但 Flutter Dart 侧从未引用，常量保留不删，后续按需补移植。
+
+## 17. Dart 移除清单（ohos 分支，2026-11-12 确认）
+
+本清单是 **T2.0a「Dart API 移除」的执行依据**，也是**每次例行同步（merge 主线）后必须重放的 checklist**（spec §5）。移除范围：Dart 公开方法/字段、MethodKey 常量、事件回调与事件常量、仅服务于被移除能力的 Model 与导出、example 中的调用入口、引用被移除 API 的测试。
+
+### 方法 key（42 个）
+
+| channel | key |
+|---|---|
+| chat_client（6+1 孤儿） | `isLoggedInBefore`、`compressLogs`、`kickDevice`、`kickAllDevices`、`getLoggedInDevicesFromServer`、`updateRoomOwnerCanLeaveSetting`；孤儿常量 `loginWithAgoraToken` |
+| chat_manager（4） | `fetchConversationsFromServerWithPage`、`deleteMessagesBeforeTimestamp`、`reportMessage`、`getThreadConversation` |
+| chat_conversation（2） | `deleteMessageByIds`、`deleteMessagesWithTs` |
+| chat_message（1） | `chatThread`（常量值 `getChatThread`） |
+| chat_room_manager（4+1 孤儿） | `createChatRoom`、`destroyChatRoom`、`fetchChatRoomInfoFromServer`、`getChatRoom`；孤儿常量 `getAllChatRooms` |
+| chat_group_manager（1） | `removeMemberAttributesFromGroup` |
+| chat_push_manager（8+2 孤儿） | `updateHMSPushToken`、`updateFCMPushToken`、`updateAPNsPushToken`、`getImPushConfigFromServer`、`setPreferredNotificationLanguage`、`fetchPreferredNotificationLanguage`、`bindPushKitToken`、`unbindPushKitToken`；孤儿常量 `getImPushConfig`、`reportPushAction` |
+
+| channel | key（子区整体 12） |
+|---|---|
+| chat_thread_manager | `fetchChatThreadDetail`、`fetchJoinedChatThreads`、`fetchChatThreadsWithParentId`、`fetchJoinedChatThreadsWithParentId`、`fetchChatThreadMember`、`fetchLastMessageWithChatThreads`、`removeMemberFromChatThread`、`updateChatThreadSubject`、`createChatThread`、`joinChatThread`、`leaveChatThread`、`destroyChatThread` |
+
+### 事件 key（8 个）
+
+| channel | key |
+|---|---|
+| chat_client（2） | `onMultiDeviceThreadEvent`、`onAppActiveNumberReachLimit` |
+| chat_message（2，孤儿常量） | `onMessageReadAck`、`onMessageDeliveryAck` |
+| chat_thread_manager（4） | `onChatThreadCreate`、`onChatThreadUpdate`、`onChatThreadDestroy`、`onUserKickOutOfChatThread` |
+
+### 连带移除
+
+- `ChatThreadManager` Dart 类及其在 `ChatClient` 的 getter、主库导出；`ChatThread` 等仅服务子区的 Model；`ChatThreadEventHandler`；`ChatMessage.chatThread` getter。
+- example 中子区页面/入口及所有调用被移除 API 的页面入口；引用被移除 API 的 Dart 测试同步清理。
+- ohos 分支 ArkTS 侧**不实现**上述 key；`MethodKeys.ets` 以移除后的 Dart 常量集为准对齐（T2.0）。
+
+### 不移除的缺口相关项（复述）
+
+- `resendMessage`（复用 `sendMessage`）、`startCallback`（ArkTS 空实现）、`onSendDataToFlutter`（保留 channel 不实现）。
+- backlog 孤儿常量 5 个（`uploadLog` 等）保留不删，见 §16.1-B。
