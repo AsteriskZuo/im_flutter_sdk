@@ -29,7 +29,7 @@ void main() {
       ChatOptions.withAppKey(_appKey, autoLogin: false, debugMode: false),
     );
 
-    if (await client.isLoginBefore()) {
+    if (await client.isConnected()) {
       await client.logout(false);
     }
 
@@ -38,7 +38,7 @@ void main() {
   });
 
   tearDownAll(() async {
-    if (await client.isLoginBefore()) {
+    if (await client.isConnected()) {
       await client.logout(false);
     }
   });
@@ -47,7 +47,7 @@ void main() {
       (tester) async {
     expect(await client.getCurrentUserId(), _userId);
     expect(client.currentUserId, _userId);
-    expect(await client.isLoginBefore(), isTrue);
+    expect(await client.isConnected(), isTrue);
     expect(await client.isConnected(), isTrue);
     expect(await client.getAccessToken(), isNotEmpty);
   });
@@ -243,23 +243,19 @@ void main() {
       );
     });
 
-    testWidgets('FL-CONV-006 deletes local messages by id, time, and all',
+    testWidgets('FL-CONV-006 deletes local messages by id and all',
         (tester) async {
       final first = incoming('delete by id', timestamp: 1000);
-      final second = incoming('delete by time', timestamp: 2000);
-      final third = incoming('delete all', timestamp: 3000);
-      for (final message in <ChatMessage>[first, second, third]) {
+      final second = incoming('delete all', timestamp: 3000);
+      for (final message in <ChatMessage>[first, second]) {
         await conversation.insertMessage(message);
       }
 
-      await conversation.deleteMessageByIds(<String>[first.msgId]);
+      await conversation.deleteMessage(first.msgId);
       // NOTE(ios): loading a deleted message throws ChatError (code 3) on iOS
       // because the native SDK reports an EMError, while Android returns null.
       // expect(await conversation.loadMessage(first.msgId), isNull);
-
-      await conversation.deleteMessagesWithTs(1500, 2500);
-      // expect(await conversation.loadMessage(second.msgId), isNull);
-      expect(await conversation.loadMessage(third.msgId), isNotNull);
+      expect(await conversation.loadMessage(second.msgId), isNotNull);
 
       await conversation.deleteAllMessages();
       expect(await conversation.messagesCount(), 0);

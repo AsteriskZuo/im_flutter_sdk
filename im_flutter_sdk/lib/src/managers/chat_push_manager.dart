@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/services.dart';
 import 'package:im_flutter_sdk/im_flutter_sdk.dart';
 import 'package:im_flutter_sdk/src/tools/chat_log.dart';
@@ -14,31 +12,11 @@ import 'package:im_flutter_sdk_interface/im_flutter_sdk_interface.dart'
 /// 推送设置管理类。
 /// ~end
 class ChatPushManager {
-  /// ~english
-  /// Gets the push configurations from the server.
-  /// ~end
-  ///
-  /// ~chinese
-  /// 从服务器获取推送设置信息。
-  /// ~end
-
   ChatPushManager() {
     platform_interface.Client.instance.pushManager
         .updateNativeHandler((MethodCall call) async {
       ChatLog.d("${call.method}: arguments: ${call.arguments}");
     });
-  }
-
-  Future<ChatPushConfigs> fetchPushConfigsFromServer() async {
-    try {
-      Map result = await platform_interface.Client.instance.pushManager
-          .callNativeMethod(ChatMethodKeys.getImPushConfigFromServer);
-      ChatError.hasErrorFromResult(result);
-      return ChatPushConfigs.fromJson(
-          result[ChatMethodKeys.getImPushConfigFromServer]);
-    } catch (e) {
-      rethrow;
-    }
   }
 
   /// ~english
@@ -101,98 +79,6 @@ class ChatPushManager {
     }
   }
 
-  @Deprecated("Use [bindDeviceToken] instead")
-
-  /// ~english
-  /// Updates the HMS push token.
-  ///
-  /// Param [token] The HMS push token.
-  ///
-  /// **Throws** A description of the issue that caused this exception. See [ChatError]
-  /// ~end
-  ///
-  /// ~chinese
-  /// 更新华为推送 token。
-  ///
-  /// Param [token] 要更新的华为推送 token。
-  ///
-  /// **Throws** 如果有异常会在此抛出，包括错误码和错误信息，详见 [ChatError]。
-  /// ~end
-  Future<void> updateHMSPushToken(String token) async {
-    if (Platform.isAndroid) {
-      try {
-        Map req = {'token': token};
-        Map result = await platform_interface.Client.instance.pushManager
-            .callNativeMethod(ChatMethodKeys.updateHMSPushToken, req);
-        ChatError.hasErrorFromResult(result);
-      } catch (e) {
-        rethrow;
-      }
-    } else {
-      return;
-    }
-  }
-
-  @Deprecated("Use [bindDeviceToken] instead")
-
-  /// ~english
-  /// Updates the FCM push token,
-  ///
-  /// Param [token] The FCM push token.
-  ///
-  /// **Throws** A description of the issue that caused this exception. See [ChatError]
-  /// ~end
-  ///
-  /// ~chinese
-  /// 更新谷歌 FCM 推送 token。
-  ///
-  /// Param [token] 要更新的谷歌 FCM 推送 token。
-  ///
-  /// **Throws** 如果有异常会在此抛出，包括错误码和错误信息，详见 [ChatError]。
-  /// ~end
-  Future<void> updateFCMPushToken(String token) async {
-    try {
-      Map req = {'token': token};
-      Map result = await platform_interface.Client.instance.pushManager
-          .callNativeMethod(ChatMethodKeys.updateFCMPushToken, req);
-      ChatError.hasErrorFromResult(result);
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  @Deprecated("Use [bindDeviceToken] instead")
-
-  /// ~english
-  /// Updates the APNs push token.
-  ///
-  /// Param [token] The APNs push token.
-  ///
-  /// **Throws** A description of the issue that caused this exception. See [ChatError]
-  /// ~end
-  ///
-  /// ~chinese
-  /// 更新苹果推送（APNs）token。
-  ///
-  /// Param [token] 要更新的苹果推送（APNs）token。
-  ///
-  /// **Throws** 如果有异常会在此抛出，包括错误码和错误信息，详见 [ChatError]。
-  /// ~end
-  Future<void> updateAPNsDeviceToken(String token) async {
-    if (Platform.isIOS) {
-      try {
-        Map req = {'token': token};
-        Map result = await platform_interface.Client.instance.pushManager
-            .callNativeMethod(ChatMethodKeys.updateAPNsPushToken, req);
-        ChatError.hasErrorFromResult(result);
-      } catch (e) {
-        rethrow;
-      }
-    } else {
-      return;
-    }
-  }
-
   /// ~english
   /// Binds the push token of the device.
   ///
@@ -232,94 +118,6 @@ class ChatPushManager {
       ChatError.hasErrorFromResult(result);
     } catch (e) {
       rethrow;
-    }
-  }
-
-  // 4.25.0
-
-  /// ~english
-  /// Binds the Apple PushKit token, which is used for VoIP push notifications.
-  ///
-  /// This method is available on iOS only; on other platforms it does nothing.
-  ///
-  /// Param [deviceToken] The PushKit token reported by `PKPushRegistry`, in hexadecimal.
-  ///
-  /// The PushKit certificate name must be set with [ChatOptions.pushKitCertName] when the SDK is
-  /// initialized, because the certificate name cannot be changed at runtime.
-  ///
-  /// The native SDK caches the token before binding it: if the current user is not logged in
-  /// yet, this call fails with `ChatError`, but the token stays cached and is bound
-  /// automatically after the next successful login. `ChatClient.logout` with
-  /// `unbindDeviceToken: true` unbinds the PushKit token as well.
-  ///
-  /// **Throws** A description of the issue that caused this exception. See [ChatError]
-  /// ~end
-  ///
-  /// ~chinese
-  /// 绑定苹果 PushKit token，用于 VoIP 推送。
-  ///
-  /// 仅 iOS 平台有效，其他平台调用不做任何处理。
-  ///
-  /// Param [deviceToken] `PKPushRegistry` 回调返回的 PushKit token，十六进制字符串。
-  ///
-  /// PushKit 证书名称需要在 SDK 初始化时通过 [ChatOptions.pushKitCertName] 设置，
-  /// 因为证书名称不支持运行时修改。
-  ///
-  /// 原生 SDK 会先缓存 token 再执行绑定：若此时当前用户尚未登录，本次调用会抛出 [ChatError]，
-  /// 但 token 已缓存，下次登录成功后 SDK 会自动完成绑定。调用 `ChatClient.logout` 且
-  /// `unbindDeviceToken` 为 `true` 时，会同时解绑 PushKit token。
-  ///
-  /// **Throws** 如果有异常会在此抛出，包括错误码和错误信息，详见 [ChatError]。
-  /// ~end
-
-  Future<void> bindPushKitToken({required String deviceToken}) async {
-    if (Platform.isIOS) {
-      try {
-        Map req = {'deviceToken': deviceToken};
-        Map result = await platform_interface.Client.instance.pushManager
-            .callNativeMethod(ChatMethodKeys.bindPushKitToken, req);
-        ChatError.hasErrorFromResult(result);
-      } catch (e) {
-        rethrow;
-      }
-    } else {
-      return;
-    }
-  }
-
-  /// ~english
-  /// Unbinds the Apple PushKit token bound by [bindPushKitToken].
-  ///
-  /// This method is available on iOS only; on other platforms it does nothing.
-  ///
-  /// `ChatClient.logout` with `unbindDeviceToken: true` already unbinds the PushKit token,
-  /// so call this method only to unbind it while the current user stays logged in.
-  ///
-  /// **Throws** A description of the issue that caused this exception. See [ChatError]
-  /// ~end
-  ///
-  /// ~chinese
-  /// 解绑 [bindPushKitToken] 绑定的苹果 PushKit token。
-  ///
-  /// 仅 iOS 平台有效，其他平台调用不做任何处理。
-  ///
-  /// `ChatClient.logout` 且 `unbindDeviceToken` 为 `true` 时已经会同时解绑 PushKit token，
-  /// 因此只有在当前用户保持登录状态、需要单独解绑时才需要调用本方法。
-  ///
-  /// **Throws** 如果有异常会在此抛出，包括错误码和错误信息，详见 [ChatError]。
-  /// ~end
-
-  Future<void> unbindPushKitToken() async {
-    if (Platform.isIOS) {
-      try {
-        Map result = await platform_interface.Client.instance.pushManager
-            .callNativeMethod(ChatMethodKeys.unbindPushKitToken);
-        ChatError.hasErrorFromResult(result);
-      } catch (e) {
-        rethrow;
-      }
-    } else {
-      return;
     }
   }
 
@@ -554,66 +352,6 @@ class ChatPushManager {
           }
         }
       }
-      return ret;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  /// ~english
-  /// Sets the preferred language for push notifications.
-  ///
-  /// Param [languageCode] The language code.
-  ///
-  /// **Throws** A description of the exception. See [ChatError].
-  /// ~end
-  ///
-  /// ~chinese
-  /// 设置用户推送翻译语言。
-  ///
-  /// Param [languageCode] 语言代码。
-  ///
-  /// **Throws** 如果有异常会在此抛出，包括错误码和错误信息，详见 [ChatError]。
-  /// ~end
-
-  Future<void> setPreferredNotificationLanguage(String languageCode) async {
-    try {
-      Map req = {"code": languageCode};
-      Map result =
-          await platform_interface.Client.instance.pushManager.callNativeMethod(
-        ChatMethodKeys.setPreferredNotificationLanguage,
-        req,
-      );
-      ChatError.hasErrorFromResult(result);
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  /// ~english
-  /// Gets the preferred language for push notifications.
-  ///
-  /// **Return** The language code.
-  ///
-  /// **Throws** A description of the exception. See [ChatError].
-  /// ~end
-  ///
-  /// ~chinese
-  /// 获取用户设置的推送翻译语言。
-  ///
-  /// **Return** 设置的语言代码。
-  ///
-  /// **Throws** 如果有异常会在此抛出，包括错误码和错误信息，详见 [ChatError]。
-  /// ~end
-
-  Future<String?> fetchPreferredNotificationLanguage() async {
-    try {
-      Map result =
-          await platform_interface.Client.instance.pushManager.callNativeMethod(
-        ChatMethodKeys.fetchPreferredNotificationLanguage,
-      );
-      ChatError.hasErrorFromResult(result);
-      String? ret = result[ChatMethodKeys.fetchPreferredNotificationLanguage];
       return ret;
     } catch (e) {
       rethrow;

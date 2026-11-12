@@ -18,7 +18,6 @@ void main() {
       return switch (method) {
         'getCurrentUser' => <String, Object>{'getCurrentUser': 'unit-user'},
         'isConnected' => <String, Object>{'isConnected': true},
-        'isLoggedInBefore' => <String, Object>{'isLoggedInBefore': true},
         'getToken' => <String, Object>{'getToken': 'token-value'},
         _ => <String, Object>{},
       };
@@ -57,7 +56,6 @@ void main() {
   test('client state APIs preserve native values', () async {
     expect(await EMClient.getInstance.getCurrentUserId(), 'unit-user');
     expect(await EMClient.getInstance.isConnected(), isTrue);
-    expect(await EMClient.getInstance.isLoginBefore(), isTrue);
     expect(await EMClient.getInstance.getAccessToken(), 'token-value');
   });
 

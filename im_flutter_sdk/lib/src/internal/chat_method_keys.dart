@@ -3,28 +3,19 @@ class ChatMethodKeys {
   static const String init = "init";
   static const String createAccount = "createAccount";
   static const String login = "login";
-  static const String loginWithAgoraToken = "loginWithAgoraToken";
   static const String renewToken = "renewToken";
   static const String logout = "logout";
   static const String changeAppKey = "changeAppKey";
 
   static const String uploadLog = "uploadLog";
-  static const String compressLogs = "compressLogs";
-  static const String kickDevice = "kickDevice";
-  static const String kickAllDevices = "kickAllDevices";
-  static const String getLoggedInDevicesFromServer =
-      "getLoggedInDevicesFromServer";
-
   static const String getToken = "getToken";
   static const String getCurrentUser = "getCurrentUser";
   static const String getCurrentDeviceId = "getCurrentDeviceId";
-  static const String isLoggedInBefore = "isLoggedInBefore";
   static const String isConnected = "isConnected";
 
   /// ChatClient listener
   static const String onMultiDeviceGroupEvent = "onMultiDeviceGroupEvent";
   static const String onMultiDeviceContactEvent = "onMultiDeviceContactEvent";
-  static const String onMultiDeviceThreadEvent = "onMultiDeviceThreadEvent";
   static const String onMultiDeviceRemoveMessagesEvent =
       "onMultiDeviceRemoveMessagesEvent";
   static const String onMultiDevicesConversationEvent =
@@ -44,9 +35,6 @@ class ChatMethodKeys {
   static const String onSendDataToFlutter = "onSendDataToFlutter";
   static const String onTokenWillExpire = "onTokenWillExpire";
   static const String onTokenDidExpire = "onTokenDidExpire";
-  static const String onAppActiveNumberReachLimit =
-      'onAppActiveNumberReachLimit';
-
   /// ChatContactManager methods
   static const String addContact = "addContact";
   static const String deleteContact = "deleteContact";
@@ -76,7 +64,6 @@ class ChatMethodKeys {
   static const String ackConversationRead = "ackConversationRead";
   static const String recallMessage = "recallMessage";
   static const String getConversation = "getConversation";
-  static const String getThreadConversation = "getThreadConversation";
   static const String markAllChatMsgAsRead = "markAllChatMsgAsRead";
   static const String getUnreadMessageCount = "getUnreadMessageCount";
   static const String updateChatMessage = "updateChatMessage";
@@ -98,9 +85,6 @@ class ChatMethodKeys {
   static const String getMessage = "getMessage";
   static const String asyncFetchGroupAcks = "asyncFetchGroupAcks";
   static const String deleteRemoteConversation = "deleteRemoteConversation";
-  static const String deleteMessagesBeforeTimestamp =
-      "deleteMessagesBeforeTimestamp";
-
   static const String translateMessage = "translateMessage";
   static const String fetchSupportLanguages = "fetchSupportLanguages";
 
@@ -108,10 +92,6 @@ class ChatMethodKeys {
   static const String removeReaction = "removeReaction";
   static const String fetchReactionList = "fetchReactionList";
   static const String fetchReactionDetail = "fetchReactionDetail";
-  static const String reportMessage = "reportMessage";
-
-  static const String fetchConversationsFromServerWithPage =
-      "fetchConversationsFromServerWithPage";
   static const String removeMessagesFromServerWithMsgIds =
       "removeMessagesFromServerWithMsgIds";
   static const String removeMessagesFromServerWithTs =
@@ -152,8 +132,6 @@ class ChatMethodKeys {
   static const String onMessageProgressUpdate = "onMessageProgressUpdate";
   static const String onMessageError = "onMessageError";
   static const String onMessageSuccess = "onMessageSuccess";
-  static const String onMessageReadAck = "onMessageReadAck";
-  static const String onMessageDeliveryAck = "onMessageDeliveryAck";
 
   /// ChatPresenceManagerDelegate
   static const String onPresenceStatusChanged = "onPresenceStatusChanged";
@@ -164,11 +142,9 @@ class ChatMethodKeys {
   static const String markMessageAsRead = "markMessageAsRead";
   static const String syncConversationExt = "syncConversationExt";
   static const String removeMessage = "removeMessage";
-  static const String deleteMessageByIds = "deleteMessageByIds";
   static const String getLatestMessage = "getLatestMessage";
   static const String getLatestMessageFromOthers = "getLatestMessageFromOthers";
   static const String clearAllMessages = "clearAllMessages";
-  static const String deleteMessagesWithTs = "deleteMessagesWithTs";
   static const String insertMessage = "insertMessage";
   static const String appendMessage = "appendMessage";
   static const String updateConversationMessage = "updateConversationMessage";
@@ -185,19 +161,12 @@ class ChatMethodKeys {
   /// ChatMessage method
   static const String getReactionList = "getReactionList";
   static const String groupAckCount = "groupAckCount";
-  static const String getChatThread = "chatThread";
 
   /// ChatRoomManager methods
   static const String joinChatRoom = "joinChatRoom";
   static const String leaveChatRoom = "leaveChatRoom";
   static const String fetchPublicChatRoomsFromServer =
       "fetchPublicChatRoomsFromServer";
-  static const String fetchChatRoomInfoFromServer =
-      "fetchChatRoomInfoFromServer";
-  static const String getChatRoom = "getChatRoom";
-  static const String getAllChatRooms = "getAllChatRooms";
-  static const String createChatRoom = "createChatRoom";
-  static const String destroyChatRoom = "destroyChatRoom";
   static const String changeChatRoomSubject = "changeChatRoomSubject";
   static const String changeChatRoomDescription = "changeChatRoomDescription";
   static const String fetchChatRoomMembers = "fetchChatRoomMembers";
@@ -285,8 +254,6 @@ class ChatMethodKeys {
   static const String declineInvitationFromGroup = "declineInvitationFromGroup";
   static const String setMemberAttributesFromGroup =
       "setMemberAttributesFromGroup";
-  static const String removeMemberAttributesFromGroup =
-      "removeMemberAttributesFromGroup";
   static const String fetchMemberAttributesFromGroup =
       "fetchMemberAttributesFromGroup";
   static const String fetchMembersAttributesFromGroup =
@@ -298,16 +265,9 @@ class ChatMethodKeys {
   static const String onGroupChanged = "onGroupChanged";
 
   /// ChatPushManager
-  static const String getImPushConfig = "getImPushConfig";
-  static const String getImPushConfigFromServer = "getImPushConfigFromServer";
   static const String updateImPushStyle = "updateImPushStyle";
   static const String updatePushNickname = "updatePushNickname";
 
-  static const String updateHMSPushToken = "updateHMSPushToken";
-  static const String updateFCMPushToken = "updateFCMPushToken";
-  static const String updateAPNsPushToken = "updateAPNsPushToken";
-
-  static const String reportPushAction = "reportPushAction";
   static const String setConversationSilentMode = "setConversationSilentMode";
   static const String removeConversationSilentMode =
       "removeConversationSilentMode";
@@ -317,11 +277,6 @@ class ChatMethodKeys {
   static const String fetchSilentModeForAll = "fetchSilentModeForAll";
   static const String fetchSilentModeForConversations =
       "fetchSilentModeForConversations";
-  static const String setPreferredNotificationLanguage =
-      "setPreferredNotificationLanguage";
-  static const String fetchPreferredNotificationLanguage =
-      "fetchPreferredNotificationLanguage";
-
   static const String setPushTemplate = "setPushTemplate";
   static const String getPushTemplate = "getPushTemplate";
 
@@ -339,29 +294,6 @@ class ChatMethodKeys {
   static const String fetchSubscribedMembersWithPageNum =
       "fetchSubscribedMembersWithPageNum";
   static const String fetchPresenceStatus = "fetchPresenceStatus";
-
-  /// ChatThreadManager methods
-  static const String fetchChatThreadDetail = "fetchChatThreadDetail";
-  static const String fetchJoinedChatThreads = "fetchJoinedChatThreads";
-  static const String fetchChatThreadsWithParentId =
-      "fetchChatThreadsWithParentId";
-  static const String fetchJoinedChatThreadsWithParentId =
-      "fetchJoinedChatThreadsWithParentId";
-  static const String fetchChatThreadMember = "fetchChatThreadMember";
-  static const String fetchLastMessageWithChatThreads =
-      "fetchLastMessageWithChatThreads";
-  static const String removeMemberFromChatThread = "removeMemberFromChatThread";
-  static const String updateChatThreadSubject = "updateChatThreadSubject";
-  static const String createChatThread = "createChatThread";
-  static const String joinChatThread = "joinChatThread";
-  static const String leaveChatThread = "leaveChatThread";
-  static const String destroyChatThread = "destroyChatThread";
-
-  // ChatThreadManagerListener
-  static const String onChatThreadCreate = "onChatThreadCreate";
-  static const String onChatThreadUpdate = "onChatThreadUpdate";
-  static const String onChatThreadDestroy = "onChatThreadDestroy";
-  static const String onUserKickOutOfChatThread = "onUserKickOutOfChatThread";
 
   /// HandleAction
   static const String startCallback = "startCallback";
@@ -406,8 +338,6 @@ class ChatMethodKeys {
       'updateDeleteMessagesWhenLeaveGroupSetting';
   static const String updateDeleteMessageWhenLeaveRoomSetting =
       'updateDeleteMessageWhenLeaveRoomSetting';
-  static const String updateRoomOwnerCanLeaveSetting =
-      'updateRoomOwnerCanLeaveSetting';
   static const String updateAutoAcceptGroupInvitationSetting =
       'updateAutoAcceptGroupInvitationSetting';
   static const String updateAcceptInvitationAlways = 'acceptInvitationAlways';
@@ -425,8 +355,6 @@ class ChatMethodKeys {
   static const String bindDeviceToken = 'bindDeviceToken';
 
   // 4.25.0
-  static const String bindPushKitToken = 'bindPushKitToken';
-  static const String unbindPushKitToken = 'unbindPushKitToken';
 
   // 4.10
   static const String onOfflineMessageSyncStart = 'onOfflineMessageSyncStart';

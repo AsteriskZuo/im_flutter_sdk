@@ -1,6 +1,5 @@
 export 'src/managers/chat_manager.dart';
 export 'src/managers/chat_room_manager.dart';
-export 'src/managers/chat_thread_manager.dart';
 export 'src/managers/chat_client.dart';
 export 'src/managers/chat_contact_manager.dart';
 export 'src/managers/chat_group_manager.dart';
@@ -11,7 +10,6 @@ export 'src/internal/chat_area_code.dart';
 export 'src/internal/inner_headers.dart';
 export 'src/models/chat_enums.dart';
 export 'src/models/chat_room.dart';
-export 'src/models/chat_thread.dart';
 export 'src/models/chat_conversation.dart';
 export 'src/models/chat_cursor_result.dart';
 export 'src/models/chat_device_info.dart';

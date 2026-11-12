@@ -33,8 +33,6 @@ void registerAllListeners() {
           log('ConnectionEventHandler.onUserAuthenticationFailed'),
       onTokenWillExpire: () => log('ConnectionEventHandler.onTokenWillExpire'),
       onTokenDidExpire: () => log('ConnectionEventHandler.onTokenDidExpire'),
-      onAppActiveNumberReachLimit: () =>
-          log('ConnectionEventHandler.onAppActiveNumberReachLimit'),
       onOfflineMessageSyncStart: () =>
           log('ConnectionEventHandler.onOfflineMessageSyncStart'),
       onOfflineMessageSyncFinish: () =>
@@ -52,10 +50,6 @@ void registerAllListeners() {
       onGroupEvent: (event, groupId, userIds) => log(
         'ChatMultiDeviceEventHandler.onGroupEvent',
         {'event': event.name, 'groupId': groupId, 'userIds': userIds},
-      ),
-      onChatThreadEvent: (event, chatThreadId, userIds) => log(
-        'ChatMultiDeviceEventHandler.onChatThreadEvent',
-        {'event': event.name, 'chatThreadId': chatThreadId, 'userIds': userIds},
       ),
       onRemoteMessagesRemoved: (conversationId, deviceId) => log(
         'ChatMultiDeviceEventHandler.onRemoteMessagesRemoved',
@@ -207,28 +201,6 @@ void registerAllListeners() {
       onAttributesRemoved: (roomId, removedKeys, from) => log(
         'ChatRoomEventHandler.onAttributesRemoved',
         {'roomId': roomId, 'removedKeys': removedKeys, 'from': from},
-      ),
-    ),
-  );
-
-  ChatClient.getInstance.chatThreadManager.addEventHandler(
-    id,
-    ChatThreadEventHandler(
-      onChatThreadCreate: (event) => log(
-        'ChatThreadEventHandler.onChatThreadCreate',
-        {'event': toJsonSafe(event)},
-      ),
-      onChatThreadDestroy: (event) => log(
-        'ChatThreadEventHandler.onChatThreadDestroy',
-        {'event': toJsonSafe(event)},
-      ),
-      onChatThreadUpdate: (event) => log(
-        'ChatThreadEventHandler.onChatThreadUpdate',
-        {'event': toJsonSafe(event)},
-      ),
-      onUserKickOutOfChatThread: (event) => log(
-        'ChatThreadEventHandler.onUserKickOutOfChatThread',
-        {'event': toJsonSafe(event)},
       ),
     ),
   );

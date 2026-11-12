@@ -17,7 +17,7 @@ void main() {
       ChatOptions.withAppKey(_publicAppKey, autoLogin: false, debugMode: false),
     );
 
-    if (await client.isLoginBefore()) {
+    if (await client.isConnected()) {
       await client.logout(false);
     }
   });
@@ -31,7 +31,7 @@ void main() {
 
   testWidgets('FL-APP-001 initializes the native SDK while logged out',
       (tester) async {
-    expect(await client.isLoginBefore(), isFalse);
+    expect(await client.isConnected(), isFalse);
     expect(client.currentUserId, isNull);
   });
 

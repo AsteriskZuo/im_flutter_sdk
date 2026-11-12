@@ -1113,40 +1113,6 @@ class ChatMessage {
     }
   }
 
-  /// ~english
-  /// Get an overview of the thread in the message (currently only supported by group messages)
-  ///
-  /// **Return** overview of the thread
-  ///
-  /// **Throws** A description of the exception. See [ChatError]
-  /// ~end
-  ///
-  /// ~chinese
-  /// 获得消息中的子区概述。
-  ///
-  /// @note
-  /// 目前，该方法只适用于群组消息。
-  ///
-  /// **Return** 子区概述内容。
-  ///
-  /// **Throws** 如果有方法调用的异常会在这里抛出，可以看到具体错误原因。请参见 [ChatError]。
-  /// ~end
-  Future<ChatThread?> chatThread() async {
-    try {
-      Map req = {"msgId": msgId};
-      Map result = await platform_interface.Client.instance.messageManager
-          .callNativeMethod(ChatMethodKeys.getChatThread, req);
-      ChatError.hasErrorFromResult(result);
-      if (result.containsKey(ChatMethodKeys.getChatThread)) {
-        return result.getValue<ChatThread>(ChatMethodKeys.getChatThread,
-            callback: (obj) => ChatThread.fromJson(obj));
-      } else {
-        return null;
-      }
-    } catch (e) {
-      rethrow;
-    }
-  }
 }
 
 abstract class ChatMessageBody {

@@ -704,42 +704,6 @@ class ChatManager {
   }
 
   /// ~english
-  /// Gets the thread conversation by thread ID.
-  ///
-  /// Param [threadId] The thread ID.
-  ///
-  /// **Return** The conversation object.
-  ///
-  /// **Throws** A description of the exception. See [ChatError].
-  /// ~end
-  ///
-  /// ~chinese
-  /// 根据 thread ID 获取 thread 会话。
-  ///
-  /// Param [threadId] Thread ID.
-  ///
-  /// **Return** 会话对象.
-  ///
-  /// **Throws**  如果有异常会在这里抛出，包含错误码和错误描述，详见 [ChatError]。
-  /// ~end
-  Future<ChatConversation?> getThreadConversation(String threadId) async {
-    try {
-      Map req = {"convId": threadId};
-      Map result = await platform_interface.Client.instance.chatManager
-          .callNativeMethod(ChatMethodKeys.getThreadConversation, req);
-      ChatError.hasErrorFromResult(result);
-      if (result.containsKey(ChatMethodKeys.getThreadConversation)) {
-        return ChatConversation.fromJson(
-            result[ChatMethodKeys.getThreadConversation]);
-      } else {
-        return null;
-      }
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  /// ~english
   /// Marks all conversations as read.
   ///
   /// This method is for the local conversations only.
@@ -1027,55 +991,6 @@ class ChatManager {
       ChatError.hasErrorFromResult(result);
       List<ChatConversation> conversationList = [];
       result[ChatMethodKeys.getConversationsFromServer]?.forEach((element) {
-        conversationList.add(ChatConversation.fromJson(element));
-      });
-      return conversationList;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  @Deprecated('Use [fetchConversationsByOptions] instead')
-
-  /// ~english
-  /// Gets the list of conversations from the server.
-  ///
-  /// Param [pageNum] The current page number.
-  ///
-  /// Param [pageSize] The number of conversations to get on each page.
-  ///
-  /// **Return** The conversation list of the current user.
-  ///
-  /// **Throws** A description of the exception. See [ChatError].
-  /// ~end
-  ///
-  /// ~chinese
-  /// 获取服务器会话列表。
-  ///
-  /// Param [pageNum] 当前页码。
-  ///
-  /// Param [pageSize] 每页期望返回的会话数量。
-  ///
-  /// **Return** 当前用户的会话列表。
-  ///
-  /// **Throws**  如果有异常会在这里抛出，包含错误码和错误描述，详见 [ChatError]。
-  /// ~end
-  Future<List<ChatConversation>> fetchConversationListFromServer({
-    int pageNum = 1,
-    int pageSize = 20,
-  }) async {
-    try {
-      Map request = {
-        "pageNum": pageNum,
-        "pageSize": pageSize,
-      };
-      Map result = await platform_interface.Client.instance.chatManager
-          .callNativeMethod(
-              ChatMethodKeys.fetchConversationsFromServerWithPage, request);
-      ChatError.hasErrorFromResult(result);
-      List<ChatConversation> conversationList = [];
-      result[ChatMethodKeys.fetchConversationsFromServerWithPage]
-          ?.forEach((element) {
         conversationList.add(ChatConversation.fromJson(element));
       });
       return conversationList;
@@ -1634,72 +1549,6 @@ class ChatManager {
       Map data = await platform_interface.Client.instance.chatManager
           .callNativeMethod(ChatMethodKeys.deleteRemoteConversation, req);
       ChatError.hasErrorFromResult(data);
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  /// ~english
-  /// Deletes messages with the timestamp that is before the specified one.
-  ///
-  /// Param [timestamp]  The specified Unix timestamp(milliseconds).
-  ///
-  /// **Throws** A description of the exception. See [ChatError].
-  /// ~end
-  ///
-  /// ~chinese
-  /// 根据时间删除本地消息。
-  ///
-  /// Param [timestamp] 指定的Unix时间戳(毫秒)。
-  ///
-  /// **Throws** 如果有异常会在这里抛出，包含错误码和错误描述，详见 [ChatError]。
-  /// ~end
-
-  Future<void> deleteMessagesBefore(int timestamp) async {
-    try {
-      Map result = await platform_interface.Client.instance.chatManager
-          .callNativeMethod(ChatMethodKeys.deleteMessagesBeforeTimestamp,
-              {"timestamp": timestamp});
-      ChatError.hasErrorFromResult(result);
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  /// ~english
-  ///  Reports an inappropriate message.
-  ///
-  /// Param [messageId] The ID of the message to report.
-  ///
-  /// Param [tag] The tag of the inappropriate message. You need to type a custom tag, like `porn` or `ad`.
-  ///
-  /// Param [reason] The reporting reason. You need to type a specific reason.
-  ///
-  /// **Throws** A description of the exception. See [ChatError].
-  /// ~end
-  ///
-  /// ~chinese
-  /// 举报消息。
-  ///
-  /// Param [messageId] 要举报的消息 ID。
-  ///
-  /// Param [tag] 非法消息的标签。你需要填写自定义标签，例如`涉政`或`广告`。
-  ///
-  /// Param [reason] 举报原因。你需要自行填写举报原因。
-  ///
-  /// **Throws**  如果有异常会在此抛出，包括错误码和错误信息，详见 [ChatError]。
-  /// ~end
-
-  Future<void> reportMessage({
-    required String messageId,
-    required String tag,
-    required String reason,
-  }) async {
-    try {
-      Map req = {"msgId": messageId, "tag": tag, "reason": reason};
-      Map result = await platform_interface.Client.instance.chatManager
-          .callNativeMethod(ChatMethodKeys.reportMessage, req);
-      ChatError.hasErrorFromResult(result);
     } catch (e) {
       rethrow;
     }

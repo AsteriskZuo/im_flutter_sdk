@@ -43,8 +43,6 @@ class ChatClient {
         _onMultiDeviceGroupEvent(argMap!);
       } else if (call.method == ChatMethodKeys.onMultiDeviceContactEvent) {
         _onMultiDeviceContactEvent(argMap!);
-      } else if (call.method == ChatMethodKeys.onMultiDeviceThreadEvent) {
-        _onMultiDeviceThreadEvent(argMap!);
       } else if (call.method ==
           ChatMethodKeys.onMultiDeviceRemoveMessagesEvent) {
         _onMultiDeviceRoamMessagesRemovedEvent(argMap!);
@@ -57,8 +55,6 @@ class ChatClient {
         _onTokenWillExpire(argMap);
       } else if (call.method == ChatMethodKeys.onTokenDidExpire) {
         _onTokenDidExpire(argMap);
-      } else if (call.method == ChatMethodKeys.onAppActiveNumberReachLimit) {
-        _onAppActiveNumberReachLimit(argMap);
       } else if (call.method == ChatMethodKeys.onOfflineMessageSyncStart) {
         _onOfflineMessageSyncStart(argMap);
       } else if (call.method == ChatMethodKeys.onOfflineMessageSyncFinish) {
@@ -133,12 +129,6 @@ class ChatClient {
     }
   }
 
-  void _onAppActiveNumberReachLimit(Map? map) {
-    for (var item in _connectionHandlers.values) {
-      item.onAppActiveNumberReachLimit?.call();
-    }
-  }
-
   void _onOfflineMessageSyncStart(Map? map) {
     for (var item in _connectionHandlers.values) {
       item.onOfflineMessageSyncStart?.call();
@@ -173,17 +163,6 @@ class ChatClient {
     }
   }
 
-  Future<void> _onMultiDeviceThreadEvent(Map map) async {
-    ChatMultiDevicesEvent event =
-        convertIntToChatMultiDevicesEvent(map['event'])!;
-    String target = map['target'] ?? '';
-    List<String> users = map.getList("userIds") ?? [];
-
-    for (var handler in _multiDeviceHandlers.values) {
-      handler.onChatThreadEvent?.call(event, target, users);
-    }
-  }
-
   Future<void> _onMultiDeviceRoamMessagesRemovedEvent(Map map) async {
     String convId = map['convId'];
     String deviceId = map['deviceId'];
@@ -212,7 +191,6 @@ class ChatClient {
   ChatRoomManager? _roomManager;
   ChatPresenceManager? _presenceManager;
   ChatPushManager? _pushManager;
-  ChatThreadManager? _threadManager;
   ChatUserInfoManager? _userInfoManager;
 
   ChatManager get chatManager => _chatManager ??= ChatManager();
@@ -225,9 +203,6 @@ class ChatClient {
       _presenceManager ??= ChatPresenceManager();
   ChatUserInfoManager get userInfoManager =>
       _userInfoManager ??= ChatUserInfoManager();
-
-  ChatThreadManager get chatThreadManager =>
-      _threadManager ??= ChatThreadManager();
 
   String? get currentUserId => _currentUserId;
   String? _currentUserId;
@@ -248,7 +223,6 @@ class ChatClient {
     pushManager;
     presenceManager;
     userInfoManager;
-    chatThreadManager;
   }
 
   /// ~english
@@ -426,34 +400,6 @@ class ChatClient {
       );
       ChatError.hasErrorFromResult(result);
       return result.boolValue(ChatMethodKeys.isConnected);
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  /// ~english
-  /// Checks whether the user has logged in before and did not log out.
-  ///
-  /// If you need to check whether the SDK is connected to the server, please use [isConnected].
-  ///
-  /// **Return** Whether the user has logged in before.
-  /// `true`: The user has logged in before,
-  /// `false`: The user has not logged in before or has called the [logout] method.
-  /// ~end
-  ///
-  /// ~chinese
-  /// 检查用户是否已登录 Chat 服务。
-  ///
-  /// **Return** 用户是否已经登录 Chat 服务。
-  ///   - `true`：是；
-  ///   - `false`：否。
-  /// ~end
-  Future<bool> isLoginBefore() async {
-    try {
-      Map result = await platform_interface.Client.instance
-          .callNativeMethod(ChatMethodKeys.isLoggedInBefore);
-      ChatError.hasErrorFromResult(result);
-      return result.boolValue(ChatMethodKeys.isLoggedInBefore);
     } catch (e) {
       rethrow;
     }
@@ -876,208 +822,6 @@ class ChatClient {
     }
   }
 
-  /// ~english
-  /// Compresses the debug log into a gzip archive.
-  ///
-  /// Best practice is to delete this debug archive as soon as it is no longer used.
-  ///
-  /// **Return** The path of the compressed gzip file.
-  ///
-  /// **Throws** A description of the exception. See [ChatError].
-  /// ~end
-  ///
-  /// ~chinese
-  /// 压缩 log 文件，并返回压缩后的文件路径。强烈建议方法完成之后删除该压缩文件。
-  ///
-  /// **Return** 压缩后的 log 文件路径。
-  ///
-  /// **Throws**  如果有异常会在这里抛出，包含错误码和错误描述，详见 [ChatError]。
-  /// ~end
-  Future<String> compressLogs() async {
-    try {
-      ChatLog.v('compressLogs:');
-      Map result = await platform_interface.Client.instance
-          .callNativeMethod(ChatMethodKeys.compressLogs);
-      ChatError.hasErrorFromResult(result);
-      return result[ChatMethodKeys.compressLogs];
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  @Deprecated('Use [fetchLoggedInDevices] instead')
-
-  /// ~english
-  /// Gets the list of currently logged-in devices of a specified account.
-  ///
-  /// Param [userId] The user ID.
-  ///
-  /// Param [password] The password.
-  ///
-  /// **Return** The list of the logged-in devices.
-  ///
-  /// **Throws** A description of the exception. See [ChatError].
-  /// ~end
-  ///
-  /// ~chinese
-  /// 获取指定账号下登录的在线设备列表。
-  ///
-  /// Param [userId] 用户 ID。
-  ///
-  /// Param [password] 密码。
-  ///
-  /// **Return**  获取到到设备列表。
-  ///
-  /// **Throws**  如果有异常会在这里抛出，包含错误码和错误描述，详见 [ChatError]。
-  /// ~end
-  Future<List<ChatDeviceInfo>> getLoggedInDevicesFromServer(
-      {required String userId, required String password}) async {
-    try {
-      Map req = {'userId': userId, 'password': password};
-      Map result = await platform_interface.Client.instance
-          .callNativeMethod(ChatMethodKeys.getLoggedInDevicesFromServer, req);
-      ChatError.hasErrorFromResult(result);
-      List<ChatDeviceInfo> list = [];
-      result[ChatMethodKeys.getLoggedInDevicesFromServer]?.forEach((info) {
-        list.add(ChatDeviceInfo.fromJson(info));
-      });
-      return list;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  /// ~english
-  /// Gets the list of currently logged-in devices of a specified account.
-  ///
-  /// Param [userId] The user ID.
-  ///
-  /// Param [pwdOrToken] The password or token.
-  ///
-  /// Param [isPwd] Whether a password or token is used: (Default)`true`: A password is used; `false`: A token is used.
-  ///
-  /// **Return** The list of the logged-in devices.
-  ///
-  /// **Throws** A description of the exception. See [ChatError].
-  /// ~end
-  ///
-  /// ~chinese
-  /// 获取指定账号下登录的在线设备列表。
-  ///
-  /// Param [userId] 用户 ID。
-  ///
-  /// Param [pwdOrToken] 密码或者 token。
-  ///
-  /// Param [isPwd] 是否使用密码或 token：（默认）`true`：使用密码；`false`：使用 token。
-  ///
-  /// **Return**  获取到到设备列表。
-  ///
-  /// **Throws**  如果有异常会在这里抛出，包含错误码和错误描述，详见 [ChatError]。
-  /// ~end
-  Future<List<ChatDeviceInfo>> fetchLoggedInDevices({
-    required String userId,
-    required String pwdOrToken,
-    bool isPwd = true,
-  }) async {
-    try {
-      Map req = {'userId': userId, 'password': pwdOrToken, 'isPwd': isPwd};
-      Map result = await platform_interface.Client.instance
-          .callNativeMethod(ChatMethodKeys.getLoggedInDevicesFromServer, req);
-      ChatError.hasErrorFromResult(result);
-      List<ChatDeviceInfo> list = [];
-      result[ChatMethodKeys.getLoggedInDevicesFromServer]?.forEach((info) {
-        list.add(ChatDeviceInfo.fromJson(info));
-      });
-      return list;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  /// ~english
-  /// Forces the specified account to log out from the specified device.
-  ///
-  /// Param [userId] The account you want to force to log out.
-  ///
-  /// Param [pwdOrToken] The password or token.
-  ///
-  /// Param [resource] The device ID. For how to fetch the device ID, See [ChatDeviceInfo.resource].
-  ///
-  /// **Throws** A description of the exception. See [ChatError].
-  /// ~end
-  ///
-  /// ~chinese
-  /// 将指定账号登录的指定设备踢下线。
-  ///
-  /// Param [userId] 用户 ID。
-  ///
-  /// Param [pwdOrToken] 密码 / token。
-  ///
-  /// Param [resource] 设备 ID，详见 [ChatDeviceInfo.resource]。
-  ///
-  /// **Throws**  如果有异常会在这里抛出，包含错误码和错误描述，详见 [ChatError]。
-  /// ~end
-  Future<void> kickDevice({
-    required String userId,
-    required String pwdOrToken,
-    required String resource,
-    bool isPwd = true,
-  }) async {
-    try {
-      ChatLog.v('kickDevice: $userId, "******"');
-      Map req = {
-        'userId': userId,
-        'password': pwdOrToken,
-        'resource': resource,
-        'isPwd': isPwd,
-      };
-      Map result = await platform_interface.Client.instance
-          .callNativeMethod(ChatMethodKeys.kickDevice, req);
-      ChatError.hasErrorFromResult(result);
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  /// ~english
-  /// Forces the specified account to log out from all devices.
-  ///
-  /// Param [userId] The account you want to force to log out from all the devices.
-  ///
-  /// Param [pwdOrToken] The password or token.
-  ///
-  /// Param [isPwd] Whether a password or token is used: (Default)`true`: A password is used; `false`: A token is used.
-  ///
-  /// **Throws** A description of the exception. See [ChatError].
-  /// ~end
-  ///
-  /// ~chinese
-  /// 将指定账号登录的所有设备都踢下线。
-  ///
-  /// Param [userId] 用户 ID。
-  ///
-  /// Param [pwdOrToken] 密码 或 token。
-  ///
-  /// Param [isPwd] 是否使用密码或 token：（默认）`true`：使用密码；`false`：使用 token。
-  ///
-  /// **Throws**  如果有异常会在这里抛出，包含错误码和错误描述，详见 [ChatError]。
-  ///
-  /// ~end
-  Future<void> kickAllDevices({
-    required String userId,
-    required String pwdOrToken,
-    bool isPwd = true,
-  }) async {
-    try {
-      Map req = {'userId': userId, 'password': pwdOrToken, 'isPwd': isPwd};
-      Map result = await platform_interface.Client.instance
-          .callNativeMethod(ChatMethodKeys.kickAllDevices, req);
-      ChatError.hasErrorFromResult(result);
-    } catch (e) {
-      rethrow;
-    }
-  }
-
   Future<void> updateUsingHttpsOnlySetting(bool usingHttpsOnly) async {
     try {
       Map req = {'usingHttpsOnly': usingHttpsOnly};
@@ -1132,18 +876,6 @@ class ChatClient {
       ChatError.hasErrorFromResult(result);
       _options = _options?.copyWith(
           deleteMessageWhenLeaveRoom: deleteMessageWhenLeaveRoom);
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<void> updateRoomOwnerCanLeaveSetting(bool roomOwnerCanLeave) async {
-    try {
-      Map req = {'roomOwnerCanLeave': roomOwnerCanLeave};
-      Map result = await platform_interface.Client.instance
-          .callNativeMethod(ChatMethodKeys.updateRoomOwnerCanLeaveSetting, req);
-      ChatError.hasErrorFromResult(result);
-      _options = _options?.copyWith(roomOwnerCanLeave: roomOwnerCanLeave);
     } catch (e) {
       rethrow;
     }

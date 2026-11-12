@@ -1994,49 +1994,6 @@ class ChatGroupManager {
   }
 
   /// ~english
-  /// Removes group member custom attributes.
-  ///
-  /// Param [groupId]     Group ID
-  /// Param [keys]        The keys of the attributes to be removed.
-  /// Param [userId]      Target user ID to remove attributes
-  ///
-  /// **Returns** None.
-  ///
-  /// **Throws** Exception description, see [ChatError].
-  /// ~end
-  ///
-  /// ~chinese
-  /// 删除群成员自定义属性。
-  ///
-  /// Param [groupId]     群组 ID
-  /// Param [keys]        要删除的属性键列表
-  /// Param [userId]      要设置属性的用户 ID
-  ///
-  /// **Return** 无。
-  ///
-  /// **Throws** 如果有异常会在这里抛出，包含错误码和错误描述，详见 [ChatError].
-  /// ~end
-  Future<void> removeMemberAttributes({
-    required String groupId,
-    required List<String> keys,
-    String? userId,
-  }) async {
-    try {
-      Map req = {
-        'groupId': groupId,
-      };
-      req.putIfNotNull('userId', userId);
-      req.putIfNotNull('keys', keys);
-      Map result = await platform_interface.Client.instance.groupManager
-          .callNativeMethod(
-              ChatMethodKeys.removeMemberAttributesFromGroup, req);
-      ChatError.hasErrorFromResult(result);
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  /// ~english
   /// Gets all custom attributes of a group member.
   ///
   /// Param [groupId]    The group ID.

@@ -5,7 +5,6 @@ export 'chat_transform_tools.dart';
 
 export '../models/chat_enums.dart';
 export '../models/chat_room.dart';
-export '../models/chat_thread.dart';
 export '../models/chat_conversation.dart';
 export '../models/chat_contact.dart';
 export '../models/chat_cursor_result.dart';
@@ -27,7 +26,6 @@ export '../models/chat_voice_param.dart';
 export '../models/chat_options.dart';
 export '../models/chat_page_result.dart';
 export '../models/chat_presence.dart';
-export '../models/chat_push_configs.dart';
 export '../models/chat_translate_language.dart';
 export '../models/chat_user_info.dart';
 export '../models/chat_silent_mode.dart';

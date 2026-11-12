@@ -851,60 +851,6 @@ enum ChatMultiDevicesEvent {
 }
 
 /// ~english
-/// The message thread events.
-/// ~end
-///
-/// ~chinese
-/// 子区事件类型枚举。
-/// ~end
-enum ChatThreadOperation {
-  /// ~english
-  /// The unknown type of message thread event.
-  /// ~end
-  ///
-  /// ~chinese
-  /// 未知类型。
-  /// ~end
-  UnKnown,
-
-  /// ~english
-  /// The message thread is created.
-  /// ~end
-  ///
-  /// ~chinese
-  /// 子区创建。
-  /// ~end
-  Create,
-
-  /// ~english
-  /// The message thread is updated.
-  /// ~end
-  ///
-  /// ~chinese
-  /// 子区更新。
-  /// ~end
-  Update,
-
-  /// ~english
-  /// The message thread is destroyed.
-  /// ~end
-  ///
-  /// ~chinese
-  /// 子区删除。
-  /// ~end
-  Delete,
-
-  /// ~english
-  /// The last reply in the message thread is updated.
-  /// ~end
-  ///
-  /// ~chinese
-  /// 更新子区最新一条消息。
-  /// ~end
-  Update_Msg,
-}
-
-/// ~english
 /// The push display styles.
 /// ~end
 ///

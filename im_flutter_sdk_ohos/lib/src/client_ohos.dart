@@ -9,7 +9,6 @@ class ClientOhos extends Client {
 
   final ChatManager _chatManager = ChatManagerOhos();
   final ChatRoomManager _chatRoomManager = ChatRoomManagerOhos();
-  final ChatThreadManager _chatThreadManager = ChatThreadManagerOhos();
   final ContactManager _contactManager = ContactManagerOhos();
   final GroupManager _groupManager = GroupManagerOhos();
   final PresenceManager _presenceManager = PresenceManagerOhos();
@@ -25,9 +24,6 @@ class ClientOhos extends Client {
 
   @override
   ChatRoomManager get chatRoomManager => _chatRoomManager;
-
-  @override
-  ChatThreadManager get chatThreadManager => _chatThreadManager;
 
   @override
   ContactManager get contactManager => _contactManager;
@@ -69,14 +65,6 @@ class ChatRoomManagerOhos extends ChatRoomManager {
   @override
   Future<dynamic> callNativeMethod(String method, [dynamic params]) async {
     return ChatRoomChannel.invokeMethod(method, params);
-  }
-}
-
-class ChatThreadManagerOhos extends ChatThreadManager {
-  ChatThreadManagerOhos() : super();
-  @override
-  Future<dynamic> callNativeMethod(String method, [dynamic params]) async {
-    return ThreadChannel.invokeMethod(method, params);
   }
 }
 

@@ -29,21 +29,6 @@ typedef EMChatRoomManager = ChatRoomManager;
 @Deprecated('Use [ChatRoomPermissionType] instead')
 typedef EMChatRoomPermissionType = ChatRoomPermissionType;
 
-@Deprecated('Use [ChatThread] instead')
-typedef EMChatThread = ChatThread;
-
-@Deprecated('Use [ChatThreadEvent] instead')
-typedef EMChatThreadEvent = ChatThreadEvent;
-
-@Deprecated('Use [ChatThreadEventHandler] instead')
-typedef EMChatThreadEventHandler = ChatThreadEventHandler;
-
-@Deprecated('Use [ChatThreadManager] instead')
-typedef EMChatThreadManager = ChatThreadManager;
-
-@Deprecated('Use [ChatThreadOperation] instead')
-typedef EMChatThreadOperation = ChatThreadOperation;
-
 @Deprecated('Use [ChatClient] instead')
 typedef EMClient = ChatClient;
 
@@ -169,9 +154,6 @@ typedef EMPresenceStatusDetail = ChatPresenceStatusDetail;
 
 @Deprecated('Use [ChatPushConfig] instead')
 typedef EMPushConfig = ChatPushConfig;
-
-@Deprecated('Use [ChatPushConfigs] instead')
-typedef EMPushConfigs = ChatPushConfigs;
 
 @Deprecated('Use [ChatPushManager] instead')
 typedef EMPushManager = ChatPushManager;

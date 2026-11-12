@@ -491,39 +491,6 @@ class ChatConversation {
   }
 
   /// ~english
-  /// Deletes messages sent or received in a certain period from the local database.
-  ///
-  /// Param [startTs] The starting UNIX timestamp for message deletion. The unit is millisecond.
-  ///
-  /// Param [endTs] The end UNIX timestamp for message deletion. The unit is millisecond.
-  ///
-  /// **Throws** A description of the exception. See [ChatError].
-  ///
-  /// ~end
-  ///
-  /// ~chinese
-  /// 从本地数据库中删除指定时间段内的消息。
-  ///
-  /// Param [startTs] 删除消息的起始时间。UNIX 时间戳，单位为毫秒。
-  ///
-  /// Param [endTs] 删除消息的结束时间。UNIX 时间戳，单位为毫秒。
-  ///
-  /// **Throws**  如果有异常会在这里抛出，包含错误码和错误描述，详见 [ChatError]。
-  /// ~end
-  Future<void> deleteMessagesWithTs(int startTs, int endTs) async {
-    try {
-      Map req = _toJson();
-      req['startTs'] = startTs;
-      req['endTs'] = endTs;
-      Map result = await platform_interface.Client.instance.conversationManager
-          .callNativeMethod(ChatMethodKeys.deleteMessagesWithTs, req);
-      ChatError.hasErrorFromResult(result);
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  /// ~english
   /// Gets the message with a specific message ID.
   ///
   /// If the message is already loaded into the memory cache, the message will be directly returned; otherwise, the message will be loaded from the local database and loaded in the memory.
@@ -847,33 +814,6 @@ class ChatConversation {
       ChatError.hasErrorFromResult(result);
       int count = result[ChatMethodKeys.messageCount];
       return count;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  /// ~english
-  /// Deletes messages with message ids.
-  ///
-  /// Param [messageIds]  The list of message ids.
-  ///
-  /// **Throws** A description of the exception. See [ChatError].
-  /// ~end
-  ///
-  /// ~chinese
-  /// 根据时间删除本地消息。
-  ///
-  /// Param [messageIds] 指定的消息id列表。
-  ///
-  /// **Throws** 如果有异常会在这里抛出，包含错误码和错误描述，详见 [ChatError]。
-  /// ~end
-  Future<void> deleteMessageByIds(List<String> messageIds) async {
-    try {
-      Map req = _toJson();
-      req['messageIds'] = messageIds;
-      Map result = await platform_interface.Client.instance.conversationManager
-          .callNativeMethod(ChatMethodKeys.deleteMessageByIds, req);
-      ChatError.hasErrorFromResult(result);
     } catch (e) {
       rethrow;
     }

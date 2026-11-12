@@ -5,14 +5,14 @@ import 'package:im_flutter_sdk/src/tools/chat_extension.dart';
 /// The chat room instance class.
 ///
 /// **Note**
-/// To get the correct value, ensure that you call [ChatRoomManager.fetchChatRoomInfoFromServer] before calling this method.
+/// To get the correct value, ensure that you call [ChatRoomManager.joinChatRoom] before calling this method.
 /// ~end
 ///
 /// ~chinese
 /// 聊天室信息类，包含内存中的聊天室信息。
 ///
 /// **Note**
-/// 如需最新数据，需从服务器获取：[ChatRoomManager.fetchChatRoomInfoFromServer]。
+/// 如需最新数据，需从服务器获取：[ChatRoomManager.joinChatRoom]。
 /// ~end
 class ChatRoom {
   ChatRoom({
@@ -84,14 +84,14 @@ class ChatRoom {
   /// Gets the chat room ID.
   ///
   /// **Note**
-  /// To get the correct value, ensure that you call [ChatRoomManager.fetchChatRoomInfoFromServer] before calling this method.
+  /// To get the correct value, ensure that you call [ChatRoomManager.joinChatRoom] before calling this method.
   /// ~end
   ///
   /// ~chinese
   /// 从内存中获取聊天室 ID。
   ///
   /// **Note**
-  /// 如需最新数据，需从服务器获取：[ChatRoomManager.fetchChatRoomInfoFromServer]。
+  /// 如需最新数据，需从服务器获取：[ChatRoomManager.joinChatRoom]。
   /// ~end
   final String roomId;
 
@@ -99,14 +99,14 @@ class ChatRoom {
   /// Gets the chat room name from the memory.
   ///
   /// **Note**
-  /// To get the correct value, ensure that you call [ChatRoomManager.fetchChatRoomInfoFromServer] before calling this method.
+  /// To get the correct value, ensure that you call [ChatRoomManager.joinChatRoom] before calling this method.
   /// ~end
   ///
   /// ~chinese
   /// 从内存中获取聊天室名称。
   ///
   /// **Note**
-  /// 如需最新数据，需从服务器获取：[ChatRoomManager.fetchChatRoomInfoFromServer]。
+  /// 如需最新数据，需从服务器获取：[ChatRoomManager.joinChatRoom]。
   /// ~end
   final String? name;
 
@@ -114,14 +114,14 @@ class ChatRoom {
   /// Gets the chat room description from the memory.
   ///
   /// **Note**
-  /// To get the correct value, ensure that you call [ChatRoomManager.fetchChatRoomInfoFromServer] before calling this method.
+  /// To get the correct value, ensure that you call [ChatRoomManager.joinChatRoom] before calling this method.
   /// ~end
   ///
   /// ~chinese
   /// 从内存中获取聊天室描述。
   ///
   /// **Note**
-  /// 如需最新数据，需从服务器获取：[ChatRoomManager.fetchChatRoomInfoFromServer]。
+  /// 如需最新数据，需从服务器获取：[ChatRoomManager.joinChatRoom]。
   /// ~end
   final String? description;
 
@@ -129,14 +129,14 @@ class ChatRoom {
   /// Gets the chat room owner ID. If this method returns an empty string, the SDK fails to get chat room details.
   ///
   /// **Note**
-  /// To get the correct value, ensure that you call [ChatRoomManager.fetchChatRoomInfoFromServer] before calling this method.
+  /// To get the correct value, ensure that you call [ChatRoomManager.joinChatRoom] before calling this method.
   /// ~end
   ///
   /// ~chinese
   /// 从内存中获取聊天室所有者 ID。
   ///
   /// **Note**
-  /// 如需最新数据，需从服务器获取：[ChatRoomManager.fetchChatRoomInfoFromServer]。
+  /// 如需最新数据，需从服务器获取：[ChatRoomManager.joinChatRoom]。
   /// ~end
   final String? owner;
 
@@ -151,7 +151,7 @@ class ChatRoom {
   /// 从内存中获取聊天室公告。
   ///
   /// **Note**
-  /// 如需最新数据，需从服务器获取：[ChatRoomManager.fetchChatRoomInfoFromServer]。
+  /// 如需最新数据，需从服务器获取：[ChatRoomManager.joinChatRoom]。
   /// ~end
   final String? announcement;
 
@@ -173,14 +173,14 @@ class ChatRoom {
   /// Gets the maximum number of members in the chat room from the memory, which is set/specified when the chat room is created.
   ///
   /// **Note**
-  /// To get the correct value, ensure that you call [ChatRoomManager.fetchChatRoomInfoFromServer] before calling this method.
+  /// To get the correct value, ensure that you call [ChatRoomManager.joinChatRoom] before calling this method.
   /// ~end
   ///
   /// ~chinese
   /// 从内存中获取聊天室最大人数限制，在创建聊天室时设置。
   ///
   /// **Note**
-  /// 如需最新数据，需从服务器获取：{[ChatRoomManager.fetchChatRoomInfoFromServer]。
+  /// 如需最新数据，需从服务器获取：{[ChatRoomManager.joinChatRoom]。
   /// ~end
   final int? maxUsers;
 
@@ -188,14 +188,14 @@ class ChatRoom {
   /// Gets the chat room admin list.
   ///
   /// **Note**
-  /// To get the correct value, ensure that you call [ChatRoomManager.fetchChatRoomInfoFromServer] before calling this method.
+  /// To get the correct value, ensure that you call [ChatRoomManager.joinChatRoom] before calling this method.
   /// ~end
   ///
   /// ~chinese
   /// 从内存中获取聊天室管理员列表。
   ///
   /// **Note**
-  /// 如需最新数据，需从服务器获取：[ChatRoomManager.fetchChatRoomInfoFromServer]。
+  /// 如需最新数据，需从服务器获取：[ChatRoomManager.joinChatRoom]。
   /// ~end
   final List<String>? adminList;
 
@@ -260,14 +260,14 @@ class ChatRoom {
   /// Gets the current user's role in the chat room. The role types: [ChatRoomPermissionType].
   ///
   /// **Note**
-  /// To get the correct value, ensure that you call [ChatRoomManager.fetchChatRoomInfoFromServer] before calling this method.
+  /// To get the correct value, ensure that you call [ChatRoomManager.joinChatRoom] before calling this method.
   /// ~end
   ///
   /// ~chinese
   /// 从内存中获取当前用户在聊天室角色，详见 [ChatRoomPermissionType]。
   ///
   /// **Note**
-  /// 如果需要获取最新值，请调用 [ChatRoomManager.fetchChatRoomInfoFromServer]。
+  /// 如果需要获取最新值，请调用 [ChatRoomManager.joinChatRoom]。
   /// ~end
   final ChatRoomPermissionType permissionType;
 

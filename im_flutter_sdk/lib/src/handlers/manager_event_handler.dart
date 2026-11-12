@@ -141,15 +141,6 @@ class ConnectionEventHandler {
   final VoidCallback? onTokenDidExpire;
 
   /// ~english
-  ///  The number of daily active users (DAU) or monthly active users (MAU) for the app has reached the upper limit.
-  /// ~end
-  ///
-  /// ~chinese
-  /// 应用程序的日活跃用户数量（DAU）或月活跃用户数量（MAU）达到上限。
-  /// ~end
-  final VoidCallback? onAppActiveNumberReachLimit;
-
-  /// ~english
   /// Occurs when the SDK starts pulling offline messages from the server.
   /// ~end
   ///
@@ -192,8 +183,6 @@ class ConnectionEventHandler {
   ///
   /// Param [onTokenDidExpire] The token has expired.
   ///
-  /// Param [onAppActiveNumberReachLimit] The number of daily active users (DAU) or monthly active users (MAU) for the app has reached the upper limit.
-  ///
   /// Param [onOfflineMessageSyncStart] Occurs when the SDK starts pulling offline messages from the server.
   ///
   /// Param [onOfflineMessageSyncFinish] Occurs when the SDK finishes pulling offline messages from the server.
@@ -225,8 +214,6 @@ class ConnectionEventHandler {
   ///
   /// Param [onTokenDidExpire] Agora token 已过期时回调。
   ///
-  /// Param [onAppActiveNumberReachLimit] 应用程序的日活跃用户数量（DAU）或月活跃用户数量（MAU）达到上限时回调。
-  ///
   /// Param [onOfflineMessageSyncStart] 开始从服务器拉取离线消息时触发。
   ///
   /// Param [onOfflineMessageSyncFinish] 从服务器拉取离线消息结束时触发。
@@ -244,7 +231,6 @@ class ConnectionEventHandler {
     this.onUserAuthenticationFailed,
     this.onTokenWillExpire,
     this.onTokenDidExpire,
-    this.onAppActiveNumberReachLimit,
     this.onOfflineMessageSyncStart,
     this.onOfflineMessageSyncFinish,
   });
@@ -307,19 +293,6 @@ class ChatMultiDeviceEventHandler {
   )? onGroupEvent;
 
   /// ~english
-  /// The multi-device event of thread.
-  /// ~end
-  ///
-  /// ~chinese
-  /// 多设备 Thread 事件。
-  /// ~end
-  final void Function(
-    ChatMultiDevicesEvent event,
-    String chatThreadId,
-    List<String> userIds,
-  )? onChatThreadEvent;
-
-  /// ~english
   /// Callback received by other devices after historical messages in a conversation are removed from the server in a multi-device login scenario.
   /// ~end
   ///
@@ -351,8 +324,6 @@ class ChatMultiDeviceEventHandler {
   ///
   /// Param [onGroupEvent] The multi-device event of group.
   ///
-  /// Param [onChatThreadEvent] The multi-device event of thread.
-  ///
   /// Param [onRemoteMessagesRemoved] The multi-device event of historical messages removed from the server.
   ///
   /// Param [onConversationEvent] The multi-device event callback for the operation of a conversation.
@@ -366,8 +337,6 @@ class ChatMultiDeviceEventHandler {
   ///
   /// Param [onGroupEvent] 多设备群组事件。
   ///
-  /// Param [onChatThreadEvent] 多设备 Thread 事件。
-  ///
   /// Param [onRemoteMessagesRemoved] 多设备漫游消息删除事件。
   ///
   /// Param [onConversationEvent] 多设备单个会话操作事件。
@@ -376,7 +345,6 @@ class ChatMultiDeviceEventHandler {
   ChatMultiDeviceEventHandler({
     this.onContactEvent,
     this.onGroupEvent,
-    this.onChatThreadEvent,
     this.onRemoteMessagesRemoved,
     this.onConversationEvent,
   });
@@ -968,119 +936,6 @@ class ChatRoomEventHandler {
     this.onSpecificationChanged,
     this.onAttributesUpdated,
     this.onAttributesRemoved,
-  });
-}
-
-/// ~english
-/// The message thread event handler, which handles message thread events such as creating or leaving a message thread.
-///
-/// Adds a message thread event handler:
-/// ```dart
-///   ChatClient.getInstance.chatThreadManager.addEventHandler(UNIQUE_HANDLER_ID, ChatThreadEventHandler());
-/// ```
-///
-/// Removes a chat event handler:
-/// ```dart
-/// ChatClient.getInstance.chatThreadManager.removeEventHandler(UNIQUE_HANDLER_ID);
-/// ```
-/// ~end
-///
-/// ~chinese
-/// Thread 事件监听
-///
-/// 添加监听:
-/// ```dart
-///   ChatClient.getInstance.chatThreadManager.addEventHandler(UNIQUE_HANDLER_ID, ChatThreadEventHandler());
-/// ```
-///
-/// 移除监听:
-/// ```dart
-/// ChatClient.getInstance.chatThreadManager.removeEventHandler(UNIQUE_HANDLER_ID);
-/// ```
-/// ~end
-class ChatThreadEventHandler {
-  /// ~english
-  /// Occurs when a message thread is created.
-  ///
-  /// Each member of the group to which the message thread belongs can receive the callback.
-  /// ~end
-  ///
-  /// ~chinese
-  /// 子区创建回调。
-  /// ~end
-  final void Function(
-    ChatThreadEvent event,
-  )? onChatThreadCreate;
-
-  /// ~english
-  /// Occurs when a message thread is destroyed.
-  ///
-  /// Each member of the group to which the message thread belongs can receive the callback.
-  /// ~end
-  ///
-  /// ~chinese
-  /// 子区解散事件。
-  /// 子区所属群组的所有成员均可调用该方法。
-  /// ~end
-  final void Function(
-    ChatThreadEvent event,
-  )? onChatThreadDestroy;
-
-  /// ~english
-  /// Occurs when a message thread is updated.
-  ///
-  /// This callback is triggered when the message thread name is changed or a threaded reply is added or recalled.
-  ///
-  /// Each member of the group to which the message thread belongs can receive the callback.
-  /// ~end
-  ///
-  /// ~chinese
-  /// 子区更新回调。
-  /// 子区所属群组的所有成员均可调用该方法。
-  /// ~end
-  final void Function(
-    ChatThreadEvent event,
-  )? onChatThreadUpdate;
-
-  /// ~english
-  /// Occurs when the current user is removed from the message thread by the group owner or a group admin to which the message thread belongs.
-  /// ~end
-  ///
-  /// ~chinese
-  /// 管理员移除子区用户的回调。
-  /// ~end
-  final void Function(
-    ChatThreadEvent event,
-  )? onUserKickOutOfChatThread;
-
-  /// ~english
-  /// The message thread listener callback.
-  ///
-  /// Param [onChatThreadCreate] A message thread is created. All members in the group to which the thread belongs receive this callback.
-  ///
-  /// Param [onChatThreadDestroy] A message thread is destroyed. All members in the group to which the destroyed thread belongs receive this callback.
-  ///
-  /// Param [onChatThreadUpdate] A message thread is updated. All members in the group to which the updated thread belongs receive this callback.
-  ///
-  /// Param [onUserKickOutOfChatThread]  The current user is removed from the message thread by the group owner or a group admin to which the message thread belongs. The current user removed from the thread receives the callback.
-  /// ~end
-  ///
-  /// ~chinese
-  /// Thread 事件监听。
-  ///
-  /// Param [onChatThreadCreate] 子区创建回调。
-  ///
-  /// Param [onChatThreadDestroy] 子区解散事件, 子区所属群组的所有成员均可调用该方法。
-  ///
-  /// Param [onChatThreadUpdate] 子区更新回调, 子区所属群组的所有成员均可调用该方法。
-  ///
-  /// Param [onUserKickOutOfChatThread] 管理员移除子区用户的回调。
-  /// ~end
-  ChatThreadEventHandler({
-    this.onChatThreadCreate,
-    this.onChatThreadDestroy,
-    this.onChatThreadUpdate,
-    this.onUserKickOutOfChatThread,
   });
 }
 
