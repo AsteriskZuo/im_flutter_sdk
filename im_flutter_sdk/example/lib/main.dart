@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import 'auto/auto_mode.dart';
@@ -63,7 +65,11 @@ class _RootShellState extends State<RootShell> {
             final overlay = appNavigatorKey.currentState?.overlay;
             if (overlay != null) {
               FloatingLog.show(overlay);
-              FloatingAttachment.show(overlay);
+              // file_picker has no ohos implementation; skip the attachment
+              // panel on ohos (the panel is the only file_picker caller).
+              if (Platform.operatingSystem != 'ohos') {
+                FloatingAttachment.show(overlay);
+              }
             }
           });
         }

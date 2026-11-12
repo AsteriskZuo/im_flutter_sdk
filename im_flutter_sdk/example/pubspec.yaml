@@ -39,6 +39,14 @@ dependencies:
 
   path_provider: ^2.1.0
 
+  # Ohos implementation of path_provider (openharmony-sig). Only selected by
+  # the ohos plugin resolution; ios/android builds ignore this package.
+  path_provider_ohos:
+    git:
+      url: https://gitcode.com/openharmony-sig/flutter_packages.git
+      ref: bddb2c981fcf826eaf19ed97f55113708aa55727
+      path: packages/path_provider/path_provider_ohos
+
   file_picker: ^8.0.0
 
   im_flutter_sdk:
