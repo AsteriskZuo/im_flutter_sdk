@@ -91,6 +91,13 @@ class AutoMode {
   }
 
   static Future<Map<String, dynamic>> _loadJsonFile(String path) async {
+    // Inline JSON is also accepted (e.g. passed via --dart-define-from-file),
+    // which avoids needing to push script/config files into the device sandbox
+    // (ohos hdc cannot write the app files dir).
+    final trimmed = path.trim();
+    if (trimmed.startsWith('{')) {
+      return Map<String, dynamic>.from(jsonDecode(trimmed) as Map);
+    }
     return Map<String, dynamic>.from(
       jsonDecode(await File(path).readAsString()) as Map,
     );
