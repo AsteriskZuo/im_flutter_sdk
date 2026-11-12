@@ -93,10 +93,11 @@ import SearchServerMessageResultHelper from './models/SearchServerMessageResultH
  *    onMessageDeliveryAck) are intentionally not emitted; onMessageChanged is
  *    a backlog orphan constant and is not wired either.
  *
- * Listener registration is lazy: ChatClient.chatManager() is undefined before
- * ChatClient.init, so registration runs on the first onMethodCall and retries
- * until it succeeds (registeredManager guards re-registration, e.g. after a
- * re-init the listener set is moved to the new ChatManager instance).
+ * Listener registration cannot run in the constructor (android/ios register
+ * there) because ChatClient.chatManager() is undefined before ChatClient.init;
+ * it runs on the first onMethodCall and eagerly right after a successful init
+ * (see ImFlutterSdkPlugin.onAttachedToEngine). registeredManager guards
+ * re-registration when the listener set moves to a new manager instance.
  */
 export default class ChatManagerWrapper extends Wrapper {
   private messageChannel: MethodChannel;

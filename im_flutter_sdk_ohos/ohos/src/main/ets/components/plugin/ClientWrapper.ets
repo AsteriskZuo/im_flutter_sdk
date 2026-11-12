@@ -31,6 +31,20 @@ export default class ClientWrapper extends Wrapper {
   private multiDevicesListener: MultiDevicesListener | undefined;
   private inited: boolean = false;
 
+  /**
+   * Called right after a successful ChatClient.init. The plugin uses this to
+   * eagerly register every wrapper's SDK listeners: the android/ios wrappers
+   * register listeners in their constructors, so an app that only listens
+   * (never calls a manager API) still receives events. On ohos the manager
+   * getters are undefined before init, so registration is deferred to here
+   * (and to the first onMethodCall of each wrapper).
+   */
+  private onInitSuccessListener: (() => void) | undefined;
+
+  public setOnInitSuccessListener(listener: (() => void) | undefined): void {
+    this.onInitSuccessListener = listener;
+  }
+
   constructor(binding: FlutterPluginBinding, channelName: string) {
     super(binding, channelName);
   }
@@ -101,6 +115,9 @@ export default class ClientWrapper extends Wrapper {
       ChatClient.getInstance().init(this.context, options);
       this.inited = true;
       this.registerEaseListener();
+      if (this.onInitSuccessListener !== undefined) {
+        this.onInitSuccessListener();
+      }
       this.onSuccess(result, call.method);
     } catch (e) {
       this.onErrorInfo(result, ChatError.GENERAL_ERROR, `init failed: ${JSON.stringify(e)}`);

@@ -32,8 +32,9 @@ export default class ImFlutterSdkPlugin implements FlutterPlugin {
   }
 
   onAttachedToEngine(binding: FlutterPluginBinding): void {
+    const clientWrapper = new ClientWrapper(binding, 'chat_client');
     this.wrappers = [
-      new ClientWrapper(binding, 'chat_client'),
+      clientWrapper,
       new ChatManagerWrapper(binding, 'chat_manager'),
       new ChatRoomManagerWrapper(binding, 'chat_room_manager'),
       new ContactManagerWrapper(binding, 'chat_contact_manager'),
@@ -45,6 +46,14 @@ export default class ImFlutterSdkPlugin implements FlutterPlugin {
       new ConversationWrapper(binding, 'chat_conversation'),
       new MessageWrapper(binding, 'chat_message'),
     ];
+    // Managers only exist after ChatClient.init, so listeners cannot be
+    // registered in the wrapper constructors like on android/ios; register
+    // them all as soon as init succeeds instead.
+    clientWrapper.setOnInitSuccessListener((): void => {
+      for (const wrapper of this.wrappers) {
+        wrapper.registerEaseListener();
+      }
+    });
   }
 
   onDetachedFromEngine(_binding: FlutterPluginBinding): void {
