@@ -1,0 +1,14 @@
+/node_modules
+/oh_modules
+/local.properties
+/.preview
+/.idea
+/build
+/.cxx
+/.test
+/BuildProfile.ets
+/oh-package-lock.json5
+/.hvigor
+
+# Local copy of the flutter_ohos runtime har, provided by the host app build.
+/har

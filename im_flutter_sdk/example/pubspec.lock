@@ -190,6 +190,13 @@ packages:
       relative: true
     source: path
     version: "4.25.0"
+  im_flutter_sdk_ohos:
+    dependency: "direct overridden"
+    description:
+      path: "../../im_flutter_sdk_ohos"
+      relative: true
+    source: path
+    version: "4.25.0"
   integration_test:
     dependency: "direct dev"
     description: flutter

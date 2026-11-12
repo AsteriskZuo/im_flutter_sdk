@@ -1,0 +1,17 @@
+analyzer:
+  errors:
+    # Federated packages intentionally use local path dependencies in source.
+    invalid_dependency: ignore
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - ohos/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
+include: package:flutter_lints/flutter.yaml
+
+# Additional information about this file can be found at
+# https://dart.dev/guides/language/analysis-options

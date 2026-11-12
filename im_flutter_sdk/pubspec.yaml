@@ -17,6 +17,8 @@ dependencies:
 
   im_flutter_sdk_android: 4.25.0
 
+  im_flutter_sdk_ohos: 4.25.0
+
 
 dev_dependencies:
   flutter_test:
@@ -32,5 +34,5 @@ flutter:
         default_package: im_flutter_sdk_ios
       android:
         default_package: im_flutter_sdk_android
-      # ohos:
-      #   default_package: im_flutter_sdk_ohos
+      ohos:
+        default_package: im_flutter_sdk_ohos
