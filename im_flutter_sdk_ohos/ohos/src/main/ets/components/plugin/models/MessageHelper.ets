@@ -53,7 +53,12 @@ export default class MessageHelper {
       message = ChatMessage.createReceiveMessage(from, body, chatType, msgId);
     }
     message.setTo(to);
-    message.setFrom(from);
+    // Never push an empty sender: native send validation rejects the whole
+    // message ("Message is invalid") when from is set to an empty string.
+    // The SDK fills the current user on send, same as the android wrapper.
+    if (from.length > 0) {
+      message.setFrom(from);
+    }
     message.setReceiverRead(SafetyMapTool.getBoolean(args, 'hasReadAck') ?? false);
 
     let status = EnumTool.messageStatusFromInt(SafetyMapTool.getNumber(args, 'status') ?? 0);
@@ -68,7 +73,12 @@ export default class MessageHelper {
     }
 
     message.deliverOnlineOnly(SafetyMapTool.getBoolean(args, 'deliverOnlineOnly') ?? false);
-    message.setLocalTimestamp(SafetyMapTool.getNumber(args, 'localTime') ?? 0);
+    // Only stamp timestamps when the payload carries real values: native send
+    // validation rejects messages whose local timestamp is 0.
+    let localTime = SafetyMapTool.getNumber(args, 'localTime');
+    if (localTime !== undefined && localTime > 0) {
+      message.setLocalTimestamp(localTime);
+    }
     let serverTime = SafetyMapTool.getNumber(args, 'serverTime');
     if (serverTime !== undefined) {
       message.setServerTimestamp(serverTime);
@@ -81,7 +91,9 @@ export default class MessageHelper {
     }
 
     message.setChatType(chatType);
-    message.setMsgId(msgId);
+    if (msgId.length > 0) {
+      message.setMsgId(msgId);
+    }
 
     MessageHelper.applyAttributes(message, args);
 
