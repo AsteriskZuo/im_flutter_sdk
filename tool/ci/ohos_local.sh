@@ -19,8 +19,11 @@
 #   bash tool/ci/ohos_local.sh logged_out logged_in_base   # subset
 #
 # Environment knobs:
-#   FLUTTER_BIN   Flutter executable to use (default: flutter).
-#                 Must be the HarmonyOS fork (3.41.9+ohos) for ohos device runs.
+#   FLUTTER_BIN   Flutter executable to use. Defaults to the project-pinned
+#                 FVM SDK (`.fvm/flutter_sdk/bin/flutter`, created by
+#                 `fvm use custom_ohos --force`) when present, otherwise the
+#                 `flutter` from PATH. Must be the HarmonyOS fork
+#                 (3.41.9+ohos) for ohos device runs.
 #   OHOS_DEVICE   hdc target (default: 127.0.0.1:5555).
 #   OHOS_SKIP_CODESIGN  Set to 0 when the fork build of the project ships a
 #                 real signing configuration; the CI emulator uses unsigned
@@ -32,7 +35,14 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 EXAMPLE_DIR="$REPO_ROOT/im_flutter_sdk/example"
-FLUTTER_BIN="${FLUTTER_BIN:-flutter}"
+# Prefer the project-pinned fvm SDK; see CONTRIBUTING.md "Flutter SDK 版本（fvm）".
+if [ -z "${FLUTTER_BIN:-}" ]; then
+  if [ -x "$REPO_ROOT/.fvm/flutter_sdk/bin/flutter" ]; then
+    FLUTTER_BIN="$REPO_ROOT/.fvm/flutter_sdk/bin/flutter"
+  else
+    FLUTTER_BIN="flutter"
+  fi
+fi
 OHOS_DEVICE="${OHOS_DEVICE:-127.0.0.1:5555}"
 OHOS_SKIP_CODESIGN="${OHOS_SKIP_CODESIGN:-1}"
 

@@ -19,4 +19,5 @@ make config       # 生成 example/config.local.json + 占位 example/lib/env.da
 make env-gettoken # 换取 user token 并生成 example/lib/env.dart（gitignore，mode 600）
 ```
 
-详见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+鸿蒙设备构建/测试使用 fvm 锁定的 `custom_ohos`（`fvm use custom_ohos --force`，项目级 `.fvmrc` 本机生效），
+Android/iOS 与质量门禁仍使用官方 Flutter 3.47.0；详见 [CONTRIBUTING.md](CONTRIBUTING.md) 的「Flutter SDK 版本（fvm）」。

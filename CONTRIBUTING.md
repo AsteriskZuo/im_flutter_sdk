@@ -39,6 +39,39 @@ make setup   # 依次执行 config + deps + pods
 
 > **重要**：修改 `im_flutter_sdk_ios.podspec` 中的 native 依赖版本（如 HyphenateChat）后，必须执行 `make pods`。`flutter run` 不会追踪 podspec 变更，会跳过 pod install，导致 iOS 使用旧版本 native SDK 引发编译错误。
 
+### Flutter SDK 版本（fvm，鸿蒙）
+
+Android/iOS 与质量门禁使用官方 Flutter 3.47.0；鸿蒙设备构建/测试使用 fork `3.41.9+ohos`。两者用 fvm 管理，缓存在 `~/fvm/versions/`（本机版本名 `custom_official`、`custom_ohos`）。
+
+```bash
+# 只需在本 worktree 执行一次；custom_ohos 不是语义化版本，fvm 会打印可忽略的 WARN
+cd im_flutter_sdk/.worktree/ohos
+fvm use custom_ohos --force
+
+# 之后用 fvm 跑任意命令（会读取 .fvmrc）
+fvm flutter --version        # Flutter 3.41.9+ohos-1.0.2
+fvm flutter pub get
+fvm flutter test integration_test/logged_out_test.dart -d 127.0.0.1:5555
+```
+
+- `fvm use` 会在 worktree 根生成 `.fvmrc` 和 `.fvm/flutter_sdk` 软链；两者已在 `.gitignore` 中（指向本机路径，不可移植，不入库）。换机器或新同事需要各自执行一次 `fvm use custom_ohos --force`。
+- IDE 把 Flutter SDK 指向 `im_flutter_sdk/.worktree/ohos/.fvm/flutter_sdk` 即可获得同样的项目级锁定。
+- `tool/ci/ohos_local.sh`（及 `smoke_local.harmony.sh` / `nightly_local.harmony.sh`）默认优先使用 `.fvm/flutter_sdk/bin/flutter`，因此配好 `.fvmrc` 后直接 `bash tool/ci/ohos_local.sh` 即可，无需手动改 `PATH`；仍可用 `FLUTTER_BIN` 覆盖，例如 `FLUTTER_BIN="$(fvm which flutter)"`。
+- 如果希望**普通的 `flutter` 命令**也遵循项目锁定（而不是只用 `fvm flutter`），在 `~/.zshrc` 加一个函数（可选）：
+
+  ```zsh
+  flutter() {
+    if [[ -f .fvmrc ]] && command -v fvm >/dev/null; then
+      fvm flutter "$@"
+    else
+      command flutter "$@"
+    fi
+  }
+  ```
+
+- 若确实想把 fork 设为**机器全局默认**：`fvm global custom_ohos`，并把 `$HOME/fvm/default/bin` 放在 `PATH` 中。注意这会影响所有项目——5.1.0 等需要官方 3.47 的工作树应各自执行 `fvm use custom_official --force`，日常优先用项目级锁定而不是全局切换。
+- 官方 Flutter 跑过 `pub get` 会重写 `example/.flutter-plugins-dependencies`（丢失 `plugins.ohos` 段），之后做鸿蒙设备测试前先执行一次 `fvm flutter pub get` 恢复。
+
 ### 本地依赖与发布
 
 运行 `make local-deps`（或 `bash tool/use_local_packages.sh`），会在主包、Android、iOS 和 example 的 pubspec 旁生成 `pubspec_overrides.yaml`。interface 没有其他子包依赖，无需 override。仓库 `.gitignore` 已在所有层级忽略这些文件，生成脚本纳入版本管理，已有 override 文件不会被覆盖。
