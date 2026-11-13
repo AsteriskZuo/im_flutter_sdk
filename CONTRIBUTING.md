@@ -57,19 +57,31 @@ fvm flutter test integration_test/logged_out_test.dart -d 127.0.0.1:5555
 - `fvm use` 会在 worktree 根生成 `.fvmrc` 和 `.fvm/flutter_sdk` 软链；两者已在 `.gitignore` 中（指向本机路径，不可移植，不入库）。换机器或新同事需要各自执行一次 `fvm use custom_ohos --force`。
 - IDE 把 Flutter SDK 指向 `im_flutter_sdk/.worktree/ohos/.fvm/flutter_sdk` 即可获得同样的项目级锁定。
 - `tool/ci/ohos_local.sh`（及 `smoke_local.harmony.sh` / `nightly_local.harmony.sh`）默认优先使用 `.fvm/flutter_sdk/bin/flutter`，因此配好 `.fvmrc` 后直接 `bash tool/ci/ohos_local.sh` 即可，无需手动改 `PATH`；仍可用 `FLUTTER_BIN` 覆盖，例如 `FLUTTER_BIN="$(fvm which flutter)"`。
-- 如果希望**普通的 `flutter` 命令**也遵循项目锁定（而不是只用 `fvm flutter`），在 `~/.zshrc` 加一个函数（可选）：
+- 如果希望**普通的 `flutter` 命令**在该项目内也使用锁定 SDK（而不是只输入 `fvm flutter`），可以在 `~/.zshrc` 加一个项目级包装函数（可选、本机生效）：进入 git 工作树后向上查找 `.fvm/flutter_sdk/bin`，命中则直接执行其中的 `flutter`/`dart`，否则回退到 PATH 上的全局版本。**只搜索到 git 仓库根为止**，避免 `$HOME` 等父目录的 `.fvm` 配置泄漏到其他项目；`command flutter` / `\flutter` 可临时使用全局版本。
 
   ```zsh
-  flutter() {
-    if [[ -f .fvmrc ]] && command -v fvm >/dev/null; then
-      fvm flutter "$@"
-    else
-      command flutter "$@"
-    fi
+  function _fvm_sdk_bin() {
+    local dir="${PWD:A}"
+    while [[ "$dir" != "/" ]]; do
+      if [[ -x "$dir/.fvm/flutter_sdk/bin/flutter" ]]; then
+        print -r -- "$dir/.fvm/flutter_sdk/bin"
+        return 0
+      fi
+      if [[ -e "$dir/.git" ]]; then return 1; fi   # 项目锁定按仓库生效
+      dir="${dir:h}"
+    done
+    return 1
+  }
+  function flutter() {
+    local sdk_bin
+    if sdk_bin="$(_fvm_sdk_bin)"; then "$sdk_bin/flutter" "$@"; else command flutter "$@"; fi
   }
   ```
 
-- 若确实想把 fork 设为**机器全局默认**：`fvm global custom_ohos`，并把 `$HOME/fvm/default/bin` 放在 `PATH` 中。注意这会影响所有项目——5.1.0 等需要官方 3.47 的工作树应各自执行 `fvm use custom_official --force`，日常优先用项目级锁定而不是全局切换。
+  注意：shell 函数只对交互式终端生效，Makefile、CI 与脚本不会继承；脚本内请用显式路径或 `FLUTTER_BIN`（`tool/ci/ohos_local.sh` 已默认优先 `.fvm/flutter_sdk/bin/flutter`）。`dart` 命令不包装：fork 的 Dart 3.11 格式化结果与 CI 使用的官方 3.47 不一致，`dart format` 请用 PATH 上的官方 `dart`，否则会破坏 format 门禁。
+
+- 若确实想把 fork 设为**机器全局默认**：`fvm global custom_ohos`，并把 `$HOME/fvm/default/bin` 放在 `PATH` 中。注意这会影响所有项目——5.1.0 等需要官方 3.47 的工作树应各自执行 `fvm use custom_official --force`；日常优先用项目级锁定，全局保持官方 3.47。
+- 不要在 `$HOME` 等父目录执行 `fvm use`：它会留下 `~/.fvmrc`/`~/.fvm`，被 shell 包装函数或 fvm 当成"项目锁定"，污染所有子目录。已经有的话删除或改名即可（`.fvmrc`、`.fvm`）。
 - 官方 Flutter 跑过 `pub get` 会重写 `example/.flutter-plugins-dependencies`（丢失 `plugins.ohos` 段），之后做鸿蒙设备测试前先执行一次 `fvm flutter pub get` 恢复。
 
 ### 本地依赖与发布
