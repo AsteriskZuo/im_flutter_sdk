@@ -216,4 +216,49 @@ void main() {
       )),
     );
   });
+
+  test('parseE2eConfigOptions accepts the five long-lived values only', () {
+    final parsed = parseE2eConfigOptions(const [
+      '--output',
+      '/tmp/out.json',
+      '--app-key',
+      'org#app',
+      '--user-id',
+      'user01',
+      '--rest-api',
+      'https://rest.example.invalid',
+      '--client-id',
+      'client-id',
+      '--client-secret',
+      'client-secret',
+    ]);
+
+    expect(parsed.output, '/tmp/out.json');
+    expect(parsed.hasCredentials, isTrue);
+    expect(parsed.toConfig(), <String, dynamic>{
+      'restApi': 'https://rest.example.invalid',
+      'appKey': 'org#app',
+      'clientId': 'client-id',
+      'clientSecret': 'client-secret',
+      'accounts': <Map<String, Object?>>[
+        <String, Object?>{'id': 'user01'},
+      ],
+    });
+  });
+
+  test('parseE2eConfigOptions rejects partial credentials', () {
+    final parsed = parseE2eConfigOptions(const [
+      '--app-key',
+      'org#app',
+    ]);
+
+    expect(
+      parsed.toConfig,
+      throwsA(isA<FormatException>().having(
+        (error) => error.message,
+        'message',
+        allOf(contains('missing'), contains('userId')),
+      )),
+    );
+  });
 }

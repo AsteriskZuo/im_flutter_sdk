@@ -42,13 +42,28 @@ The entries read six dart-defines (see `support/env.dart`):
 E2E_APP_KEY  E2E_USER_ID  E2E_USER_TOKEN  E2E_PEER_ID  E2E_REST_API  E2E_APP_TOKEN
 ```
 
-The harmony CI wrappers (`tool/ci/smoke_local.harmony.sh` and
-`tool/ci/nightly_local.harmony.sh`) generate that JSON for you from the
-gitignored local data file `im_flutter_sdk/example/config.local.json` (created
-by the one-time `make config`), so callers do not export the fields by hand.
-They call `example/tool/env_tool.dart e2e-config`, which refreshes the app/user
-tokens the same way `make env-gettoken` does. Pass `E2E_CONFIG_PATH` only to
-reuse an existing file.
+Only `E2E_APP_KEY` / `E2E_USER_ID` have safe defaults (`easemob#easeim` and
+`ci_smoke_user`), so the logged-out suite needs no environment at all.
+
+The harmony CI wrappers follow the same contract as the 5.1.0 entries: callers
+never pass a token (tokens are short lived and would need manual refreshing).
+Instead the wrappers fetch fresh app/user tokens on every run:
+
+- `tool/ci/smoke_local.harmony.sh` — zero credentials (the logged-out suite
+  uses the public demo app key; the only login attempt is expected to fail).
+- `tool/ci/nightly_local.harmony.sh` — accepts the same five long-lived values
+  as the 5.1.0 nightly entry:
+
+  ```text
+  E2E_APP_KEY  E2E_USER_ID  E2E_REST_API  E2E_CLIENT_ID  E2E_CLIENT_SECRET
+  ```
+
+  With no variables exported it falls back to the gitignored local data file
+  `im_flutter_sdk/example/config.local.json` (created by `make config`).
+  Either way `example/tool/env_tool.dart e2e-config` exchanges the credentials
+  for the six dart-defines in a mode-600 temp file that is deleted on exit.
+
+`E2E_CONFIG_PATH` remains an optional override when you already have the JSON.
 
 To produce the token file manually (for example before running `flutter test`
 directly), run the same command from the example directory:
@@ -57,6 +72,8 @@ directly), run the same command from the example directory:
 cd im_flutter_sdk/.worktree/ohos/im_flutter_sdk/example
 dart run tool/env_tool.dart e2e-config
 # prints e.g. /var/folders/.../ohos_e2e_zuoyu01_<ms>.json (mode 600)
+# or pass the five long-lived values:
+#   --app-key KEY --user-id ID --rest-api URL --client-id ID --client-secret SECRET
 ```
 
 Alternatively reuse the 5.1.0 helper (the ohos branch vendors the env tool but
@@ -82,13 +99,15 @@ restore relations through `support/rest.dart`.
 
 ## Running
 
-Convenience entries (no E2E exports needed; the JSON is generated from
-`config.local.json`):
+HarmonyOS convenience entries (no token input; the wrapper refreshes tokens):
 
 ```bash
-bash tool/ci/smoke_local.harmony.sh                 # logged_out suite
-bash tool/ci/nightly_local.harmony.sh               # all six suites
-bash tool/ci/nightly_local.harmony.sh harmony logged_in_base  # subset
+bash tool/ci/smoke_local.harmony.sh    # logged_out suite, zero credentials
+bash tool/ci/nightly_local.harmony.sh  # all six suites, five long-lived values
+                                       # or example/config.local.json
+
+# subset:
+bash tool/ci/nightly_local.harmony.sh harmony logged_in_base logged_in_group
 ```
 
 Or invoke the fork directly with the HarmonyOS Flutter SDK (3.41.9+ohos) and an
@@ -111,19 +130,17 @@ All six suites can be run in one go with the local wrapper (the only
 ohos-specific runner; the Android/iOS CI scripts and workflows are unchanged):
 
 ```bash
-E2E_CONFIG_PATH=/tmp/ohos_e2e_zuoyu01.json \
-  bash tool/ci/ohos_local.sh
-# or the harmony-only wrappers:
-E2E_CONFIG_PATH=/tmp/ohos_e2e_zuoyu01.json \
-  bash tool/ci/smoke_local.harmony.sh    # logged_out suite (21 cases)
-E2E_CONFIG_PATH=/tmp/ohos_e2e_zuoyu01.json \
-  bash tool/ci/nightly_local.harmony.sh  # all six suites (302 cases)
+bash tool/ci/ohos_local.sh              # needs E2E_CONFIG_PATH or the six fields
+# or the harmony-only wrappers (they prepare the token file themselves):
+bash tool/ci/smoke_local.harmony.sh     # logged_out suite (21 cases), no credentials
+bash tool/ci/nightly_local.harmony.sh   # all six suites (302 cases), no token input
 ```
 
 `smoke_local.harmony.sh` / `nightly_local.harmony.sh` are harmony-only entry
 wrappers around `ohos_local.sh`; the existing `smoke_local.sh` /
 `nightly_local.sh` (and their Android/iOS branches) are intentionally left
-untouched.
+untouched. Both wrappers fetch fresh tokens on every run, so no caller ever
+needs to obtain or export a user token.
 
 Pass suite names (`logged_out logged_in_base ...`) to run a subset, and set
 `FLUTTER_BIN` / `OHOS_DEVICE` when the defaults do not apply.

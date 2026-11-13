@@ -47,6 +47,11 @@ flutter test integration_test/<suite>_test.dart \
 一键跑六套件（新增脚本，未接入 CI）：
 
 ```bash
+# 推荐：harmony 包装脚本自行换取 token，调用者不传 token
+bash tool/ci/nightly_local.harmony.sh   # 六个套件，需 5 个长期凭证或 config.local.json
+bash tool/ci/smoke_local.harmony.sh     # logged_out 套件，零凭证
+
+# 或给底层入口显式提供已生成的 dart-defines：
 E2E_CONFIG_PATH=/tmp/ohos_e2e_zuoyu01.json \
 bash tool/ci/ohos_local.sh
 ```
@@ -188,7 +193,18 @@ group 3 条 skip 不变（GROUP-042/043/044，多设备）。
 
 运行方式：`tool/ci/nightly_local.harmony.sh`（harmony-only 包装，内部六套件顺序执行），
 2026-11-13 12:23–12:35，`NIGHTLY_EXIT:0`；日志 `/tmp/ohos-nightly-harmony2.log` 与
-`artifacts/ohos-<suite>.log`。
+`artifacts/ohos-<suite>.log`。该轮 runner 仍从 `example/config.local.json` 准备配置。
+
+2026-11-13 15:25–15:41 按用户反馈（对标 5.1.0，调用者不得提供 token）改造后复验：
+`smoke_local.harmony.sh` 零凭证 → 21 passed（`SMOKE_EXIT:0`，25s）；
+`nightly_local.harmony.sh` 仅 5 个长期凭证（无 token、无 config.local.json）跑全六套件 →
+logged_out 21、logged_in_base 152+1skip、contact 23、group 57+3skip、special 35、
+logged_in_user_info 首次因 hdc 端口转发瞬时错误（`[Fail]TCP Port listen failed at 54850`，
+错误发生在 app 启动前、非用例失败）整轮 exit 1；立即单独重跑 user_info → 10 passed
+（`RETRY_EXIT:0`，29s）。合计 **298 passed + 4 skipped（302 条），0 failed**，与 §4.4 一致；
+日志 `/tmp/ohos-nightly-5cred-full.log`、`/tmp/ohos-nightly-userinfo-retry.log`。
+无环境变量 + local config.local.json → `logged_in_base` 153 passed（`NIGHTLY_EXIT:0`，89s）；
+凭证不全/完全缺失时脚本直接报错退出（exit 2），并从 `env_tool e2e-config` 每次现场取 token。
 
 | 套件 | passed | skipped | failed | 日志 |
 |---|---|---|---|---|
@@ -442,11 +458,23 @@ E2E_USER_ID=zuoyu01 \
 bash tool/ci/fetch_e2e_user_token.sh --json > /tmp/ohos_e2e_zuoyu01.json
 chmod 600 /tmp/ohos_e2e_zuoyu01.json
 
-# 2) 跑全部六套件（当前 ohos worktree；无需手工 export E2E_*：入口自动从
-#    example/config.local.json 换取 token 并生成 dart-defines）
+# 2) 跑全部六套件（当前 ohos worktree；调用者不传 token，脚本每次现场换取）
 cd im_flutter_sdk/.worktree/ohos
-bash tool/ci/nightly_local.harmony.sh       # 或 smoke_local.harmony.sh
-# 未执行 make config 时仍可显式提供：
+# 方式 A：对标 5.1.0 nightly，只导出 5 个长期凭证（不含 token）
+E2E_APP_KEY='easemob-demo#zuoyu' E2E_USER_ID=zuoyu01 \
+E2E_REST_API=http://ngi-a1.easemob.com \
+E2E_CLIENT_ID='<5.1.0 config.local.json 的 clientId>' \
+E2E_CLIENT_SECRET='<5.1.0 config.local.json 的 clientSecret>' \
+  bash tool/ci/nightly_local.harmony.sh
+
+# 方式 B：无环境变量，使用本地数据准备
+make config                     # 首次生成 example/config.local.json（编辑填真实值）
+bash tool/ci/nightly_local.harmony.sh
+
+# smoke：零凭证
+bash tool/ci/smoke_local.harmony.sh
+
+# 可选覆盖：已有 dart-defines 文件时
 # E2E_CONFIG_PATH=/tmp/ohos_e2e_zuoyu01.json bash tool/ci/ohos_local.sh
 
 # 3) 单套件
@@ -514,12 +542,18 @@ bash tool/ci/ohos_cleanup.sh
   鸿蒙、不验证 iOS/Android。两个新脚本已 `bash -n` 通过，并设备实跑验证：
   `smoke_local.harmony.sh` → 21 passed，`SMOKE_EXIT:0`；`nightly_local.harmony.sh`
   → §4.4 全矩阵 298 passed + 4 skipped，`NIGHTLY_EXIT:0`。
-  2026-11-13 下午按用户反馈改为"自动准备参数"：两个 wrapper 在未提供
-  `E2E_CONFIG_PATH` 时从 `example/config.local.json` 调用
-  `example/tool/env_tool.dart e2e-config` 现场换取 app/user token 并生成六个
-  dart-defines（临时文件 mode 600、退出即删），调用者无需手工 export；
-  设备复验（无任何 E2E 环境变量）：`smoke_local.harmony.sh` → 21 passed，
-  `SMOKE_EXIT:0`；`nightly_local.harmony.sh` → 299 passed + 3 skipped（302 条，MS G-022 本轮通过），`NIGHTLY_EXIT:0`。
+  2026-11-13 下午按用户反馈（对标 5.1.0：调用者不提供 token，token 每次现场获取）
+  重做为：`smoke_local.harmony.sh` 零凭证（`logged_out` 使用公开演示 appKey 与
+  默认 user id，登录仅做失败断言）；`nightly_local.harmony.sh` 只接受 5 个长期
+  凭证 `E2E_APP_KEY/E2E_USER_ID/E2E_REST_API/E2E_CLIENT_ID/E2E_CLIENT_SECRET`
+  （未导出时回退 `example/config.local.json`），由 `example/tool/env_tool.dart
+  e2e-config` 现场换取六个 dart-defines（临时文件 mode 600、退出即删）。
+  设备复验：零凭证 smoke → 21 passed（`SMOKE_EXIT:0`，25s）；nightly 方式 A
+  （仅 5 个长期变量，无 token、无 config.local.json，跑 `logged_out logged_in_base`
+  子集）→ 21 passed + 152 passed/1 skipped（`NIGHTLY_EXIT:0`，137s）；方式 B
+  （无环境变量 + config.local.json，`logged_in_base`）→ 153 passed
+  （`NIGHTLY_EXIT:0`，89s）；凭证不全/缺失时脚本 exit 2 并打印提示。
+  完整六套件结果仍以上方 §4.4 为准（脚本改造不改变用例内容）。
 - **`tool/ci/ohos_local.sh`：通过**。fork Flutter 3.41.9+ohos + 模拟器
   `127.0.0.1:5555`，最终六套件（§4.4，经 nightly_local.harmony.sh 调用）
   **298 passed + 4 skipped + 0 failed（302 条），`NIGHTLY_EXIT:0`**

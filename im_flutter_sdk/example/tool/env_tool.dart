@@ -45,11 +45,15 @@ Usage:
   dart run tool/env_tool.dart ensure
   dart run tool/env_tool.dart gettoken
   dart run tool/env_tool.dart e2e-config [--output PATH]
+  dart run tool/env_tool.dart e2e-config --app-key KEY --user-id ID
+      --rest-api URL --client-id ID --client-secret SECRET [--output PATH]
 
 ensure      Copy the local config/env templates if they are missing.
 gettoken    Fetch one user token per configured account and rewrite lib/env.dart.
 e2e-config  Fetch fresh tokens and write the six E2E_* dart-defines the
             integration suites read (printed path, mode 0600 by default).
+            Reads config.local.json, or the five long-lived credentials passed
+            by the nightly wrapper; callers never pass user/app tokens.
 ''');
         break;
       default:
@@ -103,20 +107,27 @@ Future<void> generateEnvironment(EnvPaths paths) async {
 
 /// Writes the six `E2E_*` dart-defines consumed by the CI device suites.
 ///
-/// The harmony CI wrappers call this so nobody has to export the fields by hand:
-/// the environment + credentials come from `config.local.json`, and the tokens
-/// are fetched the same way `gettoken` does it.
+/// Mirrors the 5.1.0 nightly entry: callers pass only long-lived credentials
+/// (or nothing, using `config.local.json` prepared by `make config`); this tool
+/// fetches the app token and the user token every run, so no token is ever
+/// stored, committed or handed to the runner by hand.
 Future<void> writeE2eConfig(EnvPaths paths, List<String> options) async {
-  final output = _parseOutputOption(options);
-  if (!await paths.localConfig.exists()) {
-    throw FormatException(
-      '${paths.localConfig.path} does not exist; run `make config`, fill in '
-      'the environment, then run this command again',
-    );
+  final parsed = parseE2eConfigOptions(options);
+  final Map<String, dynamic> config;
+  if (parsed.hasCredentials) {
+    config = parsed.toConfig();
+  } else {
+    if (!await paths.localConfig.exists()) {
+      throw FormatException(
+        '${paths.localConfig.path} does not exist; export E2E_APP_KEY, '
+        'E2E_USER_ID, E2E_REST_API, E2E_CLIENT_ID and E2E_CLIENT_SECRET, or '
+        'run `make config` and fill in config.local.json',
+      );
+    }
+    config = await _readJsonObject(paths.localConfig);
+    _validateConfigShape(config);
+    _requireCredentials(config);
   }
-  final config = await _readJsonObject(paths.localConfig);
-  _validateConfigShape(config);
-  _requireCredentials(config);
 
   final tokenClient = TokenClient();
   try {
@@ -127,7 +138,7 @@ Future<void> writeE2eConfig(EnvPaths paths, List<String> options) async {
     );
     if (accounts.isEmpty) {
       throw const FormatException(
-        'config.local.json defines no accounts to log in with',
+        'no account configured to log in with',
       );
     }
     final dartDefines = buildE2eConfig(
@@ -136,7 +147,7 @@ Future<void> writeE2eConfig(EnvPaths paths, List<String> options) async {
       appToken: appToken,
     );
     final target = File(
-      output ??
+      parsed.output ??
           '${Directory.systemTemp.path}/ohos_e2e_${accounts.first['id']}_'
               '${DateTime.now().millisecondsSinceEpoch}.json',
     );
@@ -147,15 +158,123 @@ Future<void> writeE2eConfig(EnvPaths paths, List<String> options) async {
   }
 }
 
-String? _parseOutputOption(List<String> options) {
-  for (var index = 0; index < options.length; index++) {
-    if (options[index] != '--output') continue;
-    if (index + 1 >= options.length) {
-      throw const FormatException('--output requires a file path');
+/// Options accepted by the `e2e-config` command.
+///
+/// The nightly harmony wrapper mirrors `nightly_local.sh` and forwards the
+/// five long-lived values as flags; no token is accepted on purpose.
+class E2eConfigOptions {
+  const E2eConfigOptions({
+    this.output,
+    this.appKey,
+    this.userId,
+    this.restApi,
+    this.clientId,
+    this.clientSecret,
+  });
+
+  final String? output;
+  final String? appKey;
+  final String? userId;
+  final String? restApi;
+  final String? clientId;
+  final String? clientSecret;
+
+  bool get hasCredentials =>
+      appKey != null ||
+      userId != null ||
+      restApi != null ||
+      clientId != null ||
+      clientSecret != null;
+
+  /// Builds the `config.local.json`-shaped map from the explicit credentials.
+  ///
+  /// Fails fast when only part of the five values was provided, so a typo in
+  /// an environment variable cannot silently fall back to another account.
+  Map<String, dynamic> toConfig() {
+    final values = <String, String?>{
+      'appKey': appKey,
+      'userId': userId,
+      'restApi': restApi,
+      'clientId': clientId,
+      'clientSecret': clientSecret,
+    };
+    final missing = values.entries
+        .where((entry) => entry.value == null || entry.value!.isEmpty)
+        .map((entry) => entry.key)
+        .toList();
+    if (missing.isNotEmpty) {
+      throw FormatException(
+        'e2e-config needs all five long-lived values; missing ${missing.join(', ')}',
+      );
     }
-    return options[index + 1];
+    return localConfigFromCredentials(
+      appKey: appKey!,
+      userId: userId!,
+      restApi: restApi!,
+      clientId: clientId!,
+      clientSecret: clientSecret!,
+    );
   }
-  return null;
+}
+
+E2eConfigOptions parseE2eConfigOptions(List<String> options) {
+  String? output;
+  String? appKey;
+  String? userId;
+  String? restApi;
+  String? clientId;
+  String? clientSecret;
+  for (var index = 0; index < options.length; index++) {
+    final flag = options[index];
+    if (index + 1 >= options.length) {
+      throw FormatException('$flag requires a value');
+    }
+    final value = options[++index];
+    switch (flag) {
+      case '--output':
+        output = value;
+      case '--app-key':
+        appKey = value;
+      case '--user-id':
+        userId = value;
+      case '--rest-api':
+        restApi = value;
+      case '--client-id':
+        clientId = value;
+      case '--client-secret':
+        clientSecret = value;
+      default:
+        throw FormatException('Unknown e2e-config option: $flag');
+    }
+  }
+  return E2eConfigOptions(
+    output: output,
+    appKey: appKey,
+    userId: userId,
+    restApi: restApi,
+    clientId: clientId,
+    clientSecret: clientSecret,
+  );
+}
+
+/// The `config.local.json` shape when the caller only provides long-lived
+/// credentials (5.1.0 nightly contract); the token is fetched by this tool.
+Map<String, dynamic> localConfigFromCredentials({
+  required String appKey,
+  required String userId,
+  required String restApi,
+  required String clientId,
+  required String clientSecret,
+}) {
+  return <String, dynamic>{
+    'restApi': restApi,
+    'appKey': appKey,
+    'clientId': clientId,
+    'clientSecret': clientSecret,
+    'accounts': <Map<String, Object?>>[
+      <String, Object?>{'id': userId},
+    ],
+  };
 }
 
 /// Maps the configured environment onto the six dart-defines the suites read.

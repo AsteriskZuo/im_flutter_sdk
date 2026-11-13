@@ -10,14 +10,19 @@ import 'support/session.dart';
 
 /// Stable entry: no login. Covers SDK initialization, the client facade, the
 /// logged-out rejection contract, and the local event handler registry.
+///
+/// This is also the smoke entry: it runs without local data preparation. The
+/// app key and user id fall back to the public demo values in `support/env.dart`
+/// (only FL-AUTH-020 uses the user id, for an intentionally invalid token
+/// login), so the smoke runner never asks callers for credentials.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-  requireCiEnvironment();
+  requireCiEnvironment(requireUserToken: false);
 
   final client = ChatClient.getInstance;
 
   setUpAll(() async {
-    await initCiClient();
+    await initCiClient(requireUserToken: false);
     await ensureLoggedOutForCi(client);
   });
 

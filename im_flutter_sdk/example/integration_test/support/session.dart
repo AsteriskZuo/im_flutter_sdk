@@ -8,13 +8,17 @@ import 'env.dart';
 /// Every switch that can change behavior is explicit here. The native SDK
 /// persists state in the app sandbox, so a different option set needs a fresh
 /// test process; each entry file is executed as its own process by the runner.
+///
+/// [requireUserToken] must stay false for the logged-out smoke entry, which is
+/// runnable without any local data preparation.
 ChatOptions ciChatOptions({
   bool enableUserInfo = false,
   bool enableAutoSyncContacts = false,
   bool enableChatroomConversation = false,
   bool autoLoadConversations = true,
+  bool requireUserToken = true,
 }) {
-  requireCiEnvironment();
+  requireCiEnvironment(requireUserToken: requireUserToken);
   return ChatOptions.withAppKey(
     ciAppKey,
     autoLogin: false,
@@ -32,6 +36,7 @@ Future<void> initCiClient({
   bool enableAutoSyncContacts = false,
   bool enableChatroomConversation = false,
   bool autoLoadConversations = true,
+  bool requireUserToken = true,
 }) async {
   await ChatClient.getInstance.init(
     ciChatOptions(
@@ -39,6 +44,7 @@ Future<void> initCiClient({
       enableAutoSyncContacts: enableAutoSyncContacts,
       enableChatroomConversation: enableChatroomConversation,
       autoLoadConversations: autoLoadConversations,
+      requireUserToken: requireUserToken,
     ),
   );
 }
