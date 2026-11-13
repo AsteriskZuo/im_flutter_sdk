@@ -1,16 +1,16 @@
 # 环信即时通讯 IM Flutter SDK
 
-环信 IM 的 Flutter 插件，基于 Federated Plugin 架构，通过本插件可以在 Flutter 应用中快速集成单聊、群聊、聊天室等即时通讯能力。
+环信 IM 的 Flutter 插件，基于 Federated Plugin 架构，通过本插件可以在 Flutter 应用中快速集成单聊、群聊、聊天室等即时通讯能力。鸿蒙线当前版本 `1.15.0`，仓库由 5 个包组成：`im_flutter_sdk`（主包）、`im_flutter_sdk_interface`（接口包）、`im_flutter_sdk_android` / `im_flutter_sdk_ios` / `im_flutter_sdk_ohos`（平台实现包）。
 
 ## 平台支持
 
-| 平台 | 最低版本 |
-|---|---|
-| Android | API 21 (Android 5.0) |
-| iOS | 13.0 |
-| 鸿蒙 | 见下方[鸿蒙支持](#鸿蒙支持) |
+| 平台 | 最低版本 | 原生 SDK |
+|---|---|---|
+| Android | API 21 (Android 5.0) | HyphenateChat 4.25.1 |
+| iOS | 13.0 | HyphenateChat 4.25.0 |
+| HarmonyOS | HarmonyOS 5.0.0 (API 12) | @easemob/chatsdk 1.15.0 |
 
-环境要求：Flutter >= 3.3.0，Dart >= 3.3.0 且 < 4.0.0。
+环境要求：Flutter >= 3.3.0，Dart >= 3.3.0 且 < 4.0.0。Android/iOS 使用官方 Flutter；HarmonyOS 构建/运行需使用鸿蒙版 Flutter `3.41.9+ohos`（见[鸿蒙支持](#鸿蒙支持)）。
 
 ## 前提条件
 
@@ -19,9 +19,27 @@
 
 ## 集成 SDK
 
+Android/iOS 可继续使用 pub.dev 上的主线版本：
+
 ```bash
 flutter pub add im_flutter_sdk
 ```
+
+鸿蒙线（当前 `1.15.0`）按 Git tag 依赖主包，接口包与平台实现包由主包自动带入，无需逐个声明：
+
+```yaml
+dependencies:
+  im_flutter_sdk:
+    git:
+      url: https://github.com/easemob/im_flutter_sdk.git
+      ref: 1.15.0   # 以仓库实际发布的 tag 为准
+      path: im_flutter_sdk
+```
+
+- `im_flutter_sdk_interface`（接口包）与 `im_flutter_sdk_ohos`（鸿蒙实现包）由主包自动引入，无需显式添加。
+- `im_flutter_sdk_android` / `im_flutter_sdk_ios` 的版本号同样统一为 `1.15.0`，但本次不单独发版；如果项目里同时显式依赖它们，需保证与主包版本一致，避免版本冲突。
+- 主包按版本号解析上述子包。若对应版本的子包尚未发布到 pub.dev，`pub get` 会解析失败；此时需等待子包发布，或用 `dependency_overrides` 将这些包指向同一 tag 下的对应路径。
+- 鸿蒙构建请使用鸿蒙版 Flutter，并确认 `pub get` 后 `.flutter-plugins-dependencies` 中包含 `plugins.ohos` 段。
 
 ### Android 配置
 
@@ -142,17 +160,31 @@ void dispose() {
 
 ## 鸿蒙支持
 
-鸿蒙平台通过独立插件提供，需使用鸿蒙版 Flutter（`https://gitee.com/harmonycommando_flutter/flutter`），并在 `pubspec.yaml` 中添加：
+从 `1.15.0` 起，HarmonyOS 支持由本仓库的 `im_flutter_sdk_ohos` 实现包提供，使用鸿蒙版 Flutter 构建。版本号跟随 HarmonyOS native chatsdk `@easemob/chatsdk`，当前为 `1.15.0`，采用 1.x 规则。
 
-```yaml
-im_flutter_sdk: ^4.13.0
-im_flutter_sdk_ohos:
-  git:
-    url: "https://github.com/easemob/im_flutter_sdk_oh.git"
-    ref: 1.5.3
+### 环境与依赖
+
+- Flutter：鸿蒙版 `3.41.9+ohos`（fvm 版本名 `custom_ohos`）。官方 Flutter 3.47.0 仅用于 Android/iOS 构建与质量门禁，不要用于鸿蒙构建。
+- HarmonyOS：5.0.0 (API 12) 及以上；已在 DevEco Studio 模拟器（OpenHarmony 5.0.2.125 / API 14）验证，真机需配置签名。
+- 依赖写法见上方[集成 SDK](#集成-sdk) 的 Git tag 示例，`ref: 1.15.0`，只需依赖主包。
+
+### 构建与运行
+
+```bash
+fvm flutter pub get
+fvm flutter build hap --debug --no-codesign
+# 产物：build/ohos/hap/entry-default-unsigned.hap
+hdc install build/ohos/hap/entry-default-unsigned.hap
 ```
 
-最新 `ref` 请查看 [im_flutter_sdk_oh releases](https://github.com/easemob/im_flutter_sdk_oh/releases)。
+本地无签名模拟器可设 `OHOS_SKIP_CODESIGN=1`；项目已有真实签名配置时设为 `0`。开发环境初始化、fvm 项目级锁定、`hdc` 常用命令及验证脚本见 [CONTRIBUTING.md](../CONTRIBUTING.md)。
+
+### 已知限制
+
+- 不支持 Thread API。
+- 悬浮附件面板隐藏（`file_picker` 暂无鸿蒙实现）。
+- 聊天室回执、翻译、语音转文字、服务端消息搜索等依赖服务端增值服务。
+- 部分多设备用例需要两台设备验证。
 
 ## 更多资源
 

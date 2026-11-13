@@ -168,35 +168,35 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "4.25.0"
+    version: "1.15.0"
   im_flutter_sdk_android:
     dependency: "direct overridden"
     description:
       path: "../../im_flutter_sdk_android"
       relative: true
     source: path
-    version: "4.25.0"
+    version: "1.15.0"
   im_flutter_sdk_interface:
     dependency: "direct overridden"
     description:
       path: "../../im_flutter_sdk_interface"
       relative: true
     source: path
-    version: "4.25.0"
+    version: "1.15.0"
   im_flutter_sdk_ios:
     dependency: "direct overridden"
     description:
       path: "../../im_flutter_sdk_ios"
       relative: true
     source: path
-    version: "4.25.0"
+    version: "1.15.0"
   im_flutter_sdk_ohos:
     dependency: "direct overridden"
     description:
       path: "../../im_flutter_sdk_ohos"
       relative: true
     source: path
-    version: "4.25.0"
+    version: "1.15.0"
   integration_test:
     dependency: "direct dev"
     description: flutter

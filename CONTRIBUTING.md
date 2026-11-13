@@ -12,12 +12,13 @@ Federated Plugin 架构，各包的 pubspec 使用发布用的版本依赖，本
 | `im_flutter_sdk_interface/` | 平台接口层：MethodChannel 抽象 |
 | `im_flutter_sdk_android/` | Android 平台实现 |
 | `im_flutter_sdk_ios/` | iOS 平台实现 |
+| `im_flutter_sdk_ohos/` | HarmonyOS 平台实现：ArkTS Wrapper，基于 `@easemob/chatsdk` 1.15.0 |
 
-调用链：`Dart API → MethodChannel (interface) → Native Wrapper → HyphenateChat SDK`。改动 interface 会波及所有上层包。
+调用链：`Dart API → MethodChannel (interface) → Native / ArkTS Wrapper → HyphenateChat / @easemob/chatsdk`。改动 interface 会波及所有上层包。`im_flutter_sdk_ohos` 通过 `implements: im_flutter_sdk` 声明平台实现，并在主包 `flutter.plugin.platforms.ohos.default_package` 中登记，使用方只需依赖主包。
 
 ## 环境准备
 
-需要 Flutter（>= 3.3.0）、Xcode + CocoaPods（iOS）、Android Studio（Android）。
+需要 Flutter（>= 3.3.0）、Xcode + CocoaPods（iOS）、Android Studio（Android）。Android/iOS 构建与质量门禁使用官方 Flutter 3.47.0；鸿蒙开发另需 DevEco Studio、hdc/ohpm（随 DevEco 安装）和 fvm 管理的鸿蒙版 Flutter，见[下方 fvm 章节](#flutter-sdk-版本fvm鸿蒙)。
 
 项目根目录提供了 Makefile，一键初始化：
 
@@ -29,7 +30,7 @@ make setup   # 依次执行 config + deps + pods
 |--------|------|
 | `make config` | 创建本地环境文件：`im_flutter_sdk/example/config.local.json` + 占位 `example/lib/env.dart`（已存在则跳过），并保留旧的 `templates/config.example.json` → `scripts/config.json` 拷贝 |
 | `make env-gettoken` | 读取 `example/config.local.json`，为每个账号换取 user token，生成被 gitignore 的 `example/lib/env.dart`（mode 600，默认 24h 过期） |
-| `make local-deps` | 为主包、Android、iOS 和 example 生成被 Git 忽略的本地依赖 override，保留已有文件 |
+| `make local-deps` | 为主包、Android、iOS、HarmonyOS 和 example 生成被 Git 忽略的本地依赖 override，保留已有文件 |
 | `make deps` | 先执行 `make local-deps`，再在 example 目录执行 `flutter pub get` |
 | `make pods` | 在 `example/ios` 执行 `pod install`（仅 Podfile/podspec 变更时执行，mtime 检测） |
 | `make clean` | 清理 build 产物和 Pods |
@@ -86,20 +87,22 @@ fvm flutter test integration_test/logged_out_test.dart -d 127.0.0.1:5555
 
 ### 本地依赖与发布
 
-运行 `make local-deps`（或 `bash tool/use_local_packages.sh`），会在主包、Android、iOS 和 example 的 pubspec 旁生成 `pubspec_overrides.yaml`。interface 没有其他子包依赖，无需 override。仓库 `.gitignore` 已在所有层级忽略这些文件，生成脚本纳入版本管理，已有 override 文件不会被覆盖。
+运行 `make local-deps`（或 `bash tool/use_local_packages.sh`），会在主包、Android、iOS、HarmonyOS 和 example 的 pubspec 旁生成 `pubspec_overrides.yaml`。interface 没有其他子包依赖，无需 override。仓库 `.gitignore` 已在所有层级忽略这些文件，生成脚本纳入版本管理，已有 override 文件不会被覆盖。
 
-override 只对当前解析的根包生效，不会从依赖包继承。因此，example 虽然已经通过 `path: ../` 依赖主包，仍需要自己的文件覆盖 interface、Android 和 iOS。`make deps`、CI 质量检查、双端构建和设备测试入口都会在依赖解析前生成本地文件。
+override 只对当前解析的根包生效，不会从依赖包继承。因此，example 虽然已经通过 `path: ../` 依赖主包，仍需要自己的文件覆盖 interface、Android、iOS 和 HarmonyOS。`make deps`、CI 质量检查、各平台构建和设备测试入口都会在依赖解析前生成本地文件。
 
-发布配置与已发布的 `4.25.0` 保持一致：主包精确依赖 Android/iOS `4.25.0`，三个依赖 interface 的包使用 `^4.15.0+1`；该范围包含 interface `4.25.0`。本地 override 则统一使用当前工作树中的四个包。
+发布配置为鸿蒙线 `1.15.0`：主包精确依赖 Android/iOS/HarmonyOS 实现包 `1.15.0`，各包依赖 interface `^1.15.0`；5 个包版本号必须一致。本地 override 则统一使用当前工作树中的五个包。
 
-发布验证应在没有 override 的检出目录执行，或先将四份 override 移出工作树，检查后再恢复。在各个可发布包内运行 `dart pub publish --dry-run`，期间不要调用本地开发初始化入口。有 override 时解析成功，不能证明正式版本依赖可解析。新版本按 interface → Android/iOS → 主包的顺序发布；已发布的版本不能重复上传。
+发布验证应在没有 override 的检出目录执行，或先将五份 override 移出工作树，检查后再恢复。在各个可发布包内运行 `dart pub publish --dry-run`，期间不要调用本地开发初始化入口。有 override 时解析成功，不能证明正式版本依赖可解析。新版本按 interface → Android/iOS/HarmonyOS 实现包 → 主包的顺序发布；本次 Android/iOS 实现包仅版本号对齐 `1.15.0`，不单独发版；已发布的版本不能重复上传。
+
+注意：用户即使按 Git tag 依赖主包，pub 仍会按版本号解析主包的子包依赖；发布鸿蒙线版本前，需确认 interface 与 `im_flutter_sdk_ohos` 等子包已可在 pub 解析，否则用户 `pub get` 会失败。
 
 ## 测试数据准备
 
-example 应用把测试环境集中在一个本地文件里（与 5.1.0 一致，均不入库）：
+example 应用把测试环境集中在一个本地文件里（均不入库）：
 
 1. `make config` — 生成 `im_flutter_sdk/example/config.local.json`（含 restApi、appKey、clientId、clientSecret、accounts、groups、rooms、chatOptions 占位）和占位 `example/lib/env.dart`；
-2. 编辑 `config.local.json` 填真实 appKey 与账号（4.25 没有 `dataSyncType`，`chatOptions` 使用 `debugMode` / `enableUserInfo` / `enableAutoSyncContacts` / `autoLoadConversations` / `enableChatroomConversation` 等开关）；
+2. 编辑 `config.local.json` 填真实 appKey 与账号（1.15.0 的 Dart API 与 Flutter 4.25.0 线对齐，没有 `dataSyncType`，`chatOptions` 使用 `debugMode` / `enableUserInfo` / `enableAutoSyncContacts` / `autoLoadConversations` / `enableChatroomConversation` 等开关）；
 3. `make env-gettoken` — 用 clientId/clientSecret 换 app token，再为每个账号换 user token，生成 `example/lib/env.dart`（`chmod 600`，token 默认 24h 过期，过期后重新执行）。
 
 `example/lib/env.dart` 是 `const Map<String, Object?> environment`，包含 appKey、每个账号的 id+token、群组/聊天室引用；人工模式页面会用它预填初始化参数和登录账号（第一个 account 的 id+token），脚本模式以其为 base config，`API_CONFIG` 可逐键覆盖。
@@ -108,7 +111,7 @@ example 应用把测试环境集中在一个本地文件里（与 5.1.0 一致�
 
 全新检出与 CI 不需要真实凭证：`tool/ci/ensure_example_env.sh` 在 `lib/env.dart` 缺失时复制空占位模板，`tool/use_local_packages.sh` 与 `tool/ci/ohos_local.sh` 都会调用它。
 
-鸿蒙入口对标 5.1.0 的 CI 脚本：**调用者永远不需要提供 token**（token 每次由脚本现场获取）。`tool/ci/smoke_local.harmony.sh` 零凭证即可运行（`logged_out` 套件使用公开演示 appKey，登录只做失败断言）；`tool/ci/nightly_local.harmony.sh` 接受与 5.1.0 nightly 相同的 5 个长期凭证 `E2E_APP_KEY E2E_USER_ID E2E_REST_API E2E_CLIENT_ID E2E_CLIENT_SECRET`，未导出时回退 `example/config.local.json`，随后调用 `example/tool/env_tool.dart e2e-config` 现场换取六个 `E2E_*` dart-defines（临时文件 mode 600，退出即删）。`E2E_CONFIG_PATH` 仅作可选覆盖；直接跑 `tool/ci/ohos_local.sh` 时仍需 `E2E_CONFIG_PATH` 或六个变量。两个 wrapper 只增加鸿蒙平台支持，原 `smoke_local.sh` / `nightly_local.sh` 及其 android/ios 行为不变。
+鸿蒙入口使用 `tool/ci` 下的专用脚本：**调用者永远不需要提供 token**（token 每次由脚本现场获取）。`tool/ci/smoke_local.harmony.sh` 零凭证即可运行（`logged_out` 套件使用公开演示 appKey，登录只做失败断言）；`tool/ci/nightly_local.harmony.sh` 接受 5 个长期凭证 `E2E_APP_KEY E2E_USER_ID E2E_REST_API E2E_CLIENT_ID E2E_CLIENT_SECRET`，未导出时回退 `example/config.local.json`，随后调用 `example/tool/env_tool.dart e2e-config` 现场换取六个 `E2E_*` dart-defines（临时文件 mode 600，退出即删）。`E2E_CONFIG_PATH` 仅作可选覆盖；直接跑 `tool/ci/ohos_local.sh` 时仍需 `E2E_CONFIG_PATH` 或六个变量。`ohos_local.sh` 可只跑指定套件（`logged_out` / `logged_in_base` / `logged_in_contact` / `logged_in_group` / `logged_in_user_info` / `logged_in_special`），日志写入仓库根 `artifacts/ohos-<suite>.log`。两个 wrapper 只增加鸿蒙平台支持，原 `smoke_local.sh` / `nightly_local.sh` 及其 android/ios 行为不变。
 
 ## 运行与验证
 
@@ -119,9 +122,26 @@ example 是一个可视化 API 测试应用，支持两种模式：
 
 详细用法见 [im_flutter_sdk/example/README.md](im_flutter_sdk/example/README.md)；覆盖 4.22 新增 API 的完整脚本示例见 `example/scripts/script_422_apis.json`。
 
+### 鸿蒙设备验证
+
+鸿蒙设备/模拟器上的验证统一走 `tool/ci` 下的入口（默认设备 `127.0.0.1:5555`，可用 `OHOS_DEVICE` 覆盖）：
+
+```bash
+# 零凭证冒烟（仅 logged_out 套件）
+bash tool/ci/smoke_local.harmony.sh
+
+# 全量套件：5 个长期凭证，或回退 example/config.local.json，token 由脚本现场换取
+bash tool/ci/nightly_local.harmony.sh
+
+# 指定套件：需要 6 个 E2E_* 变量或 E2E_CONFIG_PATH
+bash tool/ci/ohos_local.sh logged_in_base
+```
+
+全新检出先执行 `tool/ci/ensure_example_env.sh` 生成占位 `example/lib/env.dart`；凭证口径与套件列表见[测试数据准备](#测试数据准备)。构建产物为 `build/ohos/hap/entry-default-unsigned.hap`，用 `hdc install` 安装。
+
 ## 编码规范
 
-命名约定、双语注释规范、新增 API 的标准链路（Dart → 常量 → Android → iOS）与提交前自检清单，统一维护在 [AGENTS.md](AGENTS.md) 中，人类开发者同样适用，不再重复列举。
+命名约定、双语注释规范、新增 API 的标准链路（Dart → 常量 → Android/iOS/HarmonyOS）与提交前自检清单，统一维护在 [AGENTS.md](AGENTS.md) 中，人类开发者同样适用，不再重复列举。
 
 ## 命名与兼容约定
 
@@ -152,16 +172,19 @@ scripts/gen-apidoc.sh en     # 英文版 → output/apidoc-en/
 
 ## 版本号与 CHANGELOG
 
-- 四个子包的版本号保持一致，禁止只改其中一个。
-- CHANGELOG 使用中文，格式为 `## 版本号` 标题 + `- 新增…` / `- 修复…` / `- 优化…` 条目；条目中的公开 API 名字一律使用新命名（`Chat*`），不要出现 `EM*` 旧名。
-- 新增 API 时：主包 CHANGELOG 记录新 API 条目；interface / android / ios 的 CHANGELOG 按各自实际改动记录。
+- 5 个包的版本号必须保持一致：`im_flutter_sdk`、`im_flutter_sdk_interface`、`im_flutter_sdk_android`、`im_flutter_sdk_ios`、`im_flutter_sdk_ohos`，禁止只改其中一个。
+- 鸿蒙线版本号跟随 HarmonyOS native chatsdk（`@easemob/chatsdk`）：native `1.15.0` 对应 Flutter `1.15.0`，采用 1.x 规则，不再使用 4.x 版本号。
+- `im_flutter_sdk_android` / `im_flutter_sdk_ios` 随版本号统一为 `1.15.0`，但本次不单独发版，原生依赖仍与 Flutter 4.25.x 线一致。
+- 主包 CHANGELOG 当前保留 `1.15.0`、`1.5.4`、`1.5.3` 三个版本；格式为 `## 版本号` 标题 + `- 新增…` / `- 修复…` / `- 优化…` 条目；条目中的公开 API 名字一律使用新命名（`Chat*`），不要出现 `EM*` 旧名。
+- 新增 API 时：主包 CHANGELOG 记录新 API 条目；interface / android / ios / ohos 的 CHANGELOG 按各自实际改动记录。
 
 ## 分支与发布流程
 
-- **4.x 起每个发布版本对应一个同名分支**（如 `4.22.0`），不使用 tag；3.x 遗留 tag 仅属历史。
-- 默认分支为 `flutter2_stable`；`alpha`、`dev` 等为特性或历史分支，不在其上做版本开发。
+- 本仓库的 `ohos` 分支（当前 worktree）是鸿蒙线，发布使用与版本号同名的 Git tag（当前 `1.15.0`），用户按 tag 依赖主包；4.x/5.x 主线「每个版本一个同名分支、不使用 tag」的规则不适用于本线。
+- 默认分支为 `flutter2_stable`；`ohos` 为鸿蒙线开发分支；`alpha`、`dev` 等为特性或历史分支，不在其上做版本开发。
 - 版本开发流程：
-  1. 确认当前工作区干净后，从 `flutter2_stable` 新建与目标版本同名的分支；
-  2. 在该分支上完成开发与验证（双端编译运行 + example 脚本验证）；
-  3. 验证测试通过后，合并回 `flutter2_stable`。
+  1. 确认当前工作区干净后，在 `ohos` 分支完成开发与验证（鸿蒙设备 smoke/nightly + example 脚本验证）；
+  2. 5 个包版本号统一改为目标版本，更新各包 CHANGELOG；
+  3. 验证通过后打同名 Git tag（如 `1.15.0`）并推送；
+  4. 需要合入主线时按团队流程合并回 `flutter2_stable`。
 - 版本升级（对齐 native SDK 新版本的公开 API）有专门的工作流与验收报告模板，见团队工作区的 `platform-sdk-porting-v2` skill 及历次升级报告。

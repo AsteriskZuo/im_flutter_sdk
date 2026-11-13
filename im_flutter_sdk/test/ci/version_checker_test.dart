@@ -27,23 +27,24 @@ void main() {
       'im_flutter_sdk_android',
       'im_flutter_sdk_ios',
       'im_flutter_sdk_interface',
+      'im_flutter_sdk_ohos',
     ]) {
-      write('$package/pubspec.yaml', 'name: $package\nversion: 4.19.2\n');
+      write('$package/pubspec.yaml', 'name: $package\nversion: 1.15.0\n');
     }
     write(
       'im_flutter_sdk_ios/ios/im_flutter_sdk_ios.podspec',
-      "s.version = '4.19.2'\ns.dependency 'HyphenateChat','4.19.1'\n",
+      "s.version = '1.15.0'\ns.dependency 'HyphenateChat','4.25.0'\n",
     );
     write(
       'im_flutter_sdk_ios/ios/im_flutter_sdk_ios/Package.swift',
       'dependencies: [\n'
-          '  .package(url: "https://github.com/easemob/HyphenateChat_iOS.git", exact: "4.19.1"),\n'
+          '  .package(url: "https://github.com/easemob/HyphenateChat_iOS.git", exact: "4.25.0"),\n'
           '  .package(name: "FlutterFramework", path: "../FlutterFramework")\n'
           ']\n',
     );
     write(
       'im_flutter_sdk_android/android/build.gradle',
-      "implementation 'io.hyphenate:hyphenate-chat:4.19.3.1'\n",
+      "implementation 'io.hyphenate:hyphenate-chat:4.25.1'\n",
     );
   }
 
@@ -53,9 +54,9 @@ void main() {
     final result = checkVersions(fixture.path);
 
     expect(result.errors, isEmpty);
-    expect(result.flutterVersion, '4.19.2');
-    expect(result.androidNativeVersion, '4.19.3.1');
-    expect(result.iosNativeVersion, '4.19.1');
+    expect(result.flutterVersion, '1.15.0');
+    expect(result.androidNativeVersion, '4.25.1');
+    expect(result.iosNativeVersion, '4.25.0');
   });
 
   test('accepts an Android native version independent of the Flutter version',
@@ -63,33 +64,33 @@ void main() {
     writeValidFixture();
     write(
       'im_flutter_sdk_android/android/build.gradle',
-      "implementation 'io.hyphenate:hyphenate-chat:4.25.1'\n",
+      "implementation 'io.hyphenate:hyphenate-chat:4.25.2'\n",
     );
 
     final result = checkVersions(fixture.path);
 
     expect(result.errors, isEmpty);
-    expect(result.androidNativeVersion, '4.25.1');
+    expect(result.androidNativeVersion, '4.25.2');
   });
 
   test('ignores the patch digit of both iOS integration paths', () {
     writeValidFixture();
-    // The four packages stay at 4.19.2 while both iOS paths moved to 4.19.4.
+    // The five packages stay at 1.15.0 while both iOS paths moved to 4.25.4.
     write(
       'im_flutter_sdk_ios/ios/im_flutter_sdk_ios.podspec',
-      "s.version = '4.19.2'\ns.dependency 'HyphenateChat','4.19.4'\n",
+      "s.version = '1.15.0'\ns.dependency 'HyphenateChat','4.25.4'\n",
     );
     write(
       'im_flutter_sdk_ios/ios/im_flutter_sdk_ios/Package.swift',
       'dependencies: [\n'
-          '  .package(url: "https://github.com/easemob/HyphenateChat_iOS.git", exact: "4.19.4"),\n'
+          '  .package(url: "https://github.com/easemob/HyphenateChat_iOS.git", exact: "4.25.4"),\n'
           ']\n',
     );
 
     final result = checkVersions(fixture.path);
 
     expect(result.errors, isEmpty);
-    expect(result.iosNativeVersion, '4.19.4');
+    expect(result.iosNativeVersion, '4.25.4');
   });
 
   test(
@@ -98,7 +99,7 @@ void main() {
     writeValidFixture();
     write(
       'im_flutter_sdk_ios/ios/im_flutter_sdk_ios.podspec',
-      "s.version = '4.19.7'\ns.dependency 'HyphenateChat','4.19.1'\n",
+      "s.version = '1.15.7'\ns.dependency 'HyphenateChat','4.25.0'\n",
     );
 
     final result = checkVersions(fixture.path);
@@ -111,7 +112,7 @@ void main() {
     write(
       'im_flutter_sdk_ios/ios/im_flutter_sdk_ios/Package.swift',
       'dependencies: [\n'
-          '  .package(url: "https://github.com/easemob/HyphenateChat_iOS.git", exact: "4.18.1"),\n'
+          '  .package(url: "https://github.com/easemob/HyphenateChat_iOS.git", exact: "4.24.1"),\n'
           ']\n',
     );
 
@@ -120,33 +121,33 @@ void main() {
     expect(result.errors, hasLength(1));
     expect(result.errors.single, contains('iOS native dependency mismatch'));
     expect(result.errors.single, contains('major.minor'));
-    expect(result.errors.single, contains('4.19.1'));
-    expect(result.errors.single, contains('4.18.1'));
+    expect(result.errors.single, contains('4.25.0'));
+    expect(result.errors.single, contains('4.24.1'));
   });
 
   test('reports a podspec version on another major.minor line', () {
     writeValidFixture();
     write(
       'im_flutter_sdk_ios/ios/im_flutter_sdk_ios.podspec',
-      "s.version = '4.18.9'\ns.dependency 'HyphenateChat','4.19.1'\n",
+      "s.version = '1.14.9'\ns.dependency 'HyphenateChat','4.25.0'\n",
     );
 
     final result = checkVersions(fixture.path);
 
     expect(result.errors, hasLength(1));
     expect(result.errors.single, contains('major.minor'));
-    expect(result.errors.single, contains('4.18.9'));
+    expect(result.errors.single, contains('1.14.9'));
   });
 
   test('reports every package and podspec mismatch', () {
     writeValidFixture();
     write(
       'im_flutter_sdk_android/pubspec.yaml',
-      'name: im_flutter_sdk_android\nversion: 4.19.3\n',
+      'name: im_flutter_sdk_android\nversion: 1.15.3\n',
     );
     write(
       'im_flutter_sdk_ios/ios/im_flutter_sdk_ios.podspec',
-      "s.version = '4.18.2'\ns.dependency 'HyphenateChat','4.19.1'\n",
+      "s.version = '1.14.2'\ns.dependency 'HyphenateChat','4.25.0'\n",
     );
 
     final result = checkVersions(fixture.path);
@@ -154,5 +155,20 @@ void main() {
     expect(result.errors, hasLength(2));
     expect(result.errors.join('\n'), contains('im_flutter_sdk_android'));
     expect(result.errors.join('\n'), contains('podspec'));
+  });
+
+  test('reports an ohos package version out of line', () {
+    writeValidFixture();
+    write(
+      'im_flutter_sdk_ohos/pubspec.yaml',
+      'name: im_flutter_sdk_ohos\nversion: 1.14.0\n',
+    );
+
+    final result = checkVersions(fixture.path);
+
+    expect(result.errors, hasLength(1));
+    expect(result.errors.single, contains('im_flutter_sdk_ohos'));
+    expect(
+        result.errors.single, contains('does not match im_flutter_sdk 1.15.0'));
   });
 }

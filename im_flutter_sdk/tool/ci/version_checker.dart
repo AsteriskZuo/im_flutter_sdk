@@ -5,6 +5,7 @@ const _packagePaths = <String>[
   'im_flutter_sdk_android',
   'im_flutter_sdk_ios',
   'im_flutter_sdk_interface',
+  'im_flutter_sdk_ohos',
 ];
 
 class VersionCheckResult {
@@ -23,14 +24,14 @@ class VersionCheckResult {
 
 /// Checks the version invariants of the federated packages:
 ///
-/// 1. the four package versions stay identical (strict equality), and the iOS podspec `s.version`
+/// 1. the five package versions stay identical (strict equality), and the iOS podspec `s.version`
 ///    stays on the same major.minor line as them;
 /// 2. the two iOS native dependency declarations (CocoaPods podspec and SPM `Package.swift`) stay on
 ///    the same major.minor line, because both integrate the same native SDK;
 /// 3. native dependency versions are released independently of this repository, so **the patch
-///    digit is never compared**: `4.25.0` and `4.25.1` are compatible (for example four packages at
-///    4.25.0 with `hyphenate-chat:4.25.1`), while a different major.minor line (4.24.1 against
-///    4.25.0) is an error.
+///    digit is never compared**: the Flutter packages at 1.15.0 may depend on native `4.25.x`, and
+///    the two iOS integration paths may differ in the patch digit (`4.25.0` against `4.25.1`),
+///    while a different major.minor line (4.24.1 against 4.25.0) is an error.
 VersionCheckResult checkVersions(String repositoryRoot) {
   final errors = <String>[];
   final packageVersions = <String, String>{};

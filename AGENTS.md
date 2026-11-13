@@ -23,10 +23,20 @@
 | `im_flutter_sdk_interface/` | 平台接口层：MethodChannel 抽象 |
 | `im_flutter_sdk_android/` | Android 平台实现 |
 | `im_flutter_sdk_ios/` | iOS 平台实现 |
+| `im_flutter_sdk_ohos/` | HarmonyOS 平台实现：ArkTS Wrapper，基于 `@easemob/chatsdk` 1.15.0 |
 
-调用链：`Dart API → MethodChannel (interface) → Native Wrapper → HyphenateChat SDK`
+调用链：`Dart API → MethodChannel (interface) → Native / ArkTS Wrapper → HyphenateChat / @easemob/chatsdk`
 
-依赖方向：`im_flutter_sdk` → `im_flutter_sdk_android` / `im_flutter_sdk_ios` → `im_flutter_sdk_interface`。interface 是各平台包共享的契约，改动它会波及所有上层包。各包的 pubspec 保持发布用的版本依赖；本地开发运行 `make local-deps` 生成被 Git 忽略的 `pubspec_overrides.yaml`，`make deps` 和 CI 会自动执行。override 仅对当前解析的根包生效，example 也需要自己的文件，不会继承依赖包的 override。发布验证方式见 `CONTRIBUTING.md`。
+依赖方向：`im_flutter_sdk` → `im_flutter_sdk_android` / `im_flutter_sdk_ios` / `im_flutter_sdk_ohos` → `im_flutter_sdk_interface`。interface 是各平台包共享的契约，改动它会波及所有上层包。`im_flutter_sdk_ohos` 的 `pubspec.yaml` 通过 `implements: im_flutter_sdk` 声明平台实现，主包 `flutter.plugin.platforms.ohos.default_package` 指向它，因此使用方只需依赖主包。各包的 pubspec 保持发布用的版本依赖；本地开发运行 `make local-deps` 生成被 Git 忽略的 `pubspec_overrides.yaml`，`make deps` 和 CI 会自动执行。override 仅对当前解析的根包生效，example 也需要自己的文件，不会继承依赖包的 override。发布验证方式见 `CONTRIBUTING.md`。
+
+## ohos 分支与鸿蒙线版本规则
+
+- 本仓库的 `ohos` 分支（本 worktree）是环信 IM Flutter SDK 的鸿蒙线：在原有 Federated Plugin 结构上新增 HarmonyOS 实现包 `im_flutter_sdk_ohos`，仓库共 5 个包。
+- 鸿蒙线版本号跟随 HarmonyOS native chatsdk（`@easemob/chatsdk`）：native 1.15.0 对应 Flutter 1.15.0；采用 1.x 版本规则，不再使用 4.x 版本号。
+- 5 个包版本必须完全一致：`im_flutter_sdk`、`im_flutter_sdk_ohos`、`im_flutter_sdk_interface`、`im_flutter_sdk_android`、`im_flutter_sdk_ios`，禁止只修改其中一个。
+- `im_flutter_sdk_android` / `im_flutter_sdk_ios` 的版本号同样统一为 1.15.0，但本次不单独发版；它们的原生依赖与 Flutter 4.25.x 线保持一致。
+- 鸿蒙线以 `ohos` 分支 + 同名 Git tag 发布（当前 `1.15.0`），用户按 tag 依赖主包；4.x/5.x 主线的版本分支规则不适用于本线。
+- Dart API 与 Flutter 4.25.0 线对齐：`ChatClient` + 8 个 Manager（会话、消息、群组、聊天室、联系人、用户属性、推送、在线状态）。
 
 ## 开发环境初始化
 
@@ -38,20 +48,66 @@ make setup   # config + deps + pods
 
 | target | 作用 |
 |--------|------|
-| `make config` | 拷贝 `example/templates/config.example.json` → `example/scripts/config.json`（含敏感信息，已 gitignore） |
-| `make local-deps` | 为主包、Android、iOS 和 example 生成本地依赖 override，保留已有文件 |
+| `make config` | 创建 `example/config.local.json` 与占位 `example/lib/env.dart`（均 gitignore，已存在则跳过），并兼容旧的 `templates/config.example.json` → `scripts/config.json` 拷贝 |
+| `make env-gettoken` | 读取 `example/config.local.json`，换取 user token，生成 `example/lib/env.dart`（mode 600，默认 24h 过期） |
+| `make local-deps` | 为主包、Android、iOS、HarmonyOS 和 example 生成本地依赖 override，保留已有文件 |
 | `make deps` | 生成本地 override，再在 example 目录执行 `flutter pub get` |
 | `make pods` | `pod install`（仅 Podfile/podspec 变更时执行，通过 mtime 检测） |
 | `make clean` | 清理 build 产物和 Pods |
 
 修改 podspec 中 native 依赖版本后必须执行 `make pods`，否则 iOS 侧会使用旧版本 native SDK 导致编译错误。这是 Flutter 的已知问题：`flutter run` 的 Fingerprinter 不追踪 podspec 文件，会跳过 `pod install`。
 
+`make setup` 与 `make deps` 使用 PATH 上的 Flutter（官方 3.47.0）；鸿蒙设备构建需使用 fvm `custom_ohos`，见下节。
+
+## 鸿蒙开发环境
+
+- **SDK 分工**：鸿蒙设备构建/测试使用 fvm 的 `custom_ohos`（Flutter 3.41.9+ohos-1.0.2，Dart 3.11.5）；Android/iOS 构建、质量门禁与 `dart format` 使用官方 Flutter 3.47.0。不要用 fork 的 Dart 格式化，结果与 CI 不一致。
+- **项目级锁定**：worktree 根 `.fvmrc` 与 `.fvm/flutter_sdk` 指向本机 `custom_ohos`，只在当前仓库生效且已 gitignore；换机器后执行一次 `fvm use custom_ohos --force`。IDE 的 Flutter SDK 指向 `<repo>/.fvm/flutter_sdk`。
+- **命令入口**：鸿蒙相关命令统一用 `fvm flutter ...`；`tool/ci/ohos_local.sh`、`smoke_local.harmony.sh`、`nightly_local.harmony.sh` 默认优先 `.fvm/flutter_sdk/bin/flutter`，可用 `FLUTTER_BIN` 覆盖。
+- **与官方 Flutter 的冲突**：官方 Flutter 执行 `pub get` 会重写 `example/.flutter-plugins-dependencies`（丢失 `plugins.ohos`），导致鸿蒙 hvigor 构建失败；跑完质量门禁或 Android/iOS 测试后，鸿蒙构建前必须先 `fvm flutter pub get`。
+- **OHOS_SKIP_CODESIGN**：本地模拟器使用无签名 hap 时设 `OHOS_SKIP_CODESIGN=1`（鸿蒙脚本默认值）；项目已有真实签名配置时设为 `0`。
+- **fork flutter_tools 补丁（仅本机，不在仓库）**：`~/fvm/versions/custom_ohos/packages/flutter_tools/lib/src/ohos/ohos_device.dart` 的 `shouldCodesign` 需读取 `OHOS_SKIP_CODESIGN`，`lib/src/project.dart` 的 `OhosProject.getSignedHapFile` 需使用同一开关。改完源码删除 `bin/cache/flutter_tools.snapshot` 与对应 `.stamp`，再执行 `./bin/flutter --version` 重建快照。
+- **模拟器/真机**：DevEco Studio 模拟器已验证 OpenHarmony 5.0.2.125 / API 14（`127.0.0.1:5555`）；真机需在 DevEco 配置签名。`hdc list targets` 确认在线，必要时 `hdc tconn 127.0.0.1:5555`。
+- **常用 hdc 命令**：
+
+  ```bash
+  hdc list targets
+  hdc install im_flutter_sdk/example/build/ohos/hap/entry-default-unsigned.hap
+  hdc uninstall com.example.example
+  hdc shell aa start -a EntryAbility -b com.example.example
+  hdc shell hilog | grep -iE 'im_flutter|easemob'
+  ```
+
+## 鸿蒙构建与验证入口
+
+构建 example（在 `im_flutter_sdk/example` 下，使用鸿蒙版 Flutter）：
+
+```bash
+fvm flutter pub get
+fvm flutter build hap --debug --no-codesign
+# 产物：build/ohos/hap/entry-default-unsigned.hap
+hdc install build/ohos/hap/entry-default-unsigned.hap
+```
+
+| 入口 | 用途 | 凭证 |
+|---|---|---|
+| `tool/ci/ohos_local.sh [suite...]` | 鸿蒙集成套件：`logged_out` / `logged_in_base` / `logged_in_contact` / `logged_in_group` / `logged_in_user_info` / `logged_in_special`；日志写入 `artifacts/ohos-<suite>.log` | 6 个 `E2E_*` 变量（`E2E_APP_KEY`、`E2E_USER_ID`、`E2E_USER_TOKEN`、`E2E_PEER_ID`、`E2E_REST_API`、`E2E_APP_TOKEN`）或 `E2E_CONFIG_PATH` |
+| `tool/ci/smoke_local.harmony.sh` | 零凭证冒烟，仅跑 `logged_out` 套件 | 不需要 |
+| `tool/ci/nightly_local.harmony.sh [suite...]` | 全量鸿蒙套件；token 由脚本现场换取 | 5 个长期凭证，或回退 `example/config.local.json` |
+| `tool/ci/ensure_example_env.sh` | 全新检出时生成占位 `example/lib/env.dart` | 不需要 |
+| `tool/ci/ohos_cleanup.sh` | 清理测试遗留的 `flutter_ci_group_*` 孤儿群（REST） | `E2E_APP_TOKEN` |
+
+- nightly 的 5 个长期凭证：`E2E_APP_KEY`、`E2E_USER_ID`、`E2E_REST_API`、`E2E_CLIENT_ID`、`E2E_CLIENT_SECRET`；脚本调用 `example/tool/env_tool.dart e2e-config` 换取 app token + user token，写入 mode 600 的临时文件并在退出时删除。
+- 数据准备：`make config` 生成 `example/config.local.json`，填写后 `make env-gettoken` 生成 `example/lib/env.dart`（token 默认 24h 过期）。
+- 设备默认 `127.0.0.1:5555`，用 `OHOS_DEVICE` 覆盖；`OHOS_SKIP_CODESIGN` 默认 `1`。
+- 当前 CI（`.github/workflows/`）只有 Android/iOS 任务，没有 ohos job；鸿蒙验证走上述本机/设备入口。
+
 ## 命名约定
 
 - Dart 文件统一 snake_case；Manager 文件为业务名 + `_manager`：`chat_manager.dart`
 - 公开 Dart 类统一 `Chat` 前缀：`ChatClient`、`ChatMessage`、`ChatError`（与海外版 agora_chat_sdk 命名一致）
 - Manager 类：`Chat{业务}Manager`，如 `ChatGroupManager`；事件处理器：`Chat{业务}EventHandler`
-- 原生类统一 `*Wrapper` 后缀：`ChatManagerWrapper.java` / `ChatManagerWrapper.m`；iOS 数据转换类用 `*Helper` 后缀
+- 原生类统一 `*Wrapper` 后缀：`ChatManagerWrapper.java` / `ChatManagerWrapper.m`；iOS 数据转换类用 `*Helper` 后缀；ArkTS 侧同用 `*Wrapper.ets` / `*Helper.ets`
 - Model 文件存在 `chat_` 前缀（`chat_message.dart`）与无前缀（如 `fetch_message_options.dart`）两种风格，新增时参考同类文件、保持类名 `Chat` 前缀即可
 - 旧 `EM*` 命名已由 `lib/em_compat.dart` 中的 `@Deprecated` typedef 统一兼容（4.22.0 改名时聚拢，仅为兼容存量用户代码），**新代码不得再使用 `EM*` 名称**，也不得向 em_compat.dart 新增条目
 - MethodChannel 统一前缀 `com.chat.im`，格式 `com.chat.im/{manager_name}`：`com.chat.im/chat_manager`
@@ -61,7 +117,7 @@ make setup   # config + deps + pods
 - import 顺序：dart 标准库 → flutter → `im_flutter_sdk` → `im_flutter_sdk_interface`
 - Manager 一律通过 `ChatClient.getInstance` 获取，禁止直接实例化
 - Model 必须实现 `fromJson` 工厂构造与 `toJson()`；MethodChannel 传输格式为 JSON Map
-- MethodChannel 方法名必须使用常量：Dart 侧 `ChatMethodKeys`、Android 侧 `MethodKey.java`、iOS 侧 `MethodKeys.h`，禁止在代码中硬编码字符串；原生回调事件名统一定义在 `chat_event_keys.dart`
+- MethodChannel 方法名必须使用常量：Dart 侧 `ChatMethodKeys`、Android 侧 `MethodKey.java`、iOS 侧 `MethodKeys.h`、HarmonyOS 侧 `MethodKeys.ets`，禁止在代码中硬编码字符串；原生回调事件名统一定义在 `chat_event_keys.dart`
 - 事件处理器以唯一 id 为 key 存于 `Map<String, Handler>`，通过 `addEventHandler(id, handler)` / `removeEventHandler(id)` 管理
 
 ## 文档注释规范
@@ -96,6 +152,8 @@ make setup   # config + deps + pods
 | Android 实现 | 同目录下 `{业务}Wrapper.java` | `onMethodCall` 注册分支；参数校验与类型/枚举转换；调用 Hyphenate Android SDK 异步 API；回调中经 `updateObject` 返回可序列化结构 |
 | iOS 常量 | `im_flutter_sdk_ios/ios/im_flutter_sdk_ios/Sources/im_flutter_sdk_ios/include/im_flutter_sdk_ios/MethodKeys.h` | 新增同名同值常量 |
 | iOS 实现 | `im_flutter_sdk_ios/ios/im_flutter_sdk_ios/Sources/im_flutter_sdk_ios/{业务}Wrapper.m` | `handleMethodCall` 注册分支；参数校验与类型/枚举转换；调用 Hyphenate iOS SDK；completion 中经 `wrapperCallBack` 返回 |
+| HarmonyOS 常量 | `im_flutter_sdk_ohos/ohos/src/main/ets/components/plugin/MethodKeys.ets` | 新增同名同值常量 |
+| HarmonyOS 实现 | 同目录下 `{业务}Wrapper.ets` | `override onMethodCall` 注册分支；参数校验与类型/枚举转换；调用 `@easemob/chatsdk` Promise，经 `Wrapper.handlePromise` / `onSuccess` / `onError` 返回可序列化结构 |
 
 同时还需：
 
@@ -104,11 +162,11 @@ make setup   # config + deps + pods
 
 提交前自检：
 
-- [ ] 三端方法名常量的值完全一致
+- [ ] 四侧（Dart / Android / iOS / HarmonyOS）方法名常量的值完全一致
 - [ ] Dart 请求参数 key 与原生读取 key 完全一致
 - [ ] 枚举索引与原生枚举映射一致
 - [ ] 返回结构可被 Dart 正确反序列化（注意 `Map<String, List<String>>` 等泛型）
-- [ ] Android 与 iOS 的路由分支均已注册
+- [ ] Android、iOS 与 HarmonyOS 的路由分支均已注册
 
 新增 Model：在 `im_flutter_sdk/lib/src/models/` 建文件，类名 `Chat` 前缀，实现 `fromJson`/`toJson`，在 `im_flutter_sdk/lib/im_flutter_sdk.dart` 导出，写双语注释。
 
@@ -116,26 +174,29 @@ make setup   # config + deps + pods
 
 ## 版本与 CHANGELOG
 
-- 四个子包的版本号保持一致，禁止只修改其中某一个
-- CHANGELOG 使用中文，格式为 `## 版本号` 标题 + `- 新增…` / `- 修复…` / `- 优化…` 条目
-- 新增 API 时：主包 CHANGELOG 记录新 API 条目；interface / android / ios 的 CHANGELOG 按各自实际改动记录
+- 5 个包的版本号必须保持一致：`im_flutter_sdk`、`im_flutter_sdk_interface`、`im_flutter_sdk_android`、`im_flutter_sdk_ios`、`im_flutter_sdk_ohos`，禁止只修改其中某一个。
+- 鸿蒙线版本号跟随 HarmonyOS native chatsdk（`@easemob/chatsdk` 1.15.0 → Flutter 1.15.0），采用 1.x 规则，不再使用 4.x。
+- `im_flutter_sdk_android` / `im_flutter_sdk_ios` 随版本号统一为 1.15.0，但本次不单独发版。
+- 主包 CHANGELOG 当前保留 `1.15.0`、`1.5.4`、`1.5.3` 三个版本；格式为 `## 版本号` 标题 + `- 新增…` / `- 修复…` / `- 优化…` 条目。
+- 新增 API 时：主包 CHANGELOG 记录新 API 条目；interface / android / ios / ohos 的 CHANGELOG 按各自实际改动记录。
 
 ## Git 分支管理
 
-- **4.x 起，每个发布版本对应一个同名分支**（如 `4.19.2`、`4.17.1`），不使用 tag；查看或对比某版本代码用 `git checkout 4.19.2`、`git diff 4.19.2..4.19.3` 等分支操作
-- 3.x 时代遗留的 tag（`3.8.x`/`3.9.x`）仅属历史，4.x 无 tag
-- 默认分支为 `flutter2_stable`；`alpha`、`dev`、`customMsg` 等为特性或历史分支，勿在其上做版本开发
-- 发布新版本：新建与版本号同名的分支
+- 本 worktree 位于 `ohos` 分支（鸿蒙线），发布版本使用同名 Git tag（当前 `1.15.0`），用户按 tag 依赖主包；4.x/5.x 主线「每个版本一个同名分支、不使用 tag」的规则不适用于本线。
+- 主线默认分支为 `flutter2_stable`；`alpha`、`dev`、`customMsg` 等为特性或历史分支，勿在其上做版本开发。
 - **切换分支前先确认工作区干净**（`git status` 无未提交改动）；不干净则停止操作并告知用户，由用户决定如何处理
 - **创建 worktree 时，统一放在仓库根目录的 `.worktree/` 文件夹下**（如 `git worktree add .worktree/agora-1.4.0 agora-1.4.0`），不要放在仓库外部
 
 ## 平台支持
 
-iOS 同时支持 CocoaPods 与 Swift Package Manager 两种集成，共用同一份源码（`ios/im_flutter_sdk_ios/Sources/`），两条链路的原生 SDK 版本保持一致：CocoaPods 走 `im_flutter_sdk_ios.podspec`（HyphenateChat 4.22.1，部署目标 13.0），SPM 走 `ios/im_flutter_sdk_ios/Package.swift`（HyphenateChat_iOS 4.22.1，部署目标 13.0）。
+iOS 同时支持 CocoaPods 与 Swift Package Manager 两种集成，共用同一份源码（`ios/im_flutter_sdk_ios/Sources/`），两条链路的原生 SDK 版本保持一致：CocoaPods 走 `im_flutter_sdk_ios.podspec`（HyphenateChat 4.25.0，部署目标 13.0），SPM 走 `ios/im_flutter_sdk_ios/Package.swift`（HyphenateChat_iOS 4.25.0，部署目标 13.0）。
 
-| 平台 | 最低版本 |
-|---|---|
-| Android | minSdk 21 |
-| iOS | 13.0 |
-| Dart | >=3.3.0 <4.0.0 |
-| Flutter | >=3.3.0 |
+HarmonyOS 由 `im_flutter_sdk_ohos` 提供 ArkTS 实现，原生 SDK 为 `@easemob/chatsdk` 1.15.0；要求 HarmonyOS 5.0.0 (API 12) 及以上，使用鸿蒙版 Flutter 3.41.9+ohos 构建。
+
+| 平台 | 最低版本 | 原生 SDK |
+|---|---|---|
+| Android | minSdk 21 | HyphenateChat 4.25.1 |
+| iOS | 13.0 | HyphenateChat 4.25.0（CocoaPods / SPM） |
+| HarmonyOS | HarmonyOS 5.0.0 (API 12) | @easemob/chatsdk 1.15.0 |
+| Dart | >=3.3.0 <4.0.0 | — |
+| Flutter | >=3.3.0（鸿蒙构建用 3.41.9+ohos） | — |

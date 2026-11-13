@@ -1,3 +1,8 @@
+## 1.15.0
+
+- 版本号跟随鸿蒙 SDK 版本线（1.15.0），功能与 4.25.0 一致，本次不单独发版；
+- The version number follows the HarmonyOS SDK line (1.15.0); features are identical to 4.25.0, and this package is not released separately this time.
+
 ## 4.25.0
 
 ## 4.24.0

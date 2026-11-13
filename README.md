@@ -1,6 +1,6 @@
 # 环信 IM Flutter SDK
 
-环信即时通讯 IM 的 Flutter 插件仓库，Federated Plugin 架构，支持 Android、iOS、鸿蒙（鸿蒙为独立仓库插件）。
+环信即时通讯 IM 的 Flutter 插件仓库，Federated Plugin 架构，支持 Android、iOS、HarmonyOS。当前鸿蒙线版本为 `1.15.0`，由 5 个包组成：`im_flutter_sdk`（主包）、`im_flutter_sdk_interface`（接口包）、`im_flutter_sdk_android` / `im_flutter_sdk_ios` / `im_flutter_sdk_ohos`（平台实现包）；使用方只需依赖主包，接口包与平台实现包会被自动引入。
 
 ## 文档导航
 
