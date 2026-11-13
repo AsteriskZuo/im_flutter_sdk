@@ -32,7 +32,8 @@ void registerContactNegativeCases(ChatClient client) {
       // (INVALID_PARAM). Both mean "self invitation rejected"; the ohos code is
       // recorded in the failure ledger instead of being relaxed silently.
       expect(error.code, anyOf(205, 101));
-      debugPrint('NOTE(deviation) FL-CONTACT-021: code=${error.code} desc=${error.description}');
+      debugPrint(
+          'NOTE(deviation) FL-CONTACT-021: code=${error.code} desc=${error.description}');
     }
   });
 
@@ -68,7 +69,8 @@ void registerContactNegativeCases(ChatClient client) {
       // NOTE(deviation FL-CONTACT-023): the server treats an accept with no
       // pending invitation as a no-op instead of rejecting. Recorded in the
       // failure ledger (EMErrorCode.h documents 205).
-      debugPrint('NOTE(deviation) FL-CONTACT-023: acceptInvitation resolved without a pending invitation');
+      debugPrint(
+          'NOTE(deviation) FL-CONTACT-023: acceptInvitation resolved without a pending invitation');
     }
     expect(await manager.fetchAllContactIds(), isNot(contains(absentPeer)));
   });

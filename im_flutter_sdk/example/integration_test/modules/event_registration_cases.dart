@@ -67,8 +67,7 @@ void registerManagerEventCases(ChatClient client) {
     expect(client.getMultiDeviceEventHandler(id), same(handler));
   });
 
-  ciTestWidgets('FL-EVENT-006 replaces a multi-device handler',
-      (tester) async {
+  ciTestWidgets('FL-EVENT-006 replaces a multi-device handler', (tester) async {
     final id = _unique('ci_multi_cover');
     final first = ChatMultiDeviceEventHandler();
     final second = ChatMultiDeviceEventHandler();
@@ -107,8 +106,7 @@ void registerManagerEventCases(ChatClient client) {
     expect(client.contactManager.getEventHandler(id), same(handler));
   });
 
-  ciTestWidgets('FL-EVENT-010 replaces a contact handler',
-      (tester) async {
+  ciTestWidgets('FL-EVENT-010 replaces a contact handler', (tester) async {
     final id = _unique('ci_contact_cover');
     final first = ChatContactEventHandler();
     final second = ChatContactEventHandler();
@@ -118,8 +116,7 @@ void registerManagerEventCases(ChatClient client) {
     expect(client.contactManager.getEventHandler(id), same(second));
   });
 
-  ciTestWidgets('FL-EVENT-011 removes a contact event handler',
-      (tester) async {
+  ciTestWidgets('FL-EVENT-011 removes a contact event handler', (tester) async {
     final id = _unique('ci_contact_remove');
     client.contactManager.addEventHandler(id, ChatContactEventHandler());
     client.contactManager.removeEventHandler(id);
@@ -138,8 +135,7 @@ void registerManagerEventCases(ChatClient client) {
   });
 
   // Chat manager (FL-EVENT-013..019).
-  ciTestWidgets('FL-EVENT-013 registers a chat event handler',
-      (tester) async {
+  ciTestWidgets('FL-EVENT-013 registers a chat event handler', (tester) async {
     final id = _unique('ci_chat_add');
     final handler = ChatEventHandler();
     client.chatManager.addEventHandler(id, handler);
@@ -181,8 +177,7 @@ void registerManagerEventCases(ChatClient client) {
     addTearDown(() => client.chatManager.removeMessageEvent(id));
   });
 
-  ciTestWidgets('FL-EVENT-018 removes a message event handler',
-      (tester) async {
+  ciTestWidgets('FL-EVENT-018 removes a message event handler', (tester) async {
     final id = _unique('ci_message_remove');
     client.chatManager.addMessageEvent(id, ChatMessageEvent());
     client.chatManager.removeMessageEvent(id);
@@ -198,8 +193,7 @@ void registerManagerEventCases(ChatClient client) {
   });
 
   // Group manager (FL-EVENT-020..023).
-  ciTestWidgets('FL-EVENT-020 registers a group event handler',
-      (tester) async {
+  ciTestWidgets('FL-EVENT-020 registers a group event handler', (tester) async {
     final id = _unique('ci_group_add');
     final handler = ChatGroupEventHandler();
     client.groupManager.addEventHandler(id, handler);
@@ -224,8 +218,7 @@ void registerManagerEventCases(ChatClient client) {
     expect(client.groupManager.getEventHandler(id), isNull);
   });
 
-  ciTestWidgets('FL-EVENT-023 clears all group event handlers',
-      (tester) async {
+  ciTestWidgets('FL-EVENT-023 clears all group event handlers', (tester) async {
     final first = _unique('ci_group_clear_a');
     final second = _unique('ci_group_clear_b');
     client.groupManager.addEventHandler(first, ChatGroupEventHandler());

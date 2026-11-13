@@ -43,7 +43,10 @@ final class CiRestClient {
     if (data is! List) {
       throw FormatException('GET contacts of "$userId": data must be a list');
     }
-    return <String>[for (final item in data) if (item is String) item];
+    return <String>[
+      for (final item in data)
+        if (item is String) item
+    ];
   }
 
   /// Adds bilateral friend relation (bypasses the invite/accept flow).
@@ -64,7 +67,8 @@ final class CiRestClient {
     }
   }
 
-  Future<void> removeContact(String owner, String userId, {bool ignoreNotFound = true}) async {
+  Future<void> removeContact(String owner, String userId,
+      {bool ignoreNotFound = true}) async {
     await _request(
       'DELETE',
       'users/${Uri.encodeComponent(owner)}/contacts/users/'
@@ -91,10 +95,43 @@ final class CiRestClient {
     );
   }
 
+  /// Sends a text message as [from] to [to] through the server-side message
+  /// API, which delivers it to a receiver on another account.
+  ///
+  /// This deployment's payload is `{to, from, type, body: {msg}}`; the
+  /// documented `target_type/target/msg` shape answers 400
+  /// "param to can't be empty".
+  Future<void> sendUserTextMessage({
+    required String from,
+    required String to,
+    required String text,
+  }) async {
+    await _request(
+      'POST',
+      'messages/users',
+      body: <String, Object>{
+        'to': <String>[to],
+        'from': from,
+        'type': 'txt',
+        'body': <String, Object>{'msg': text},
+      },
+    );
+  }
+
   /// Groups. The REST collection path is `/chatgroups` (the `/groups` route
   /// answers 404 "url is invalid" on this deployment). The SDK-side group
   /// fixture is preferred; REST is for members that must join without an
   /// invite/accept round trip.
+  /// Publishes the presence status of the given account through REST so the
+  /// signed-in client can observe `presence.onPresenceStatusChanged`.
+  Future<void> publishPresence(String userId, String description) async {
+    await _request(
+      'POST',
+      'users/${Uri.encodeComponent(userId)}/presence',
+      body: <String, Object>{'description': description},
+    );
+  }
+
   Future<String> createGroup({
     required String owner,
     required String name,
@@ -117,7 +154,8 @@ final class CiRestClient {
     if (data is Map && data['groupid'] is String) {
       return data['groupid'] as String;
     }
-    throw const FormatException('POST chatgroups: response missing data.groupid');
+    throw const FormatException(
+        'POST chatgroups: response missing data.groupid');
   }
 
   Future<void> deleteGroup(String groupId) async {
@@ -181,7 +219,8 @@ final class CiRestClient {
     );
   }
 
-  Future<void> addChatRoomMembers(String chatRoomId, List<String> userIds) async {
+  Future<void> addChatRoomMembers(
+      String chatRoomId, List<String> userIds) async {
     if (userIds.isEmpty) return;
     await _request(
       'POST',
@@ -326,12 +365,18 @@ final class CiRestClient {
           : <String, dynamic>{};
     }
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      final error = decoded is Map
-          ? <Object>[decoded['error'], decoded['error_description']]
-              .whereType<Object>()
-              .join(' ')
-          : decoded.toString();
-      throw HttpException('HTTP ${response.statusCode}: $error', uri: uri);
+      final parts = <String>[
+        if (decoded is Map && decoded['error'] != null) '${decoded['error']}',
+        if (decoded is Map && decoded['error_description'] != null)
+          '${decoded['error_description']}',
+      ];
+      final error = parts.isNotEmpty
+          ? parts.join(' ')
+          : (decoded is Map ? jsonEncode(decoded) : '$decoded');
+      throw HttpException(
+        'HTTP ${response.statusCode}: $error',
+        uri: uri,
+      );
     }
     if (decoded is! Map) {
       throw FormatException('$method $path response must be a JSON object');

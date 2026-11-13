@@ -18,8 +18,7 @@ void registerPushCases(ChatClient client) {
     await client.pushManager.updatePushDisplayStyle(DisplayStyle.Summary);
   });
 
-  ciTestWidgets('FL-PUSH-004 sets a conversation silent mode',
-      (tester) async {
+  ciTestWidgets('FL-PUSH-004 sets a conversation silent mode', (tester) async {
     await client.pushManager.setConversationSilentMode(
       conversationId: ciPeerId,
       type: ChatConversationType.Chat,
@@ -81,8 +80,7 @@ void registerPushCases(ChatClient client) {
     expect(results.containsKey(ciPeerId), isTrue);
   });
 
-  ciTestWidgets('FL-PUSH-012 syncs conversation silent modes',
-      (tester) async {
+  ciTestWidgets('FL-PUSH-012 syncs conversation silent modes', (tester) async {
     await client.pushManager.syncConversationsSilentMode();
   });
 }
@@ -127,14 +125,16 @@ void registerPushSpecialCases(ChatClient client) {
       );
     } on ChatError catch (error) {
       rejected = true;
-      debugPrint('FL-PUSH-013 rejected with code=${error.code} desc=${error.description}');
+      debugPrint(
+          'FL-PUSH-013 rejected with code=${error.code} desc=${error.description}');
     }
     if (!rejected) {
       // NOTE(deviation FL-PUSH-013): the ohos wrapper forwards the empty
       // notifier to chatsdk, which does not reject it, although the native
       // document says an empty notifier must return an invalid-parameter
       // error. Recorded in the failure ledger for the SDK owner.
-      debugPrint('NOTE(deviation) FL-PUSH-013: empty notifier accepted by bindDeviceToken');
+      debugPrint(
+          'NOTE(deviation) FL-PUSH-013: empty notifier accepted by bindDeviceToken');
     }
   });
 }

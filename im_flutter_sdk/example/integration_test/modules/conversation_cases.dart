@@ -141,8 +141,7 @@ void registerConversationCases(ChatClient client) {
       final handlerId =
           'flutter_ci_conv_${DateTime.now().microsecondsSinceEpoch}_'
           '${messageSequence++}';
-      final completion =
-          Completer<({ChatMessage message, ChatError? error})>();
+      final completion = Completer<({ChatMessage message, ChatError? error})>();
       client.chatManager.addMessageEvent(
         handlerId,
         ChatMessageEvent(
@@ -239,7 +238,8 @@ void registerConversationCases(ChatClient client) {
       (tester) async {
         final seed = incoming('conversation lifecycle seed');
         await conversation.insertMessage(seed);
-        await conversation.setExt(const <String, String>{'owner': 'flutter-ci'});
+        await conversation
+            .setExt(const <String, String>{'owner': 'flutter-ci'});
 
         expect(conversation.id, conversationId);
         expect(conversation.type, ChatConversationType.Chat);
@@ -491,7 +491,11 @@ void registerConversationCases(ChatClient client) {
         timestamp: 3000,
         direction: MessageDirection.SEND,
       );
-      for (final message in <ChatMessage>[receivedFirst, receivedSecond, sent]) {
+      for (final message in <ChatMessage>[
+        receivedFirst,
+        receivedSecond,
+        sent
+      ]) {
         await conversation.insertMessage(message);
       }
 
@@ -801,7 +805,8 @@ void registerConversationCases(ChatClient client) {
       // ascending order (oldest-first). The deviation is tracked in the
       // failure ledger; the page contents and the start-id exclusion are still
       // asserted strictly.
-      debugPrint('NOTE(deviation) FL-CONV-021: newest page=${messageIds(newest)}');
+      debugPrint(
+          'NOTE(deviation) FL-CONV-021: newest page=${messageIds(newest)}');
       expect(
         messageIds(newest),
         unorderedEquals(<String>[messages[2].msgId, messages[3].msgId]),
@@ -811,7 +816,8 @@ void registerConversationCases(ChatClient client) {
         startMsgId: messages[3].msgId,
         loadCount: 2,
       );
-      debugPrint('NOTE(deviation) FL-CONV-021: older page=${messageIds(older)}');
+      debugPrint(
+          'NOTE(deviation) FL-CONV-021: older page=${messageIds(older)}');
       expect(
         messageIds(older),
         unorderedEquals(<String>[messages[1].msgId, messages[2].msgId]),

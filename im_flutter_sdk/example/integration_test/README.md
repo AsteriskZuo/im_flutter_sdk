@@ -91,14 +91,46 @@ E2E_CONFIG_PATH=/tmp/ohos_e2e_zuoyu01.json \
 Pass suite names (`logged_out logged_in_base ...`) to run a subset, and set
 `FLUTTER_BIN` / `OHOS_DEVICE` when the defaults do not apply.
 
+Event listener callbacks are covered by `FL-EVENT-201..210` in
+`modules/event_callback_cases.dart` (registered by `logged_in_base_test.dart`):
+one real server/native-triggered callback per listener family that a single
+device can drive (connection, chat message, contact added/deleted, group
+member-joined/removed/destroyed, self user-info, presence on login sync, room
+destroyed). Callbacks that need a second logged-in client (multi-device
+kick/login, token expiry) or a server operation this deployment does not
+expose (room member join/exit) stay UNVERIFIED and are listed in the
+verification record.
+
+### Which CI script runs what
+
+- `tool/ci/run_quality.sh` — host-only checks (format / analyze / Dart unit
+  tests / mapping / contracts / versions). It runs with the official Flutter
+  3.47.0 used by CI and does not touch a device; it passed for this branch.
+- `tool/ci/smoke_local.sh` — Android/iOS device smoke only (`android|ios`). It
+  has no ohos branch; the ohos equivalent smoke is the `logged_out` suite in
+  `tool/ci/ohos_local.sh`.
+- `tool/ci/ohos_local.sh` — the ohos device entry: runs the six suites on the
+  HarmonyOS emulator and writes `artifacts/ohos-<suite>.log`.
+
+> Important: `run_quality.sh` / `smoke_local.sh` run `flutter pub get` with the
+> official Flutter SDK. That rewrites `example/.flutter-plugins-dependencies`
+> without the `plugins.ohos` key, and the next fork build fails with hvigor
+> `TypeError ... reading 'filter'`. Re-run `flutter pub get` with the fork
+> (`PATH="$HOME/fvm/versions/custom_ohos/bin:$PATH"`) before any ohos device
+> run.
+
 ## Notes
 
 - The legacy `no_login_presence_test.dart` and `single_account_local_test.dart`
   remain as the Android/iOS CI entries; the new suites are the ohos rewrite and
   are additive.
 - The room cases create their chat room through REST in `setUpAll`; the group
-  cases create groups through the SDK because the REST group routes answer 404
-  on this app key.
+  cases create groups through the SDK (the REST group collection is
+  `POST /chatgroups`; the earlier `/groups` 404 was a fixture path error, see
+  verification §8.1). `support/rest.dart` uses `/chatgroups` for the REST
+  group fixtures.
+- Format the suites with the official Flutter 3.47.0 `dart format` (the same
+  version `run_quality.sh` checks with), not the fork's Dart 3.11.
 - Cleanup: entries log in and out through `support/login.dart`; fixtures either
   destroy their own resources or explicitly leave peer-owned groups orphaned
   and print a `CI cleanup:` line, which the failure ledger collects.

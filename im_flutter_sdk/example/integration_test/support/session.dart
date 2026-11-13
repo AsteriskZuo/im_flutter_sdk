@@ -78,7 +78,8 @@ Future<void> clearPinnedConversationsForCi(ChatClient client) async {
       }
     }
     if (pinned.data.isNotEmpty) {
-      debugPrint('CI cleared ${pinned.data.length} leftover pinned conversation(s)');
+      debugPrint(
+          'CI cleared ${pinned.data.length} leftover pinned conversation(s)');
     }
   } on ChatError catch (error) {
     debugPrint('CI pinned conversation cleanup failed: code=${error.code}');

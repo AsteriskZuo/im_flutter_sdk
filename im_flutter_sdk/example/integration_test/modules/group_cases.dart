@@ -1279,8 +1279,7 @@ void registerGroupCases(ChatClient client) {
       namecard: namecard,
     );
     final page = await manager.fetchGroupMembersInfo(groupId: group.groupId);
-    final ownRows =
-        page.data.where((item) => item.userId == ciUserId).toList();
+    final ownRows = page.data.where((item) => item.userId == ciUserId).toList();
     // NOTE(deviation FL-GROUP-055): fetchGroupMembersInfo may omit the owner
     // (FL-GROUP-053), so the server row is asserted only when it is listed; the
     // local cache read below is the primary assertion.

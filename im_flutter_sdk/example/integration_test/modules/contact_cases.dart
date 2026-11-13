@@ -284,7 +284,8 @@ void registerContactCases(ChatClient client) {
       // with 101 (INVALID_PARAM) although a session is logged in. Recorded in
       // the failure ledger; revisit with the ohos SDK owner.
       expect(error.code, 101);
-      debugPrint('NOTE(deviation) FL-CONTACT-015: code=${error.code} desc=${error.description}');
+      debugPrint(
+          'NOTE(deviation) FL-CONTACT-015: code=${error.code} desc=${error.description}');
     }
   });
 

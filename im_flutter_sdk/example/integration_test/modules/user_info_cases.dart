@@ -156,7 +156,8 @@ void registerUserInfoCases(ChatClient client) {
       // NOTE(deviation FL-USERINFO-003): ohos chatsdk 1.15.0 returns a
       // placeholder ChatUserInfo for an unknown id instead of skipping the
       // entry. Recorded in the failure ledger.
-      debugPrint('NOTE(deviation) FL-USERINFO-003: unknown id returned ChatUserInfo(userId=${absentInfo.userId})');
+      debugPrint(
+          'NOTE(deviation) FL-USERINFO-003: unknown id returned ChatUserInfo(userId=${absentInfo.userId})');
     }
   });
 
@@ -308,7 +309,8 @@ void registerUserInfoCases(ChatClient client) {
       // profile fields and does not return the documented 901. Recorded in the
       // failure ledger; the field contents are not asserted because the server
       // may truncate them.
-      debugPrint('NOTE(deviation) FL-USERINFO-010: over-long profile fields accepted');
+      debugPrint(
+          'NOTE(deviation) FL-USERINFO-010: over-long profile fields accepted');
     }
 
     final own = await manager.fetchOwnInfo(expireTime: 0);

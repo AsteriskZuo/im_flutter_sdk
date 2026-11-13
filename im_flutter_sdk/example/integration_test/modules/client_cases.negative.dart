@@ -43,8 +43,7 @@ void registerLoggedOutClientCases(ChatClient client) {
       expect(client.pushManager, isNotNull);
     });
 
-    ciTestWidgets('FL-CLIENT-007 exposes the presence manager',
-        (tester) async {
+    ciTestWidgets('FL-CLIENT-007 exposes the presence manager', (tester) async {
       expect(client.presenceManager, isNotNull);
     });
 

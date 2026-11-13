@@ -1,7 +1,8 @@
 # OHOS 4.25.0 Dart 公开 API 测试覆盖表
 
 > **快照时间**：2026-11-12 22:45 +08:00（Asia/Shanghai）  
-> **终态更新**：2026-11-13 10:38 +08:00，六套件复验矩阵 **284 passed / 8 skipped / 0 failed**（292 条正式用例；8 skip 为 UNVERIFIED/环境异步记录，明细见 verification §4.2）。  
+> **终态更新**：2026-11-13 12:00 +08:00，六套件最终矩阵 **294 passed / 8 skipped / 0 failed**（302 条正式用例；8 skip 为 UNVERIFIED/环境异步记录，明细见 verification §4.3）。
+> **事件回调补充（2026-11-13 11:5x）**：新增 `modules/event_callback_cases.dart` 的 `FL-EVENT-201~210`（10 条），逐条验证 native→Dart 事件分发；正式用例总数 292 → **302**。详细结果与单设备限制见 verification §5.6 / §4.3。  
 > **代码基线**：`d2772e3f`（`im_flutter_sdk/.worktree/ohos`）  
 > **覆盖草稿**：[2026-11-12-test-coverage-draft.md](2026-11-12-test-coverage-draft.md)（704 行，396 张表行）  
 > **失败台账**：[2026-11-12-test-failure-ledger.md](2026-11-12-test-failure-ledger.md)（分类口径以此为准）  
@@ -12,7 +13,7 @@
 
 **注意**：表内通过的 `/` 失败状态行是 22:45 的中途快照。终态结果与归因见
 [2026-11-12-test-verification.md](2026-11-12-test-verification.md) §4/§5：最终六套件
-**284 passed + 8 skipped = 292 条正式用例，0 failed**；本表保留用于"每条 API 是否有
+**294 passed + 8 skipped = 302 条正式用例，0 failed**；本表保留用于"每条 API 是否有
 正式用例、落在哪个文件"的查询，不再代表最终通过状态。
 
 ## 摘要
@@ -641,14 +642,37 @@ UserInfo 10 条全部映射；run3 全绿，含 2 条 deviation 记录。
 | ChatPresenceEventHandler / ChatUserInfoEventHandler | 3 | FL-EVENT-122~124 | 仅注册/注销验证 |
 | **合计** | **89** | 036~124 | 0 条逐条用例 |
 
-统计结论：
+统计结论（2026-11-13 起有补充用例，见 §4.3）：
 
-- **有逐条用例的回调：0 条。** 回调行不能算“有对应用例”，只能算“注册入口已被覆盖”。
+- **有逐条用例的回调：10 条**（`FL-EVENT-201~210`，每个 handler 家族至少一条代表性回调，
+  验证事件真的从 native 分发到 Dart handler；其余 79 条仍为“注册入口覆盖”）。
+- 说明：这 10 条覆盖的是分发链路与代表性回调参数，不改变上面按“每条回调”统计的口径。
 - **间接断言：2 条**（`FL-EVENT-067` onSuccess、`FL-EVENT-068` onError）。`message_cases.dart:59-70` 与 `conversation_cases.dart:148-161` 的 `awaitFinalSend` 用这两个回调关联发送结果，发送/重发/下载类用例依赖它完成。
 - **明确 UNVERIFIED：2 条**。`FL-EVENT-056` onMessagesRead 见 `message_cases.dart:516`；`FL-EVENT-063` onConversationRead 见 `message_cases.dart:552`——单设备入口没有对端在线，回调无法观测。
 - **未断言：1 条**（`FL-EVENT-069` onProgress，测试中无 `onProgress` 回调）。
 - **其余 84 条**：注册/注销路径通过，但原生事件投递没有任何断言；需要第二设备、多端登录、真机推送或 505 增值服务才能逐条验证（草稿 §2 的“特殊入口”场景）。
 - 各域 API 用例只做了 server-positive / local 断言，不依赖这些回调，因此 89 条回调不构成“API 未测”的阻塞项，但也不能作为“事件链路已验证”的依据。
+
+### 4.3 2026-11-13 补充用例（FL-EVENT-201~210）
+
+新增 `modules/event_callback_cases.dart`，由 `logged_in_base_test.dart` 注册；
+每条用例用唯一 handler id、`addTearDown` 注销，通过 REST 夹具或 SDK 资料更新
+触发真实事件，再用 `waitForCi`（30–40s）等待并断言回调参数。逐条结果见
+verification §5.6；单设备无法验证的回调（MultiDevice、token 到期、contact/group
+审批、room 成员进出）在 verification 中登记为 UNVERIFIED。
+
+| 用例 | 回调 | 触发方式 | 日志/结果 |
+|---|---|---|---|
+| FL-EVENT-201 | ConnectionEventHandler.onConnected | logout+login | passed（放在最后） |
+| FL-EVENT-202 | ChatEventHandler.onMessagesReceived / onConversationsUpdate | REST peer 发消息；实时推送延迟时 logout/login 走离线同步 | passed |
+| FL-EVENT-203 | ChatContactEventHandler.onContactAdded | REST 加好友 | passed |
+| FL-EVENT-204 | ChatContactEventHandler.onContactDeleted | REST 删好友 | passed |
+| FL-EVENT-205 | GroupEventHandler.onMemberJoinedFromGroup | REST 建 peer-owned 群并含我 | passed |
+| FL-EVENT-206 | GroupEventHandler.onUserRemovedFromGroup | REST 移除我的群成员 | passed |
+| FL-EVENT-207 | GroupEventHandler.onGroupDestroyed | REST 删除 peer 的群 | passed |
+| FL-EVENT-208 | ChatUserInfoEventHandler.onSelfUserInfoUpdate | updateUserInfo(nickname) | passed |
+| FL-EVENT-209 | ChatPresenceEventHandler.onPresenceStatusChanged | REST 发布 presence + logout/login | passed |
+| FL-EVENT-210 | ChatRoomEventHandler.onChatRoomDestroyed | REST 建/删房间 | passed |
 
 ## 5. D17 已移除 key 索引（50 项）
 
@@ -797,6 +821,11 @@ group 套件通过 18 条：`FL-GROUP-012/013/019`~`022`、`025`、`026`、`032`
 10. **special 套件构成**：35 条 = ROOM 31 + PUSH 003/010/011/013；草稿把 `FL-PUSH-011` 归 base，`push_cases.dart` 头注释也未列出 011（实际由 `registerPushSpecialCases` 执行）。
 
 ## 8. 复跑后需更新的状态
+
+> **2026-11-13 终态说明**：以下条目是 2026-11-12 中途快照的待办；复验后已全部
+> 收敛：失败用例修复或按约定记录（见 verification §5），最终矩阵 0 failed；
+> 缺口 26 条的数量与分类未变（属未落地用例，已登记）；89 条回调中的 10 条已有
+> 补充用例（§4.3），其余仍为注册覆盖/UNVERIFIED。以下原文保留作历史记录。
 
 - `failed·待复跑` 3 条（CONV-021、MSG-008、MSG-013）：重新 `flutter build hap` + 安装后跑 base，确认转 passed。
 - `failed·已记录` 9 条：MSG-052/053 按计划改 `markTestSkipped`（505 → skip 不计 fail）；MSG-024/025/048/050/054/059/060 待契约确认或环境开通后重跑。

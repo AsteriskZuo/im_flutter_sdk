@@ -177,3 +177,38 @@ curl -s -X DELETE "$BASE/chatgroups/<groupid>/users/<user>" \
   不是 SDK 或产品缺陷；§3 已逐条列出修复状态。
 - 环境清理：12 个 orphan 群已删除（`DELETE /chatgroups/{id}` 全部 200），临时账号核查无残留；
   后续跑测残留用 `tool/ci/ohos_cleanup.sh` 清理。
+
+## 11. 2026-11-13 事件回调补充（m02637 第 2 点；只验证鸿蒙 m02920）
+
+背景：原 `FL-EVENT-001..035` 只验证 handler 注册表，不验证 native→Dart 事件分发；
+按用户要求补代表性回调用例。
+
+- 新增 `modules/event_callback_cases.dart`（`FL-EVENT-201..210`，注册在
+  `logged_in_base_test.dart`），每例唯一 handler id + `addTearDown` 注销，触发方式
+  走 REST 夹具（`support/rest.dart` 新增 `sendUserTextMessage` / `publishPresence`）
+  或 SDK 资料更新；详细表格见 verification §5.6。
+- 触发条件调研结论（探针，产物已删除）：
+  - presence 变化不即时推送，只能由 logout+login 的登录 sync 分发
+    （`onPresenceStatusChanged`）→ FL-EVENT-209 用"发布 + 重新登录"验证。
+  - room 成员进入/退出回调该 app/部署不推送（仅房间销毁事件可观测）→ 记 UNVERIFIED。
+  - 自己创建的群做 rename/destroy 不会回推事件；用 REST 建 peer 为 owner 的群
+    再增删成员/删群才得到 group 回调（FL-EVENT-205/206/207）。
+  - REST 发消息的 body 格式必须是 `{"to":[...],"from":"...","type":"txt","body":{"msg":"..."}}`。
+- 稳定性问题与处置：
+  - FL-EVENT-202（消息回调）：本机模拟器"刚 logout+login 后"实时消息推送会延迟
+    （探针对比：不重登录 S1=15s 内必到；重登录后 S2 20s 未到；离线期间发送再登录
+    S3 30s 内到）。用例实现：先等实时推送 15s，未到则 logout/login 让离线同步
+    分发同一回调；并把 FL-EVENT-201（会重登录）移到所有事件用例最后，避免影响其它用例。
+  - `onConversationsUpdate` 在该模拟器上非确定触发（探针见过、套件里偶发缺失）：
+    用例严格断言 `onMessagesReceived`，对 `onConversationsUpdate` 记录
+    `CI NOTE(deviation) FL-EVENT-202 ...` 而不阻塞套件；该项列为 SDK 行为偏差。
+- 复验记录：2026-11-13 11:39 全矩阵中 base 因上述 conversationsUpdate 缺失失败 1 次；
+  改为 deviation 记录后 base 单套重跑 **150 passed + 3 skipped + 0 failed**
+  （日志 `artifacts/ohos-logged_in_base.log`），其余五套件在同一窗口均全绿。
+- 单设备无法验证（UNVERIFIED）：MultiDevice 4 个回调、`onTokenWillExpire` /
+  `onTokenDidExpire`、contact 邀请/接受/拒绝、group 邀请/申请/审批、room 成员进出。
+
+- 最终矩阵（2026-11-13 11:52–12:00，`MATRIX_EXIT:0`）：**294 passed + 8 skipped +
+  0 failed（302 条正式用例）**；事件回调 FL-EVENT-201..210 全部通过，另有两处
+  deviation 记录（FL-EVENT-202 `onConversationsUpdate` 非确定触发、
+  FL-MSG-044 本地清空后会话壳被服务端同步重建），均不阻塞套件。

@@ -17,12 +17,12 @@ Future<void> _expectRoomError(
     await operation();
   } on ChatError catch (error) {
     // ignore: avoid_print
-    print('CI room negative "$label" code=${error.code} desc=${error.description}');
+    print(
+        'CI room negative "$label" code=${error.code} desc=${error.description}');
     return;
   }
   fail('CI room negative "$label": expected ChatError but the call succeeded');
 }
-
 
 /// Makes sure [userId] is an explicit member of the room; blocking or
 /// removing members leaves the fixture room in a modified state otherwise.
@@ -81,7 +81,8 @@ void registerRoomCases(
       contains(ciUserId),
     );
     await client.chatRoomManager.leaveChatRoom(tempRoom);
-    expect(await rest.fetchChatRoomMembers(tempRoom), isNot(contains(ciUserId)));
+    expect(
+        await rest.fetchChatRoomMembers(tempRoom), isNot(contains(ciUserId)));
   });
 
   ciTestWidgets('FL-ROOM-003 fetches public chat rooms', (tester) async {
@@ -166,8 +167,7 @@ void registerRoomCases(
     expect(await rest.fetchChatRoomAdmins(roomId), isNot(contains(ciPeerId)));
   });
 
-  ciTestWidgets('FL-ROOM-012 fetches the chat room mute list',
-      (tester) async {
+  ciTestWidgets('FL-ROOM-012 fetches the chat room mute list', (tester) async {
     final roomId = fixture.roomId;
     final muteList = await client.chatRoomManager.fetchChatRoomMuteList(roomId);
     expect(muteList, isA<List<String>>());
@@ -210,8 +210,7 @@ void registerRoomCases(
     expect(blockList, isNot(contains(ciPeerId)));
   });
 
-  ciTestWidgets('FL-ROOM-016 fetches the chat room block list',
-      (tester) async {
+  ciTestWidgets('FL-ROOM-016 fetches the chat room block list', (tester) async {
     final roomId = fixture.roomId;
     final blockList =
         await client.chatRoomManager.fetchChatRoomBlockList(roomId);
@@ -222,7 +221,8 @@ void registerRoomCases(
       (tester) async {
     final roomId = fixture.roomId;
     final announcement = _unique('ci_room_announcement');
-    await client.chatRoomManager.updateChatRoomAnnouncement(roomId, announcement);
+    await client.chatRoomManager
+        .updateChatRoomAnnouncement(roomId, announcement);
     expect(
       await client.chatRoomManager.fetchChatRoomAnnouncement(roomId),
       announcement,
@@ -233,7 +233,8 @@ void registerRoomCases(
       (tester) async {
     final roomId = fixture.roomId;
     final announcement = _unique('ci_room_announcement');
-    await client.chatRoomManager.updateChatRoomAnnouncement(roomId, announcement);
+    await client.chatRoomManager
+        .updateChatRoomAnnouncement(roomId, announcement);
     expect(
       await client.chatRoomManager.fetchChatRoomAnnouncement(roomId),
       announcement,
@@ -241,11 +242,10 @@ void registerRoomCases(
     expect(await rest.fetchChatRoomAnnouncement(roomId), announcement);
   });
 
-  ciTestWidgets('FL-ROOM-019 fetches the chat room allow list',
-      (tester) async {
+  ciTestWidgets('FL-ROOM-019 fetches the chat room allow list', (tester) async {
     final roomId = fixture.roomId;
-    final allowList = await client.chatRoomManager
-        .fetchChatRoomAllowListFromServer(roomId);
+    final allowList =
+        await client.chatRoomManager.fetchChatRoomAllowListFromServer(roomId);
     expect(allowList, isA<List<String>>());
   });
 
@@ -268,8 +268,8 @@ void registerRoomCases(
       () => client.chatRoomManager
           .removeMembersFromChatRoomAllowList(roomId, <String>[ciPeerId]),
     );
-    final allowList = await client.chatRoomManager
-        .fetchChatRoomAllowListFromServer(roomId);
+    final allowList =
+        await client.chatRoomManager.fetchChatRoomAllowListFromServer(roomId);
     expect(allowList, contains(ciPeerId));
   });
 
@@ -281,8 +281,8 @@ void registerRoomCases(
         .addMembersToChatRoomAllowList(roomId, <String>[ciPeerId]);
     await client.chatRoomManager
         .removeMembersFromChatRoomAllowList(roomId, <String>[ciPeerId]);
-    final allowList = await client.chatRoomManager
-        .fetchChatRoomAllowListFromServer(roomId);
+    final allowList =
+        await client.chatRoomManager.fetchChatRoomAllowListFromServer(roomId);
     expect(allowList, isNot(contains(ciPeerId)));
   });
 
@@ -354,8 +354,7 @@ void registerRoomCases(
     expect(attributes?.containsKey(key), isNot(isTrue));
   });
 
-  ciTestWidgets('FL-ROOM-028 checks whether the user is muted',
-      (tester) async {
+  ciTestWidgets('FL-ROOM-028 checks whether the user is muted', (tester) async {
     final roomId = fixture.roomId;
     expect(
       await client.chatRoomManager.isMemberInChatRoomMuteList(roomId),
