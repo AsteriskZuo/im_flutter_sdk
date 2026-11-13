@@ -1,8 +1,8 @@
 # OHOS 4.25.0 Dart 公开 API 测试覆盖表
 
 > **快照时间**：2026-11-12 22:45 +08:00（Asia/Shanghai）  
-> **终态更新**：2026-11-13 12:00 +08:00，六套件最终矩阵 **294 passed / 8 skipped / 0 failed**（302 条正式用例；8 skip 为 UNVERIFIED/环境异步记录，明细见 verification §4.3）。
-> **事件回调补充（2026-11-13 11:5x）**：新增 `modules/event_callback_cases.dart` 的 `FL-EVENT-201~210`（10 条），逐条验证 native→Dart 事件分发；正式用例总数 292 → **302**。详细结果与单设备限制见 verification §5.6 / §4.3。  
+> **终态更新**：2026-11-13 12:35 +08:00，六套件最终矩阵 **298 passed / 4 skipped / 0 failed**（302 条正式用例；4 skip 为 UNVERIFIED/环境异步记录，明细见 verification §4.4）。2026-11-13 偏差修复轮后 `NOTE(deviation)` 从 31 处降到 17 处。
+> **事件回调补充（2026-11-13 11:5x）**：新增 `modules/event_callback_cases.dart` 的 `FL-EVENT-201~210`（10 条），逐条验证 native→Dart 事件分发；正式用例总数 292 → **302**。详细结果与单设备限制见 verification §5.6 / §4.4。  
 > **代码基线**：`d2772e3f`（`im_flutter_sdk/.worktree/ohos`）  
 > **覆盖草稿**：[2026-11-12-test-coverage-draft.md](2026-11-12-test-coverage-draft.md)（704 行，396 张表行）  
 > **失败台账**：[2026-11-12-test-failure-ledger.md](2026-11-12-test-failure-ledger.md)（分类口径以此为准）  
@@ -11,16 +11,17 @@
 
 本文回答三个问题：每个 Dart 公开 API **有没有**对应用例、用例在**哪个文件**、在 2026-11-12 的跑测里**验证到什么程度**。
 
-**注意**：表内通过的 `/` 失败状态行是 22:45 的中途快照。终态结果与归因见
-[2026-11-12-test-verification.md](2026-11-12-test-verification.md) §4/§5：最终六套件
-**294 passed + 8 skipped = 302 条正式用例，0 failed**；本表保留用于"每条 API 是否有
-正式用例、落在哪个文件"的查询，不再代表最终通过状态。
+**注意**：表内通过的 `/` 失败状态行是 22:45 的中途快照，且 2026-11-13 偏差修复轮又
+修正了多条断言（错误码 205、群/聊天室成员 owner、消息顺序、by-time 删除等）。终态结果与
+归因见 [2026-11-12-test-verification.md](2026-11-12-test-verification.md) §4.4/§5：最终
+六套件 **298 passed + 4 skipped = 302 条正式用例，0 failed**；本表保留用于"每条 API 是否
+有正式用例、落在哪个文件"的查询，不再代表最终通过状态。
 
 ## 摘要
 
 - 草稿 396 行（248 API + 24 负向 + 124 事件）中，**281 行有正式用例**；缺口 **26 行**（认证 10、Client 13、消息 3），另有 **89 条事件回调没有逐条用例**。
-- 正式用例共 **292 条**（草稿表内 281 + 既有 11）：终态 **287 passed / 5 skipped / 0 failed**（中途快照为 237 passed / 54 failed / 1 skipped）。
-- 32 条用例以 `NOTE(deviation)` 记录与 SDK 文档/草稿预期的偏差后通过；5 条 UNVERIFIED skip 见验证记录 §4。
+- 正式用例共 **302 条**（草稿表内 281 + 既有 11 + 事件回调 10）：终态 **298 passed / 4 skipped / 0 failed**（2026-11-12 首轮中途快照为 237 passed / 54 failed / 1 skipped）。
+- 2026-11-13 修复轮后剩 **17 条**用例以 `NOTE(deviation)` 记录与 SDK 文档/草稿预期的偏差后通过（修复前 32 条）；4 条 skip 见验证记录 §4.4（FL-MSG-022 环境异步、FL-GROUP-042/043/044 多设备）。
 - 事件注册 35 条全部通过，但回调投递**没有逐条断言**；仅 onSuccess/onError 被发送类用例间接使用。
 
 ## 0. 图例与统计口径

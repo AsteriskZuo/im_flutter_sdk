@@ -282,8 +282,64 @@ export default class GroupManagerWrapper extends Wrapper {
     let groupId = SafetyMapTool.getString(call.args, 'groupId', '') ?? '';
     let pageSize = SafetyMapTool.getNumber(call.args, 'pageSize', 200) ?? 200;
     let cursor = SafetyMapTool.getString(call.args, 'cursor');
-    this.handlePromise(result, call.method, manager.fetchGroupMembers(groupId, pageSize, cursor),
-      (value: CursorResult<string>) => CursorResultHelper.toJson<string>(value, (s: string) => s));
+    if (cursor !== undefined && cursor.length > 0) {
+      // Only the first page gets the owner prepended (see memberListJson), so
+      // later pages keep the chatsdk order and cursor untouched.
+      this.handlePromise(result, call.method, manager.fetchGroupMembers(groupId, pageSize, cursor),
+        (value: CursorResult<string>) => CursorResultHelper.toJson<string>(value, (s: string) => s));
+      return;
+    }
+    // The page and the owner resolve in parallel; the owner only affects how
+    // the resolved page is serialized.
+    let page: Promise<CursorResult<string>> = manager.fetchGroupMembers(groupId, pageSize, cursor);
+    this.resolveGroupOwner(manager, groupId).then((owner: string) => {
+      this.handlePromise(result, call.method, page,
+        (value: CursorResult<string>) => this.memberListJson(value, owner));
+    });
+  }
+
+  /**
+   * Resolves the group owner id: the local snapshot first (create/fetch cache
+   * it), the server detail as the fallback. An unresolvable owner resolves to ''
+   * so the member page is returned unchanged instead of failing the call.
+   */
+  private resolveGroupOwner(manager: GroupManager, groupId: string): Promise<string> {
+    let cached = manager.getGroup(groupId);
+    let cachedOwner = cached === undefined ? '' : cached.owner();
+    if (cachedOwner.length > 0) {
+      return Promise.resolve(cachedOwner);
+    }
+    return manager.fetchGroupFromServer(groupId)
+      .then((group: Group) => group.owner())
+      .catch((): string => '');
+  }
+
+  /**
+   * Serializes one server member page and restores the owner id on the first
+   * page.
+   *
+   * chatsdk `fetchGroupMembers` leaves the group owner out of the page (a two
+   * member group only lists the peer while `membersCount()` reports 2), while
+   * android/iOS return the owner as a regular member; `fetchMemberListFromServer`
+   * is documented to list every member, so the owner is prepended when the page
+   * does not hold it yet.
+   *
+   * The keys match CursorResultHelper.toJson; the list is rebuilt because the
+   * owner has to be inserted before the chatsdk items.
+   */
+  private memberListJson(value: CursorResult<string>, owner: string): Map<string, Object> {
+    let ids = value.getResult();
+    let list = new Array<string>();
+    if (owner.length > 0 && ids.indexOf(owner) < 0) {
+      list.push(owner);
+    }
+    for (let id of ids) {
+      list.push(id);
+    }
+    let data = new Map<string, Object>();
+    data.set('cursor', value.getNextCursor());
+    data.set('list', list);
+    return data;
   }
 
   private getGroupBlockListFromServer(call: MethodCall, result: MethodResult): void {

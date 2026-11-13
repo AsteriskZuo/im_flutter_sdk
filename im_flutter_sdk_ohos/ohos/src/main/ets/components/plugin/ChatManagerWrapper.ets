@@ -1144,9 +1144,18 @@ export default class ChatManagerWrapper extends Wrapper {
     let sender = SafetyMapTool.getString(call.args, 'sender') ?? '';
     let direction = EnumTool.searchDirectionFromInt(SafetyMapTool.getNumber(call.args, 'direction') ?? 0);
     let scope = (SafetyMapTool.getNumber(call.args, 'scope') ?? 2) as MessageSearchScope;
-    this.handlePromise(result, call.method,
-      manager.loadConversationMessagesWithKeyword(keyword, timestamp, sender, direction, scope),
-      (map: Map<string, Array<string>>) => map);
+    // chatsdk completes this async operation without a result or an error on
+    // some inputs, surfacing "Native async operation completed without an
+    // error result" from libhyphenate; a synchronous throw must not escape
+    // onMethodCall either, or the Dart caller gets no error result at all.
+    try {
+      let promise: Promise<Map<string, Array<string>>> =
+        manager.loadConversationMessagesWithKeyword(keyword, timestamp, sender, direction, scope);
+      this.handlePromise(result, call.method, promise, (map: Map<string, Array<string>>) => map);
+    } catch (e) {
+      this.onErrorInfo(result, ChatError.GENERAL_ERROR,
+        `loadConversationMessagesWithKeyword failed: ${JSON.stringify(e)}`);
+    }
   }
 
   private loadMessagesWithIds(call: MethodCall, result: MethodResult): void {

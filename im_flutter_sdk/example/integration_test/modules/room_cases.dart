@@ -62,8 +62,11 @@ void registerRoomCases(
       ext: 'flutter-ci',
     );
     final members = await client.chatRoomManager.fetchChatRoomMembers(roomId);
-    // The SDK member list excludes the room owner, the fixture room has the
-    // peer as an explicit member.
+    // chatsdk leaves the room owner out of the member page and its join
+    // response carries no owner either, so the wrapper can restore the owner
+    // row only after a later room-info call is observed (see FL-ROOM-006,
+    // which runs after the name/description updates). The peer added by the
+    // fixture is always present on the first page.
     expect(members.data, contains(ciPeerId));
   });
 
@@ -117,6 +120,9 @@ void registerRoomCases(
       roomId,
       pageSize: 200,
     );
+    // The owner row is restored from the Chatroom that FL-ROOM-001's join
+    // cached (chatsdk has no single-room fetch on this line).
+    expect(members.data, contains(ciUserId));
     expect(members.data, contains(ciPeerId));
     expect(members.cursor, isA<String>());
   });

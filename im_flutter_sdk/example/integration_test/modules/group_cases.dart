@@ -170,9 +170,8 @@ void registerGroupCases(ChatClient client) {
   // Test: Create a group that invites the peer directly and reads the member
   // list plus the server joined list.
   // Expected: The call returns the created id, the requested name, and the
-  // current user as owner; the server member list holds exactly the peer (the
-  // owner is omitted, see the NOTE); the server joined list contains the
-  // group. Teardown destroys it.
+  // current user as owner; the server member list holds the owner and the peer;
+  // the server joined list contains the group. Teardown destroys it.
   ciTestWidgets('FL-GROUP-005 createGroup invites the peer', (_) async {
     final name = fixtures.nextName();
     final group = await manager.createGroup(
@@ -191,12 +190,7 @@ void registerGroupCases(ChatClient client) {
       () => fixtures.memberIds(group.groupId),
       (ids) => ids.contains(ciPeerId),
     );
-    // NOTE(deviation FL-GROUP-005): ohos fetchMemberListFromServer (chatsdk
-    // fetchGroupMembers) omits the owner, so the page holds only the invited
-    // peer although the group has two members (FL-GROUP-006 still reads
-    // memberCount 2 and the owner is asserted on the created snapshot above).
-    debugPrint('CI FL-GROUP-005: server member list=$members owner=$ciUserId');
-    expect(members, <String>[ciPeerId]);
+    expect(members, unorderedEquals(<String>[ciUserId, ciPeerId]));
     // The server rejects pageSize > 20 with code 112 (query param reaches
     // limit), so this row pages with the SDK default of 20.
     final joined = await manager.fetchJoinedGroupsFromServer(pageSize: 20);
@@ -228,8 +222,8 @@ void registerGroupCases(ChatClient client) {
 
   // Test: Create a group with the peer as member and page the server member
   // list.
-  // Expected: One page with exactly the peer (the owner is omitted, see the
-  // NOTE), no duplicates, and no next cursor. Teardown destroys it.
+  // Expected: One page with the owner and the peer, no duplicates, and no next
+  // cursor. Teardown destroys it.
   ciTestWidgets('FL-GROUP-007 fetchMemberListFromServer lists both members',
       (_) async {
     final group = await fixtures.create(
@@ -240,10 +234,8 @@ void registerGroupCases(ChatClient client) {
       group.groupId,
       pageSize: 100,
     );
-    // NOTE(deviation FL-GROUP-007): the same owner omission as FL-GROUP-005.
-    debugPrint('CI FL-GROUP-007: server member list=${members.data}');
-    expect(members.data, <String>[ciPeerId]);
-    expect(members.data.toSet(), hasLength(1));
+    expect(members.data, unorderedEquals(<String>[ciUserId, ciPeerId]));
+    expect(members.data.toSet(), hasLength(2));
     expect(members.cursor ?? '', isEmpty);
   });
 
@@ -385,7 +377,7 @@ void registerGroupCases(ChatClient client) {
   // Test: Add the peer with a welcome message, then poll the server member list
   // and read the remote member count.
   // Expected: The peer joins; the member count becomes two; the server member
-  // page holds only the peer because the owner is omitted (see the NOTE).
+  // page holds the owner and the peer.
   ciTestWidgets('FL-GROUP-014 addMembers adds the peer', (_) async {
     final group = await fixtures.create(caseId: 'FL-GROUP-014');
     await manager.addMembers(
@@ -398,9 +390,7 @@ void registerGroupCases(ChatClient client) {
       () => fixtures.memberIds(group.groupId),
       (ids) => ids.contains(ciPeerId),
     );
-    // NOTE(deviation FL-GROUP-014): the owner omission of FL-GROUP-005.
-    debugPrint('CI FL-GROUP-014: server member list=$members');
-    expect(members, <String>[ciPeerId]);
+    expect(members, unorderedEquals(<String>[ciUserId, ciPeerId]));
     final detail = await manager.fetchGroupInfoFromServer(group.groupId);
     expect(detail.memberCount, 2);
   });
@@ -408,8 +398,8 @@ void registerGroupCases(ChatClient client) {
   // Test: Invite the peer with a reason while invitation confirmation is off,
   // then poll the server member list.
   // Expected: The peer is a member, because inviteNeedConfirm=false adds the
-  // invitee directly; the page lists only the peer (the owner is omitted, see
-  // the NOTE). Teardown destroys the group.
+  // invitee directly; the page lists the owner and the peer. Teardown destroys
+  // the group.
   ciTestWidgets('FL-GROUP-015 inviterUser adds the peer directly', (_) async {
     final group = await fixtures.create(caseId: 'FL-GROUP-015');
     await manager.inviterUser(
@@ -422,15 +412,13 @@ void registerGroupCases(ChatClient client) {
       () => fixtures.memberIds(group.groupId),
       (ids) => ids.contains(ciPeerId),
     );
-    // NOTE(deviation FL-GROUP-015): the owner omission of FL-GROUP-005.
-    debugPrint('CI FL-GROUP-015: server member list=$members');
-    expect(members, <String>[ciPeerId]);
+    expect(members, unorderedEquals(<String>[ciUserId, ciPeerId]));
   });
 
   // Test: Remove the peer from a two member group and poll the server member
   // list.
-  // Expected: The remote member count drops to one; the server member page is
-  // empty because it only lists non-owner members.
+  // Expected: The remote member count drops to one; the server member page
+  // holds only the owner.
   ciTestWidgets('FL-GROUP-016 removeMembers removes the peer', (_) async {
     final group = await fixtures.create(
       caseId: 'FL-GROUP-016',
@@ -442,17 +430,14 @@ void registerGroupCases(ChatClient client) {
       () => fixtures.memberIds(group.groupId),
       (ids) => !ids.contains(ciPeerId),
     );
-    // NOTE(deviation FL-GROUP-016): the owner omission of FL-GROUP-005 leaves
-    // an empty page once the peer is removed.
-    debugPrint('CI FL-GROUP-016: server member list after remove=$members');
-    expect(members, isEmpty);
+    expect(members, <String>[ciUserId]);
     final detail = await manager.fetchGroupInfoFromServer(group.groupId);
     expect(detail.memberCount, 1);
   });
 
   // Test: Block the peer and read both the block list and the member list.
   // Expected: The block list holds the peer and the blocked peer is no longer a
-  // group member; the member page is empty because it omits the owner.
+  // group member; the member page holds only the owner.
   ciTestWidgets('FL-GROUP-017 blockMembers moves the peer to the block list',
       (_) async {
     final group = await fixtures.create(
@@ -471,10 +456,7 @@ void registerGroupCases(ChatClient client) {
       () => fixtures.memberIds(group.groupId),
       (ids) => !ids.contains(ciPeerId),
     );
-    // NOTE(deviation FL-GROUP-017): the owner omission of FL-GROUP-005 leaves
-    // an empty page once the peer is blocked.
-    debugPrint('CI FL-GROUP-017: server member list after block=$members');
-    expect(members, isEmpty);
+    expect(members, <String>[ciUserId]);
   });
 
   // Test: Block the peer, unblock it, and read the block list again.
@@ -1205,9 +1187,9 @@ void registerGroupCases(ChatClient client) {
   });
 
   // Test: Page the group member details of a two member group.
-  // Expected: The peer is listed once as a Member with a positive join
-  // timestamp and no next cursor; no outsider or duplicate ids appear. When the
-  // owner row is listed it carries the Owner role (see the NOTE).
+  // Expected: The owner is listed once with the Owner role and a positive join
+  // timestamp, the peer once as a Member with a positive join timestamp, and no
+  // next cursor; no outsider or duplicate ids appear.
   ciTestWidgets('FL-GROUP-053 fetchGroupMembersInfo returns member details',
       (_) async {
     final group = await fixtures.create(
@@ -1219,11 +1201,6 @@ void registerGroupCases(ChatClient client) {
       limit: 20,
     );
     final ids = page.data.map((item) => item.userId).toList();
-    // NOTE(deviation FL-GROUP-053): the sibling server list
-    // (fetchMemberListFromServer, FL-GROUP-005/007) omits the owner on ohos, and
-    // the 5.1.0 member-detail row only requires the peer, so the owner row is
-    // not required here; its role is checked when the server returns it.
-    debugPrint('CI FL-GROUP-053: member detail ids=$ids');
     expect(ids, contains(ciPeerId));
     expect(ids.toSet(), hasLength(ids.length));
     // The expected ids are added imperatively because both are compile time
@@ -1239,11 +1216,9 @@ void registerGroupCases(ChatClient client) {
     expect(peer.joinedTs, greaterThan(0));
     final ownerRows =
         page.data.where((item) => item.userId == ciUserId).toList();
-    expect(ownerRows.length, lessThanOrEqualTo(1));
-    if (ownerRows.isNotEmpty) {
-      expect(ownerRows.single.role, ChatGroupPermissionType.Owner);
-      expect(ownerRows.single.joinedTs, greaterThan(0));
-    }
+    expect(ownerRows, hasLength(1));
+    expect(ownerRows.single.role, ChatGroupPermissionType.Owner);
+    expect(ownerRows.single.joinedTs, greaterThan(0));
     expect(page.cursor ?? '', isEmpty);
   });
 
@@ -1266,8 +1241,8 @@ void registerGroupCases(ChatClient client) {
 
   // Test: Set the namecard of the current user and read it back from the member
   // details and the local namecard lookup.
-  // Expected: The local lookup returns the written namecard; when the owner row
-  // is listed in the member details it carries the same card (see the NOTE).
+  // Expected: The local lookup returns the written namecard and the owner row of
+  // the member details carries the same card.
   ciTestWidgets('FL-GROUP-055 updateGroupNamecard stores the card', (_) async {
     final group = await fixtures.create(
       caseId: 'FL-GROUP-055',
@@ -1280,15 +1255,10 @@ void registerGroupCases(ChatClient client) {
     );
     final page = await manager.fetchGroupMembersInfo(groupId: group.groupId);
     final ownRows = page.data.where((item) => item.userId == ciUserId).toList();
-    // NOTE(deviation FL-GROUP-055): fetchGroupMembersInfo may omit the owner
-    // (FL-GROUP-053), so the server row is asserted only when it is listed; the
-    // local cache read below is the primary assertion.
-    debugPrint('CI FL-GROUP-055: own detail namecards='
-        '${ownRows.map((item) => item.namecard).toList()}');
-    expect(ownRows.length, lessThanOrEqualTo(1));
-    if (ownRows.isNotEmpty) {
-      expect(ownRows.single.namecard, namecard);
-    }
+    // The member detail lists the owner (FL-GROUP-053), so the server row is
+    // asserted before the local cache read below.
+    expect(ownRows, hasLength(1));
+    expect(ownRows.single.namecard, namecard);
     final cached = await waitForCi<String?>(
       'CI FL-GROUP-055 namecard is cached',
       () => manager.getGroupNamecard(

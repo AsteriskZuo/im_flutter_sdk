@@ -1019,12 +1019,15 @@ class ChatConversation {
   Future<void> deleteLocalAndServerMessagesByTime(
       {required int beforeMs}) async {
     try {
-      Map req = {"beforeTs": beforeMs};
+      // The native wrappers address the conversation by id and type
+      // (android ConversationParams / ios ConversationHelper), so the
+      // conversation fields must be part of the request.
+      Map req = _toJson();
+      req["beforeTs"] = beforeMs;
       Map result = await platform_interface.Client.instance.conversationManager
           .callNativeMethod(
               ChatMethodKeys.conversationDeleteServerMessageWithTime, req);
       ChatError.hasErrorFromResult(result);
-      return result[ChatMethodKeys.conversationGetLocalMessageCount];
     } catch (e) {
       rethrow;
     }

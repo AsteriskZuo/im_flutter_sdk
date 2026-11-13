@@ -1,8 +1,8 @@
 # OHOS 4.25.0 集成测试验证记录（2026-11-12 首轮 / 2026-11-13 复验更新）
 
-> **状态**：final v3（2026-11-13 事件回调补充 + 复验矩阵，0 failed）
-> **代码基线**：`93e415f9`（首轮）/ `95f71553`（稳定性与 REST 修正）+ 2026-11-13 未提交的事件回调补充（见 §7）
-> **最终结果**：302 条正式用例 = **294 passed + 8 skipped + 0 failed**（2026-11-13 11:52–12:00 六套件全矩阵，`MATRIX_EXIT:0`）
+> **状态**：final v4（2026-11-13 事件回调补充 + SDK 偏差修复轮，0 failed）
+> **代码基线**：`93e415f9`（首轮）/ `95f71553`（稳定性与 REST 修正）+ 2026-11-13 未提交的偏差修复与事件回调补充（见 §7）
+> **最终结果**：302 条正式用例 = **298 passed + 4 skipped + 0 failed**（2026-11-13 12:23–12:35 `nightly_local.harmony.sh` 六套件全矩阵，`NIGHTLY_EXIT:0`）
 > **覆盖表**：[2026-11-12-test-coverage.md](2026-11-12-test-coverage.md)（表内 `failed` 行是中途快照，终态见 §4.2；每条 API 的用例位置不变）
 > **失败台账**：[2026-11-12-test-failure-ledger.md](2026-11-12-test-failure-ledger.md)（含每类问题的"测试用例问题 / SDK 问题 / 环境限制"分类与处置）
 > **用例根目录**：`im_flutter_sdk/example/integration_test/`
@@ -184,6 +184,39 @@ group 3 条 skip 不变（GROUP-042/043/044，多设备）。
   “`loadAllConversations` 为空”不稳定；改为断言“本地消息全部清空（`getAllMessageCount==0`、
   未读 0、每个会话本地消息数 0）”，并在用例内 `NOTE(deviation)` 说明。
 
+### 4.4 2026-11-13 偏差修复后矩阵（最终结果 v4）
+
+运行方式：`tool/ci/nightly_local.harmony.sh`（harmony-only 包装，内部六套件顺序执行），
+2026-11-13 12:23–12:35，`NIGHTLY_EXIT:0`；日志 `/tmp/ohos-nightly-harmony2.log` 与
+`artifacts/ohos-<suite>.log`。
+
+| 套件 | passed | skipped | failed | 日志 |
+|---|---|---|---|---|
+| logged_out | 21 | 0 | 0 | `artifacts/ohos-logged_out.log` |
+| logged_in_base | 152 | 1 | 0 | `artifacts/ohos-logged_in_base.log` |
+| logged_in_contact | 23 | 0 | 0 | `artifacts/ohos-logged_in_contact.log` |
+| logged_in_group | 57 | 3 | 0 | `artifacts/ohos-logged_in_group.log` |
+| logged_in_special | 35 | 0 | 0 | `artifacts/ohos-logged_in_special.log` |
+| logged_in_user_info | 10 | 0 | 0 | `artifacts/ohos-logged_in_user_info.log` |
+| **合计** | **298** | **4** | **0** | **302 条正式用例** |
+
+相对 4.3 的变化：子代理 A/B 修复了 §5.3 中 wrapper/Dart 可修的偏差项（错误码 205、
+群/聊天室成员列表补 owner、loadMessages 排序、by-time 删除参数、native error result、
+消息模型序列化），原先的 8 个 skip 中 FL-CONV-030 与 FL-MSG-050 已转为通过（后者以
+`CI SDK LIMITATION` 日志记录），故 294/8 变为 298/4。
+
+本轮 4 个 skip：
+
+- **FL-MSG-022**：`UNVERIFIED (CI server async)` —— 共享 appKey 的漫游索引在 20s 内
+  未反映 `deleteRemoteMessagesBefore` 结果，按环境限制记录（同一用例单套复跑可过）。
+- **FL-GROUP-042/043/044**：需要第二个已登录客户端（peer 为群主 + 申请人），单设备
+  无法提供，保持 UNVERIFIED。
+
+限制类日志（不判失败、在用例内记录）：`FL-MSG-050`（native 拒绝无 error result，
+`code 1`，已由 wrapper 保证错误回包后按 SDK 能力限制记录）、FL-MSG-052/053
+（505 语音转文字服务未开通）、FL-MSG-054（100 搜索服务未注册）、FL-MSG-034
+（1113 翻译服务瞬时失败，本轮通过）。
+
 ## 5. 失败归因与修复（逐条）
 
 本章回答用户在 2026-11-13 反馈中提出的问题：每条失败"为什么失败、根因在谁、
@@ -216,34 +249,44 @@ group 3 条 skip 不变（GROUP-042/043/044，多设备）。
 | FL-MSG-036/038/043 | pin 持续 303 / mark 过滤 90s 空 | ①本地 peer 会话需要等服务端会话物化后才可 pin；物化未完成时 chatsdk 返回 303（303=SERVER_UNKNOWN_ERROR，desc "concurrent operation are not allowed"）；②历史运行遗留的置顶状态干扰 | 新增 `ensureServerConversation`（先 `fetchConversationsByOptions` 等服务端会话出现再 pin，303 重试上限 45s）；mark 先确保会话再 20s 过滤；base setUpAll 清理历史置顶 | 通过 |
 | FL-MSG-021/022/029 | 破坏性服务端操作污染后续用例 | 三条用例对**共享 peer 会话**做服务端删除，破坏后序用例依赖的会话（例：022 删漫游后，036/038 pin 一直 303） | 三条全部改为 REST 创建的一次性 peer 账号，teardown 删会话+账号 | 通过（隔离后立即可复现修复） |
 
-### 5.2 已修复的 SDK 问题（3 处，已单独提交/待二次提交）
+### 5.2 已修复的 SDK 问题（9 处，其中 3 处在 `95f71553`，其余待本轮提交）
 
 | # | 问题 | 证据 | 修复 |
 |---|---|---|---|
 | 1 | `loadMessagesWithIds` 参数键不一致 | Dart `chat_manager.dart:619-631` 发 `messageIds`；ohos `ChatManagerWrapper.ets:1152-1162` 读 `msgIds` → 恒空数组，`ChatError code 110 messageIds cannot be empty!`（影响 FL-MSG-008/013） | `ChatManagerWrapper.ets` 先读 `messageIds`，fallback `msgIds` |
 | 2 | `searchMsgFromDB` 参数键不一致 | Dart 发 `maxCount`（`chat_manager.dart:1422`），三端 native 都读 `count`（Android `ChatManagerWrapper.java:838`、iOS `.m:900`、ohos `ChatManagerWrapper.ets:777`）→ 每页恒 20 条（影响 FL-MSG-027） | `chat_manager.dart` 同时发 `count` + `maxCount`（兼容未升级的 native） |
 | 3 | `getGroupWithId` 空壳未判空 | chatsdk 未命中群时返回 `groupId` 有值、`name` 为空的 ChatGroup；Dart 侧按约定应返回 null（影响 FL-GROUP-001） | `GroupManagerWrapper.ets`：groupId 或 groupName 为空都回 `onSuccess` 无 payload（Dart 得到 null） |
+| 4 | 联系人错误码不一致 | CONTACT-015/021：ohos 101（INVALID_USER_NAME）vs 文档 205（影响 FL-CONTACT-015/021） | `ContactManagerWrapper.ets`：`addContact` 前置当前用户判断直接回 205；`getSelfIdsOnOtherPlatform` 把 101 翻译为 205（`arkts-limited-throw` 限制下用 then/catch 实现） |
+| 5 | 群成员列表缺群主 | GROUP-005/007/014/015/016/017/053/055/058：`fetchMemberListFromServer` 不含 owner（影响上述用例） | `GroupManagerWrapper.ets`：首页补 owner（本地 getGroup → 回退 fetchGroupFromServer），分页游标保持不变 |
+| 6 | 聊天室成员列表缺房主 | ROOM-001/006：`fetchChatRoomMembers` 不含 owner | `ChatRoomManagerWrapper.ets`：`roomOwners` 缓存 + 首个 Chatroom payload 记 owner，首页补 owner 行 |
+| 7 | `loadMessages` 分页顺序 | CONV-014/015/017/021：chatsdk 按升序返回，Dart 文档 Up=newest-first | `ConversationWrapper.ets`：`sortByDirection`（serverTime 回退 localTime）归一化 |
+| 8 | by-time 删除参数缺失 | CONV-030：Dart 只发 `beforeTs`（Android/iOS 同样缺），ohos 要求 convId → 110 | `chat_conversation.dart`：请求改用 `_toJson()` + beforeTs（补齐 convId/type） |
+| 9 | native reject 无 error result | MSG-050：`loadConversationMessagesWithKeyword` 原生拒绝时无 result/error → `code 1` | `ChatManagerWrapper.ets`：try/catch 保证必有错误回包；用例断言 code 1 并记录能力限制 |
 
-### 5.3 SDK 行为偏差（未改 SDK，用例记录 + 待用户决定是否修）
+另有 1 处 Dart 模型修复：`ChatMessage` 的 `CombineMessageBody.fromJson` / `ChatImageMessageBody.toJson` /
+`dispose`（新增 `im_flutter_sdk/test/models/message_body_serialization_test.dart` 6 条单测）。
 
-这些是"行为与 Dart 文档/Android/iOS 不一致，但不阻塞测试通过"的项，均已在用例内
-`NOTE(deviation)` 记录（共 31 处），是否作为 SDK bug 修由用户确认。
+### 5.3 SDK 行为偏差（2026-11-13 用户确认修复；可修项已修，能力缺口保留）
+
+用户 m03238 确认按建议修复后，子代理 A/B 修复了下列可修项（见 §5.2 #4-#9 + 模型序列化）；
+剩余项因 chatsdk/上游能力限制或纯服务端语义无法在 ohos 线单方面修复，仍在用例内以
+`NOTE(deviation)` 记录（当前共 17 处，日志或注释中可检索）。
 
 | 偏差 | 现象/证据 | 建议 |
 |---|---|---|
-| 错误码不一致 | CONTACT-015 getSelfIdsOnOtherPlatform 实测 101（文档 205）；CONTACT-021 加自己实测 101（文档 205）；CONTACT-023 无 pending accept 为 no-op（文档抛错） | ohos 对齐 iOS/Android 错误码 |
-| 群成员列表不含群主 | GROUP-005/014/015 `fetchMemberListFromServer` 省略 owner | 补 owner，与 Android/iOS 一致 |
+| ~~错误码不一致~~ | **已修**：CONTACT-015/021 对齐 205（`ContactManagerWrapper.ets`）；CONTACT-023 无 pending accept 为 no-op，chatsdk 无 pending 查询接口，保留记录 | — |
+| ~~群成员列表不含群主~~ | **已修**：GROUP-005/007/014/015 等改为 `unorderedEquals([ciUserId, ciPeerId])` | — |
 | allowlist 语义 | GROUP-011/035：owner 恒 true、owner 行不能移除 | 文档写明服务端语义 |
 | 群缓存不失效 | GROUP-023/024/052：destroy/leave 后同会话内缓存仍返回旧快照 | `getGroupWithId` 返回 null 或文档说明 |
-| 聊天室成员不含房主 | ROOM-006 | 同群 |
-| loadMessages 顺序 | CONV-021：Up 分页返回升序（文档 newest-first） | 对齐 Dart 文档（`chat_conversation.dart:602-637`） |
+| ~~聊天室成员不含房主~~ | **已修**：ROOM-006 断言 owner+peer；ROOM-001 受 chatsdk join 不返回 owner 限制，首调仅断言 peer（FL-ROOM-006 覆盖 owner 行） | — |
+| ~~loadMessages 顺序~~ | **已修**：wrapper `sortByDirection` 归一化，CONV-014/015/017/021 恢复严格有序断言 | — |
 | pin 需要服务端物化 | MSG-036/038：未物化时 pin 返回 303（303=SERVER_UNKNOWN_ERROR） | 返回明确错误或自动触发同步 |
-| by-time 删除参数缺失 | CONV-030：`chat_conversation.dart:1019-1031` 只发 `beforeTs`，ohos `ConversationWrapper.ets:485-500` 要 `convId` → 110 | wrapper 兼容或 Dart 契约调整 |
-| native reject 无 error result | MSG-050：`loadConversationMessagesWithKeyword` native 侧拒绝时没有 error result → `code 1` | 补 error result |
+| ~~by-time 删除参数缺失~~ | **已修**：`chat_conversation.dart` 请求改 `_toJson()`+beforeTs；CONV-030 由 skip 转为真实服务端删除断言 | — |
+| ~~native reject 无 error result~~ | **已修（wrapper 兜底）**：`ChatManagerWrapper.ets` try/catch 保证错误回包；用例断言 code 1 并记录 `CI SDK LIMITATION` | — |
 | sendGroupMessageReadAck 能力缺口 | Dart 发 `group_id`，ohos 用 `getMessage(msgId)` 取消息（本地无消息必报 500）；chatsdk 仅 `ackGroupMessageRead(message, ext)` | 需要 chatsdk 层支持 |
 | downloadGroupSharedFile 假成功 | ohos 立即回成功但无文件进度通道（Dart 侧只处理 `onMessageProgressUpdate`） | 补进度事件或明确契约 |
 | push/资料校验缺失 | PUSH-013 空 notifier 未校验；USERINFO-010 部分字段；MSG-059/060 服务端未拒绝空文本/未知用户 | 文档/校验补齐 |
-| 消息模型序列化不完整 | `CombineMessageBody.fromJson` 丢 messageList/compatibleText；`ChatImageMessageBody.toJson` 漏 bigImageRemotePath/bigImageDownloadStatus；`ChatMessage.dispose` 空实现 | 后续排期 |
+| ~~消息模型序列化不完整~~ | **已修**：Dart 模型补齐 + 单测 6 条（`im_flutter_sdk/test/models/message_body_serialization_test.dart`） | — |
 
 ### 5.4 环境限制（已记录，不计失败）
 
@@ -304,33 +347,38 @@ dispatch → 用户 handler。
 接受/拒绝、group 邀请/申请/审批、room 成员进入/退出（需要第二登录端）。这些在
 本文件中登记为单设备限制，不视为失败。
 
-## 6. 已确认的 SDK 偏差（31 处 `NOTE(deviation)`）
+## 6. 剩余 SDK 偏差（17 处 `NOTE(deviation)`）
 
-用例保持"可解释断言 + 记录"，不静默弱化；详细台账见 failure-ledger。主要类别：
+2026-11-13 修复轮后从 31 处降到 17 处；用例保持"可解释断言 + 记录"，不静默弱化；
+详细台账见 failure-ledger。剩余类别：
 
-- **错误码与文档不一致**：CONTACT-015/021/023（101/101/no-op vs 文档 205/205/抛错）；
-  GROUP-001 未知群返回空壳 ChatGroup 而非 null；GROUP-058 单人群成员页为空；
-  PUSH-013 空 notifier 未拒绝；USERINFO-003 未知 id 返回占位对象；USERINFO-010
-  部分字段校验缺失。
-- **列表语义**：GROUP-005/014/015 成员列表不含群主；GROUP-011/035 白名单对 owner
-  恒 true/恒保留 owner 行；ROOM 成员列表不含房主。
-- **缓存/异步**：GROUP-023/024/052 群快照缓存需重新登录才清空（会话内不可达）；
-  FL-CONV-021 分页升序；FL-MSG-036 pin 需服务端会话物化。
-- **能力缺口**：`sendGroupMessageReadAck`（Dart 发 `group_id`，ohos 不读、依赖本地
-  消息，本地无消息必报 500）；`downloadGroupSharedFile` 假成功、无文件进度通道。
+- **服务端语义**：GROUP-011/035 白名单对 owner 恒 true/恒保留 owner 行；GROUP-023/024/052
+  群快照缓存需重新登录才清空（会话内不可达）。
+- **chatsdk 能力缺口**：`sendGroupMessageReadAck`（Dart 发 `group_id`，ohos 用本地消息
+  替代，本地无消息必报 500）；`downloadGroupSharedFile` 假成功、无文件进度通道。
+- **服务端/环境**：pin 需要服务端会话物化（MSG-036/038 已用 ensureServerConversation +
+  重试；未物化时 303）；FL-MSG-059/060 服务端接受空文本/未知用户；PUSH-013 空
+  notifier 不校验；USERINFO-003/010 占位对象与部分校验缺失。
+- **单设备限制**：GROUP-042/043/044（多客户端）等为 UNVERIFIED skip，不计入偏差。
 
 ## 7. 工作区改动与遗留
 
 **已提交**：`93e415f9 test(ohos): rewrite integration suites for full Dart API coverage`
 （2026-11-12，首轮 292 条用例 + 文档 + 本地 runner，可作为回退点；此前 head `d2772e3f`）。
 
-**2026-11-13 未提交改动（本轮复验修复 + 事件回调补充，将二次提交）**：
+**2026-11-13 未提交改动（本轮偏差修复 + 事件回调补充，将二次提交）**：
 
 - 新增 `im_flutter_sdk/example/integration_test/modules/event_callback_cases.dart`
   （`FL-EVENT-201..210`，约 500 行；_EventCollector + 10 条事件回调用例）
+- 新增 `im_flutter_sdk/test/models/message_body_serialization_test.dart`（6 条模型单测）
+- 新增 `tool/ci/smoke_local.harmony.sh`、`tool/ci/nightly_local.harmony.sh`（harmony-only 入口）
 - M `im_flutter_sdk/example/integration_test/logged_in_base_test.dart`
   （接入事件回调用例；`requireRest: true`；登录后清理历史置顶）
-- 其余 `modules/*.dart`、`support/*.dart` 的改动同时包含官方 3.47 `dart format` 重排
+- M wrapper（偏差修复）：`ContactManagerWrapper.ets`、`GroupManagerWrapper.ets`、
+  `ChatRoomManagerWrapper.ets`、`ConversationWrapper.ets`、`ChatManagerWrapper.ets`
+- M Dart：`im_flutter_sdk/lib/src/models/chat_conversation.dart`（by-time 参数）、
+  `chat_message.dart`（序列化模型）与 `modules/*.dart` 用例断言/事件补充
+- 其余 `modules/*.dart`、`support/*.dart` 同时包含官方 3.47 `dart format` 重排
   （此前提交用 fork Dart 3.11 格式化，run_quality 的 format gate 要求统一）
 
 - M `im_flutter_sdk/example/integration_test/support/rest.dart`
@@ -455,9 +503,18 @@ bash tool/ci/ohos_cleanup.sh
   但用户已明确本轮不需要 iOS/Android 验证，故不作为本次结论；Android 分支因本机
   DevEco 模拟器占用端口/ADB 无设备未跑通。ohos 的 smoke 等价入口是
   `tool/ci/ohos_local.sh logged_out`（21 passed）。
+- **新增 harmony-only 入口（2026-11-13，按用户 m03257/m03270 要求）**：
+  `tool/ci/smoke_local.harmony.sh`（harmony 平台 smoke，内部跑
+  `ohos_local.sh logged_out`）与 `tool/ci/nightly_local.harmony.sh`（harmony
+  平台 nightly，内部跑全部六套件/可传子集）。原 `tool/ci/smoke_local.sh`、
+  `tool/ci/nightly_local.sh` 以及 `tool/ci/ohos_local.sh` 均未改动；只验证
+  鸿蒙、不验证 iOS/Android。两个新脚本已 `bash -n` 通过，并设备实跑验证：
+  `smoke_local.harmony.sh` → 21 passed，`SMOKE_EXIT:0`；`nightly_local.harmony.sh`
+  → §4.4 全矩阵 298 passed + 4 skipped，`NIGHTLY_EXIT:0`。
 - **`tool/ci/ohos_local.sh`：通过**。fork Flutter 3.41.9+ohos + 模拟器
-  `127.0.0.1:5555`，最终六套件（§4.3）**294 passed + 8 skipped + 0 failed（302 条），
-  `MATRIX_EXIT:0`**（日志 `artifacts/ohos-<suite>.log`）。
+  `127.0.0.1:5555`，最终六套件（§4.4，经 nightly_local.harmony.sh 调用）
+  **298 passed + 4 skipped + 0 failed（302 条），`NIGHTLY_EXIT:0`**
+  （日志 `/tmp/ohos-nightly-harmony2.log`、`artifacts/ohos-<suite>.log`）。
   运行前提：①fork flutter_tools 的 `OHOS_SKIP_CODESIGN` 补丁（§3）；
   ②在 example 用 fork 执行 `flutter pub get`（官方 Flutter 跑过
   run_quality/smoke 后必须重做，见 §2 注）。

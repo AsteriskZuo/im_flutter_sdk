@@ -96,6 +96,15 @@ export default class ContactManagerWrapper extends Wrapper {
       return;
     }
     let userId = SafetyMapTool.getString(call.args, 'userId', '') ?? '';
+    // Android/iOS reject adding the signed-in user up front with 205
+    // (USER_ILLEGAL_ARGUMENT); chatsdk forwards the request and answers 101
+    // (INVALID_USER_NAME). Enforce the same illegal-argument contract before
+    // the SDK call so the Dart error code matches the other platforms.
+    if (this.isCurrentUser(userId)) {
+      this.onErrorInfo(result, ChatError.USER_ILLEGAL_ARGUMENT,
+        `addContact failed: cannot add the current user ${userId} as a contact`);
+      return;
+    }
     let reason = SafetyMapTool.getString(call.args, 'reason');
     let promise: Promise<void>;
     if (reason !== undefined) {
@@ -196,8 +205,40 @@ export default class ContactManagerWrapper extends Wrapper {
     if (manager === undefined) {
       return;
     }
-    this.handlePromise(result, call.method, manager.getSelfIdsOnOtherPlatform(),
-      (list: Array<string>) => list as Object);
+    // The method takes no argument, so a 101 (INVALID_USER_NAME) can only mean
+    // "the account has no session on another platform". Android/iOS report 205
+    // (USER_ILLEGAL_ARGUMENT) for that state; translate the chatsdk code so the
+    // Dart contract matches. Not routed through handlePromise: ArkTS forbids
+    // throwing non-Error values, so the translation has to happen here instead
+    // of in a rejecting catch handler.
+    manager.getSelfIdsOnOtherPlatform()
+      .then((ids: Array<string>) => {
+        this.onSuccess(result, call.method, ids as Object);
+      })
+      .catch((e: ESObject) => {
+        if (e instanceof ChatError) {
+          let code: number = e.errorCode === ChatError.INVALID_USER_NAME ?
+            ChatError.USER_ILLEGAL_ARGUMENT : e.errorCode;
+          this.onErrorInfo(result, code, e.description);
+          return;
+        }
+        // Same fallback as handlePromise for unexpected rejection shapes.
+        let code: number = -1;
+        let desc: string = '';
+        if (e !== null && e !== undefined && typeof e === 'object') {
+          let record = e as Record<string, ESObject>;
+          if (typeof record['errorCode'] === 'number') {
+            code = record['errorCode'] as number;
+          }
+          if (typeof record['description'] === 'string') {
+            desc = record['description'] as string;
+          }
+        }
+        if (desc.length === 0) {
+          desc = `rejected: ${typeof e}`;
+        }
+        this.onErrorInfo(result, code, desc);
+      });
   }
 
   private getAllContacts(call: MethodCall, result: MethodResult): void {
@@ -280,6 +321,15 @@ export default class ContactManagerWrapper extends Wrapper {
       return undefined;
     }
     return manager;
+  }
+
+  /** True when `userId` is the signed-in account (empty ids never match). */
+  private isCurrentUser(userId: string): boolean {
+    if (userId.length === 0) {
+      return false;
+    }
+    let currentUser: string = ChatClient.getInstance().getCurrentUser() ?? '';
+    return currentUser.length > 0 && currentUser === userId;
   }
 
   override registerEaseListener(): void {

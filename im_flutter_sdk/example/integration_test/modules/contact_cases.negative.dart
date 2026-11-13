@@ -27,13 +27,10 @@ void registerContactNegativeCases(ChatClient client) {
       await manager.addContact(ciUserId);
       fail('addContact(self) must be rejected');
     } on ChatError catch (error) {
-      // NOTE(deviation FL-CONTACT-021): EMErrorCode.h documents 205
-      // (USER_ILLEGAL_ARGUMENT); ohos chatsdk 1.15.0 reports 101
-      // (INVALID_PARAM). Both mean "self invitation rejected"; the ohos code is
-      // recorded in the failure ledger instead of being relaxed silently.
-      expect(error.code, anyOf(205, 101));
-      debugPrint(
-          'NOTE(deviation) FL-CONTACT-021: code=${error.code} desc=${error.description}');
+      // ohos chatsdk answers 101 (INVALID_USER_NAME) for a self invitation;
+      // the wrapper rejects it before the SDK call and reports the documented
+      // 205, matching android/iOS.
+      expect(error.code, 205);
     }
   });
 
@@ -67,8 +64,12 @@ void registerContactNegativeCases(ChatClient client) {
     }
     if (!rejected) {
       // NOTE(deviation FL-CONTACT-023): the server treats an accept with no
-      // pending invitation as a no-op instead of rejecting. Recorded in the
-      // failure ledger (EMErrorCode.h documents 205).
+      // pending invitation as a no-op instead of rejecting. Not fixable in the
+      // ohos wrapper: chatsdk 1.15.0 exposes no pending-invitation query
+      // (ContactManager has no getAllInvitations) and the invitation list is
+      // server state that must survive restarts, so a local mirror would
+      // wrongly reject a real invitation received on another device or before
+      // login. Recorded in the failure ledger (EMErrorCode.h documents 205).
       debugPrint(
           'NOTE(deviation) FL-CONTACT-023: acceptInvitation resolved without a pending invitation');
     }

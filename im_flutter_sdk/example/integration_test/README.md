@@ -80,13 +80,23 @@ configuration: it lets the fork use the unsigned hap and is documented in the
 verification record. Without the fork patch, the same command fails with
 "请通过DevEco Studio打开ohos工程后配置调试签名".
 
-All six suites can be run in one go with the local wrapper (this is the only
-ohos-specific entry; the Android/iOS CI scripts and workflows are unchanged):
+All six suites can be run in one go with the local wrapper (the only
+ohos-specific runner; the Android/iOS CI scripts and workflows are unchanged):
 
 ```bash
 E2E_CONFIG_PATH=/tmp/ohos_e2e_zuoyu01.json \
   bash tool/ci/ohos_local.sh
+# or the harmony-only wrappers:
+E2E_CONFIG_PATH=/tmp/ohos_e2e_zuoyu01.json \
+  bash tool/ci/smoke_local.harmony.sh    # logged_out suite (21 cases)
+E2E_CONFIG_PATH=/tmp/ohos_e2e_zuoyu01.json \
+  bash tool/ci/nightly_local.harmony.sh  # all six suites (302 cases)
 ```
+
+`smoke_local.harmony.sh` / `nightly_local.harmony.sh` are harmony-only entry
+wrappers around `ohos_local.sh`; the existing `smoke_local.sh` /
+`nightly_local.sh` (and their Android/iOS branches) are intentionally left
+untouched.
 
 Pass suite names (`logged_out logged_in_base ...`) to run a subset, and set
 `FLUTTER_BIN` / `OHOS_DEVICE` when the defaults do not apply.
@@ -106,11 +116,17 @@ verification record.
 - `tool/ci/run_quality.sh` — host-only checks (format / analyze / Dart unit
   tests / mapping / contracts / versions). It runs with the official Flutter
   3.47.0 used by CI and does not touch a device; it passed for this branch.
-- `tool/ci/smoke_local.sh` — Android/iOS device smoke only (`android|ios`). It
-  has no ohos branch; the ohos equivalent smoke is the `logged_out` suite in
-  `tool/ci/ohos_local.sh`.
+- `tool/ci/smoke_local.sh` — Android/iOS device smoke only (`android|ios`); it
+  is intentionally unchanged.
+- `tool/ci/nightly_local.sh` — Android/iOS single-account nightly only
+  (`android|ios`); it is intentionally unchanged.
 - `tool/ci/ohos_local.sh` — the ohos device entry: runs the six suites on the
   HarmonyOS emulator and writes `artifacts/ohos-<suite>.log`.
+- `tool/ci/smoke_local.harmony.sh` — harmony-only smoke wrapper; runs
+  `ohos_local.sh logged_out` (the 21-case no-login suite).
+- `tool/ci/nightly_local.harmony.sh` — harmony-only nightly wrapper; runs all
+  six suites (or the suite names passed as arguments) through
+  `ohos_local.sh`.
 
 > Important: `run_quality.sh` / `smoke_local.sh` run `flutter pub get` with the
 > official Flutter SDK. That rewrites `example/.flutter-plugins-dependencies`

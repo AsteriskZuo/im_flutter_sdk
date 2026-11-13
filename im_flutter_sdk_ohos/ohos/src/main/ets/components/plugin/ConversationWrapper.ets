@@ -2,6 +2,7 @@ import {
   ChatClient,
   ChatError,
   ChatManager,
+  ChatMessage,
   ContentType,
   Conversation,
   ConversationType,
@@ -42,10 +43,13 @@ import MessageHelper from './models/MessageHelper';
  *  - syncConversationExt: the Flutter ext is a Map<String,String> while
  *    chatsdk stores a plain string, so the map is JSON-serialized before
  *    setExtField (mirrors android JSONObject.toString()).
- *  - conversationDeleteServerMessageWithTime: the Dart side currently sends
- *    only "beforeTs" (no convId/type, a mainline Flutter bug that makes the
- *    android branch throw and fall through to notImplemented). Here a missing
- *    convId is reported as an invalid-param error instead.
+ *  - conversationDeleteServerMessageWithTime: the Flutter caller now sends the
+ *    conversation fields (convId/type) together with "beforeTs"; a missing
+ *    convId is reported as an invalid-param error instead of falling through
+ *    to notImplemented.
+ *  - loadMsgWithStartId: chatsdk returns the page in ascending order whatever
+ *    the requested direction, so the page is re-sorted to the documented
+ *    Up = newest-first / Down = oldest-first order.
  */
 export default class ConversationWrapper extends Wrapper {
   constructor(binding: FlutterPluginBinding, channelName: string) {
@@ -350,7 +354,29 @@ export default class ConversationWrapper extends Wrapper {
     let direction = EnumTool.searchDirectionFromInt(SafetyMapTool.getNumber(call.args, 'direction') ?? 0);
     this.handlePromise(result, call.method,
       conversation.loadMoreMessagesFromDB(startId, count, direction),
-      (msgs) => MessageHelper.listToJson(msgs));
+      (msgs) => MessageHelper.listToJson(ConversationWrapper.sortByDirection(msgs, direction)));
+  }
+
+  /**
+   * chatsdk answers `loadMoreMessagesFromDB` in ascending server-timestamp
+   * order regardless of `direction`, while the Flutter API documents
+   * `ChatSearchDirection.Up` as newest-first and `Down` as oldest-first
+   * (chat_conversation.dart loadMessages). Normalize the order here so the
+   * ohos branch matches android/ios instead of exposing the platform order.
+   */
+  private static sortByDirection(msgs: Array<ChatMessage>, direction: SearchDirection): Array<ChatMessage> {
+    let sorted = msgs.slice();
+    sorted.sort((left: ChatMessage, right: ChatMessage): number => {
+      let delta = ConversationWrapper.timestampOf(left) - ConversationWrapper.timestampOf(right);
+      return direction === SearchDirection.UP ? -delta : delta;
+    });
+    return sorted;
+  }
+
+  /** Server timestamp is authoritative; local time covers local-only rows. */
+  private static timestampOf(msg: ChatMessage): number {
+    let serverTime = msg.getServerTimestamp();
+    return serverTime > 0 ? serverTime : msg.getLocalTimestamp();
   }
 
   private loadMsgWithKeywords(call: MethodCall, result: MethodResult): void {
@@ -488,7 +514,8 @@ export default class ConversationWrapper extends Wrapper {
       return;
     }
     if (!SafetyMapTool.has(call.args, 'convId')) {
-      // The Dart caller currently sends only "beforeTs" (see class doc).
+      // The Flutter caller sends the conversation fields (see class doc);
+      // a request without them cannot address the conversation.
       this.onErrorInfo(result, ChatError.INVALID_PARAM,
         'conversationDeleteServerMessageWithTime requires convId and type');
       return;

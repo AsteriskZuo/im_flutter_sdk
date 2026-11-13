@@ -5,6 +5,7 @@ import {
   ChatroomAttributesResult,
   ChatroomListener,
   ChatroomManager,
+  CursorResult,
   LEAVE_REASON,
   RemoveChatroomAttributeParams,
   SetChatroomAttributeParams,
@@ -15,7 +16,6 @@ import Wrapper from './Wrapper';
 import SafetyMapTool from './SafetyMapTool';
 import ChannelValue from './models/ChannelValue';
 import ChatRoomHelper from './models/ChatRoomHelper';
-import CursorResultHelper from './models/CursorResultHelper';
 
 /**
  * Wrapper for the `com.chat.im/chat_room_manager` channel.
@@ -49,6 +49,16 @@ import CursorResultHelper from './models/CursorResultHelper';
 export default class ChatRoomManagerWrapper extends Wrapper {
   private chatroomListener: ChatroomListener | undefined;
   private listenerAttached: boolean = false;
+  /**
+   * Room owner ids learned from Chatroom payloads (join, room mutations,
+   * onSpecificationChanged/onOwnerChanged).
+   *
+   * chatsdk has no single-room fetch on this line (the Dart constants dropped
+   * `fetchChatRoomInfoFromServer` / `getChatRoom`), so a Chatroom payload is the
+   * only owner source; the cache feeds the owner row that
+   * `fetchChatRoomMembers` restores (see memberListJson).
+   */
+  private roomOwners: Map<string, string> = new Map<string, string>();
 
   constructor(binding: FlutterPluginBinding, channelName: string) {
     super(binding, channelName);
@@ -133,7 +143,7 @@ export default class ChatRoomManagerWrapper extends Wrapper {
     } else {
       promise = manager.joinChatroom(roomId, leaveOtherRooms);
     }
-    this.handlePromise(result, call.method, promise, (room: Chatroom) => ChatRoomHelper.toJson(room));
+    this.handlePromise(result, call.method, promise, (room: Chatroom) => this.rememberRoom(room));
   }
 
   private leaveChatRoom(call: MethodCall, result: MethodResult): void {
@@ -169,7 +179,7 @@ export default class ChatRoomManagerWrapper extends Wrapper {
     let roomId = SafetyMapTool.getString(call.args, 'roomId', '') ?? '';
     let subject = SafetyMapTool.getString(call.args, 'subject', '') ?? '';
     this.handlePromise(result, call.method, manager.changeChatroomName(roomId, subject),
-      (room: Chatroom) => ChatRoomHelper.toJson(room));
+      (room: Chatroom) => this.rememberRoom(room));
   }
 
   private changeChatRoomDescription(call: MethodCall, result: MethodResult): void {
@@ -180,7 +190,7 @@ export default class ChatRoomManagerWrapper extends Wrapper {
     let roomId = SafetyMapTool.getString(call.args, 'roomId', '') ?? '';
     let description = SafetyMapTool.getString(call.args, 'description', '') ?? '';
     this.handlePromise(result, call.method, manager.changeChatroomDescription(roomId, description),
-      (room: Chatroom) => ChatRoomHelper.toJson(room));
+      (room: Chatroom) => this.rememberRoom(room));
   }
 
   private fetchChatRoomMembers(call: MethodCall, result: MethodResult): void {
@@ -191,8 +201,44 @@ export default class ChatRoomManagerWrapper extends Wrapper {
     let roomId = SafetyMapTool.getString(call.args, 'roomId', '') ?? '';
     let cursor = SafetyMapTool.getString(call.args, 'cursor', '') ?? '';
     let pageSize = SafetyMapTool.getNumber(call.args, 'pageSize', 200) ?? 200;
+    // Only the first page gets the owner prepended (see memberListJson).
+    let owner = cursor.length === 0 ? (this.roomOwners.get(roomId) ?? '') : '';
     this.handlePromise(result, call.method, manager.fetchChatroomMembers(roomId, cursor, pageSize),
-      (ret) => CursorResultHelper.toJson<string>(ret, (s: string) => s as Object));
+      (ret: CursorResult<string>) => this.memberListJson(ret, owner));
+  }
+
+  /** Caches the owner carried by a Chatroom payload, then serializes it. */
+  private rememberRoom(room: Chatroom): Map<string, Object> {
+    let roomId: string = room.chatroomId();
+    let owner: string = room.owner();
+    if (roomId.length > 0 && owner.length > 0) {
+      this.roomOwners.set(roomId, owner);
+    }
+    return ChatRoomHelper.toJson(room);
+  }
+
+  /**
+   * Serializes one room member page and restores the owner row on the first
+   * page when the owner was learned from a Chatroom payload (see roomOwners).
+   *
+   * chatsdk `fetchChatroomMembers` leaves the room owner out (REST `/users` and
+   * android/iOS list it), so the cached owner is prepended when the page does
+   * not hold it yet. The keys match CursorResultHelper.toJson; the list is
+   * rebuilt because the owner has to be inserted before the chatsdk items.
+   */
+  private memberListJson(value: CursorResult<string>, owner: string): Map<string, Object> {
+    let ids = value.getResult();
+    let list = new Array<string>();
+    if (owner.length > 0 && ids.indexOf(owner) < 0) {
+      list.push(owner);
+    }
+    for (let id of ids) {
+      list.push(id);
+    }
+    let data = new Map<string, Object>();
+    data.set('cursor', value.getNextCursor());
+    data.set('list', list);
+    return data;
   }
 
   private muteChatRoomMembers(call: MethodCall, result: MethodResult): void {
@@ -204,7 +250,7 @@ export default class ChatRoomManagerWrapper extends Wrapper {
     let muteMembers = SafetyMapTool.getStringArray(call.args, 'muteMembers') ?? new Array<string>();
     let duration = SafetyMapTool.getNumber(call.args, 'duration', -1) ?? -1;
     this.handlePromise(result, call.method, manager.muteChatroomMembers(roomId, muteMembers, duration),
-      (room: Chatroom) => ChatRoomHelper.toJson(room));
+      (room: Chatroom) => this.rememberRoom(room));
   }
 
   private unMuteChatRoomMembers(call: MethodCall, result: MethodResult): void {
@@ -215,7 +261,7 @@ export default class ChatRoomManagerWrapper extends Wrapper {
     let roomId = SafetyMapTool.getString(call.args, 'roomId', '') ?? '';
     let unMuteMembers = SafetyMapTool.getStringArray(call.args, 'unMuteMembers') ?? new Array<string>();
     this.handlePromise(result, call.method, manager.unmuteChatroomMembers(roomId, unMuteMembers),
-      (room: Chatroom) => ChatRoomHelper.toJson(room));
+      (room: Chatroom) => this.rememberRoom(room));
   }
 
   private changeChatRoomOwner(call: MethodCall, result: MethodResult): void {
@@ -226,7 +272,7 @@ export default class ChatRoomManagerWrapper extends Wrapper {
     let roomId = SafetyMapTool.getString(call.args, 'roomId', '') ?? '';
     let newOwner = SafetyMapTool.getString(call.args, 'newOwner', '') ?? '';
     this.handlePromise(result, call.method, manager.changeChatroomOwner(roomId, newOwner),
-      (room: Chatroom) => ChatRoomHelper.toJson(room));
+      (room: Chatroom) => this.rememberRoom(room));
   }
 
   private addChatRoomAdmin(call: MethodCall, result: MethodResult): void {
@@ -237,7 +283,7 @@ export default class ChatRoomManagerWrapper extends Wrapper {
     let roomId = SafetyMapTool.getString(call.args, 'roomId', '') ?? '';
     let admin = SafetyMapTool.getString(call.args, 'admin', '') ?? '';
     this.handlePromise(result, call.method, manager.addChatroomAdmin(roomId, admin),
-      (room: Chatroom) => ChatRoomHelper.toJson(room));
+      (room: Chatroom) => this.rememberRoom(room));
   }
 
   private removeChatRoomAdmin(call: MethodCall, result: MethodResult): void {
@@ -248,7 +294,7 @@ export default class ChatRoomManagerWrapper extends Wrapper {
     let roomId = SafetyMapTool.getString(call.args, 'roomId', '') ?? '';
     let admin = SafetyMapTool.getString(call.args, 'admin', '') ?? '';
     this.handlePromise(result, call.method, manager.removeChatroomAdmin(roomId, admin),
-      (room: Chatroom) => ChatRoomHelper.toJson(room));
+      (room: Chatroom) => this.rememberRoom(room));
   }
 
   private fetchChatRoomMuteList(call: MethodCall, result: MethodResult): void {
@@ -278,7 +324,7 @@ export default class ChatRoomManagerWrapper extends Wrapper {
     let roomId = SafetyMapTool.getString(call.args, 'roomId', '') ?? '';
     let members = SafetyMapTool.getStringArray(call.args, 'members') ?? new Array<string>();
     this.handlePromise(result, call.method, manager.removeChatroomMembers(roomId, members),
-      (room: Chatroom) => ChatRoomHelper.toJson(room));
+      (room: Chatroom) => this.rememberRoom(room));
   }
 
   private blockChatRoomMembers(call: MethodCall, result: MethodResult): void {
@@ -289,7 +335,7 @@ export default class ChatRoomManagerWrapper extends Wrapper {
     let roomId = SafetyMapTool.getString(call.args, 'roomId', '') ?? '';
     let members = SafetyMapTool.getStringArray(call.args, 'members') ?? new Array<string>();
     this.handlePromise(result, call.method, manager.blockChatroomMembers(roomId, members),
-      (room: Chatroom) => ChatRoomHelper.toJson(room));
+      (room: Chatroom) => this.rememberRoom(room));
   }
 
   private unBlockChatRoomMembers(call: MethodCall, result: MethodResult): void {
@@ -300,7 +346,7 @@ export default class ChatRoomManagerWrapper extends Wrapper {
     let roomId = SafetyMapTool.getString(call.args, 'roomId', '') ?? '';
     let members = SafetyMapTool.getStringArray(call.args, 'members') ?? new Array<string>();
     this.handlePromise(result, call.method, manager.unblockChatroomMembers(roomId, members),
-      (room: Chatroom) => ChatRoomHelper.toJson(room));
+      (room: Chatroom) => this.rememberRoom(room));
   }
 
   private fetchChatRoomBlockList(call: MethodCall, result: MethodResult): void {
@@ -617,6 +663,9 @@ export default class ChatRoomManagerWrapper extends Wrapper {
         this.emitEvent(MethodKey.chatRoomChange, data);
       },
       onOwnerChanged: (roomId: string, newOwner: string, oldOwner: string): void => {
+        if (roomId.length > 0 && newOwner.length > 0) {
+          this.roomOwners.set(roomId, newOwner);
+        }
         let data = new Map<string, Object>();
         data.set('roomId', roomId);
         data.set('newOwner', newOwner);
@@ -633,7 +682,7 @@ export default class ChatRoomManagerWrapper extends Wrapper {
       },
       onSpecificationChanged: (room: Chatroom): void => {
         let data = new Map<string, Object>();
-        data.set('room', ChatRoomHelper.toJson(room));
+        data.set('room', this.rememberRoom(room));
         data.set('type', ChatRoomEvent.ON_SPECIFICATION_CHANGED);
         this.emitEvent(MethodKey.chatRoomChange, data);
       },

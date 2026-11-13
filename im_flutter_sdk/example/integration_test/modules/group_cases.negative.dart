@@ -6,6 +6,7 @@ import 'package:im_flutter_sdk/im_flutter_sdk.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../support/ci_test.dart';
+import '../support/env.dart';
 
 /// Negative and boundary group rows, FL-GROUP-057..060 of the 4.25 ohos
 /// coverage draft.
@@ -96,12 +97,10 @@ void registerGroupNegativeCases(ChatClient client) {
       debugPrint('CI FL-GROUP-058: addMembers code=${error.code}');
       expect(error.code, isNot(0));
     }
-    // NOTE(deviation FL-GROUP-058): ohos fetchMemberListFromServer omits the
-    // owner (see FL-GROUP-005), so an empty page proves that the unknown user
-    // was not added; the member count keeps the owner check meaningful.
+    // The server member page holds the owner only, which proves that the
+    // unknown user was not added; the member count keeps the same check.
     final members = await memberIds(group.groupId);
-    debugPrint('CI FL-GROUP-058: server member list=$members');
-    expect(members, isEmpty);
+    expect(members, <String>[ciUserId]);
     final detail = await manager.fetchGroupInfoFromServer(group.groupId);
     expect(detail.memberCount, 1);
   });

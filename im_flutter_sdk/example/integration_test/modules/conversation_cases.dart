@@ -615,14 +615,11 @@ void registerConversationCases(ChatClient client) {
 
       expect(await conversation.messagesCount(), 3);
       final messages = await conversation.loadMessages(loadCount: 10);
-      // The documented local order is newest-first. The ohos chatsdk currently
-      // returns chronological order, so membership is asserted here and the
-      // order deviation is tracked in the failure ledger (FL-CONV-021 keeps the
-      // strict paging contract).
+      // The documented local order is newest-first.
       debugPrint('FL-CONV-014 loadMessages order: ${messageIds(messages)}');
       expect(
         messageIds(messages),
-        unorderedEquals(<String>[third.msgId, second.msgId, first.msgId]),
+        <String>[third.msgId, second.msgId, first.msgId],
       );
       expect((await conversation.latestMessage())?.msgId, third.msgId);
       expectTextStored(await conversation.loadMessage(second.msgId), second);
@@ -644,7 +641,7 @@ void registerConversationCases(ChatClient client) {
       debugPrint('FL-CONV-015 loadMessages order: ${messageIds(messages)}');
       expect(
         messageIds(messages),
-        unorderedEquals(<String>[third.msgId, second.msgId, first.msgId]),
+        <String>[third.msgId, second.msgId, first.msgId],
       );
       expect((await conversation.latestMessage())?.msgId, third.msgId);
       expectTextStored(await conversation.loadMessage(first.msgId), first);
@@ -697,10 +694,7 @@ void registerConversationCases(ChatClient client) {
 
       final messages = await conversation.loadMessages(loadCount: 10);
       debugPrint('FL-CONV-017 loadMessages order: ${messageIds(messages)}');
-      expect(
-        messageIds(messages),
-        unorderedEquals(<String>[third.msgId, first.msgId]),
-      );
+      expect(messageIds(messages), <String>[third.msgId, first.msgId]);
       expect((await conversation.latestMessage())?.msgId, third.msgId);
     });
 
@@ -800,27 +794,21 @@ void registerConversationCases(ChatClient client) {
       }
 
       final newest = await conversation.loadMessages(loadCount: 2);
-      // NOTE(deviation FL-CONV-021): the Dart API documents Up=newest-first,
-      // but the ohos chatsdk loadMoreMessagesFromDB returns the page in
-      // ascending order (oldest-first). The deviation is tracked in the
-      // failure ledger; the page contents and the start-id exclusion are still
-      // asserted strictly.
-      debugPrint(
-          'NOTE(deviation) FL-CONV-021: newest page=${messageIds(newest)}');
+      // ChatSearchDirection.Up is documented as newest-first.
+      debugPrint('FL-CONV-021 newest page=${messageIds(newest)}');
       expect(
         messageIds(newest),
-        unorderedEquals(<String>[messages[2].msgId, messages[3].msgId]),
+        <String>[messages[3].msgId, messages[2].msgId],
       );
 
       final older = await conversation.loadMessages(
         startMsgId: messages[3].msgId,
         loadCount: 2,
       );
-      debugPrint(
-          'NOTE(deviation) FL-CONV-021: older page=${messageIds(older)}');
+      debugPrint('FL-CONV-021 older page=${messageIds(older)}');
       expect(
         messageIds(older),
-        unorderedEquals(<String>[messages[1].msgId, messages[2].msgId]),
+        <String>[messages[2].msgId, messages[1].msgId],
       );
     });
 
@@ -1125,10 +1113,8 @@ void registerConversationCases(ChatClient client) {
 
     // Test: send a real message to the CI peer and delete messages older than
     // its server timestamp through deleteLocalAndServerMessagesByTime.
-    // Expected: on a build that forwards the conversation id, the message is
-    // removed locally and from a fresh server history fetch. The current Dart
-    // API sends only beforeTs, so HarmonyOS rejects the call with ChatError
-    // 110; that SDK gap is reported as UNVERIFIED, not as a pass.
+    // Expected: the message is removed locally and from a fresh server history
+    // fetch.
     ciTestWidgets('FL-CONV-030 deletes local and server messages by time',
         (tester) async {
       final peer = await peerConversation();
@@ -1137,20 +1123,7 @@ void registerConversationCases(ChatClient client) {
       expect(message.serverTime, greaterThan(0));
 
       final beforeMs = message.serverTime + 1;
-      try {
-        await peer.deleteLocalAndServerMessagesByTime(beforeMs: beforeMs);
-      } on ChatError catch (error) {
-        if (error.code == 110) {
-          expect(error.code, 110);
-          markTestSkipped(
-            'UNVERIFIED: chat_conversation.dart:1019-1031 sends only beforeTs, '
-            'and ConversationWrapper.ets:485-500 requires convId; the server '
-            'purge could not be exercised.',
-          );
-          return;
-        }
-        rethrow;
-      }
+      await peer.deleteLocalAndServerMessagesByTime(beforeMs: beforeMs);
 
       await waitForCi<ChatMessage?>(
         'local copy of ${message.msgId} is deleted by time',

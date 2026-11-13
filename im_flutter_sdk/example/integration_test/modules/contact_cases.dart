@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:im_flutter_sdk/im_flutter_sdk.dart';
 
@@ -273,20 +272,13 @@ void registerContactCases(ChatClient client) {
   });
 
   // Test: Read the other-platform ids of the only logged-in account.
-  // Expected: This device holds the sole session, so no other-platform id is
-  // reported. The multi-device variant belongs to the multi-device suites.
-  ciTestWidgets('FL-CONTACT-015 getSelfIdsOnOtherPlatform is empty', (_) async {
-    try {
-      final ids = await manager.getSelfIdsOnOtherPlatform();
-      expect(ids, isEmpty);
-    } on ChatError catch (error) {
-      // NOTE(deviation FL-CONTACT-015): ohos chatsdk 1.15.0 rejects the call
-      // with 101 (INVALID_PARAM) although a session is logged in. Recorded in
-      // the failure ledger; revisit with the ohos SDK owner.
-      expect(error.code, 101);
-      debugPrint(
-          'NOTE(deviation) FL-CONTACT-015: code=${error.code} desc=${error.description}');
-    }
+  // Expected: the account holds the sole session, so the call reports 205
+  // (USER_ILLEGAL_ARGUMENT) instead of an id list. ohos chatsdk answers 101
+  // (INVALID_USER_NAME) for the same state; the wrapper translates it. The
+  // multi-device variant belongs to the multi-device suites.
+  ciTestWidgets('FL-CONTACT-015 getSelfIdsOnOtherPlatform reports 205',
+      (_) async {
+    await expectCiError(() => manager.getSelfIdsOnOtherPlatform(), 205);
   });
 
   // Test: Read getAllContacts from the local cache after a logout/login cycle

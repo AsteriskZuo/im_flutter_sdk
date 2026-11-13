@@ -312,18 +312,51 @@ void registerEventCallbackCases(ChatClient client, CiRestClient rest) {
     addTearDown(() => client.presenceManager.removeEventHandler(id));
 
     // The ohos wrapper delivers presence changes through the login sync, so a
-    // peer presence update is published and then picked up by a re-login.
-    await rest.publishPresence(ciPeerId, _eventText('ci_event_presence'));
-    await logoutForCi(client);
-    await loginForCi(client);
-
-    await collector.waitFor(
-      'FL-EVENT-209 presence.onPresenceStatusChanged fires on login sync',
-      (events) => events.any(
-        (event) => event.startsWith('presence.onPresenceStatusChanged:'),
-      ),
-      timeout: const Duration(seconds: 40),
+    // subscribed peer presence update is published and then picked up by a
+    // re-login. Subscription is required for the server to include the member
+    // in the sync payload; the sync itself has been observed to be occasionally
+    // late, so retry the publish + re-login once before failing.
+    await client.presenceManager.subscribe(
+      members: <String>[ciPeerId],
+      expiry: 3600,
     );
+    addTearDown(() async {
+      try {
+        await client.presenceManager.unsubscribe(members: <String>[ciPeerId]);
+      } on ChatError catch (error) {
+        debugPrint('CI cleanup: unsubscribe after FL-EVENT-209 failed: $error');
+      }
+    });
+
+    final text = _eventText('ci_event_presence');
+    var accepted = false;
+    for (var attempt = 1; attempt <= 2 && !accepted; attempt++) {
+      await client.presenceManager.subscribe(
+        members: <String>[ciPeerId],
+        expiry: 3600,
+      );
+      await rest.publishPresence(ciPeerId, text);
+      await logoutForCi(client);
+      await loginForCi(client);
+      try {
+        await collector.waitFor(
+          'FL-EVENT-209 presence.onPresenceStatusChanged fires on login sync '
+          '(attempt $attempt)',
+          (events) => events.any(
+            (event) => event.startsWith('presence.onPresenceStatusChanged:'),
+          ),
+          timeout: const Duration(seconds: 30),
+        );
+        accepted = true;
+      } on TimeoutException {
+        debugPrint(
+          'CI NOTE(transient) FL-EVENT-209 attempt $attempt missed the '
+          'presence sync event; retrying with a fresh publish',
+        );
+      }
+    }
+    expect(accepted, isTrue,
+        reason: 'presence sync callback was not observed after two logins');
   });
 
   ciTestWidgets('FL-EVENT-210 dispatches chat room destroyed callback',

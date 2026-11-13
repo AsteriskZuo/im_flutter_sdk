@@ -422,6 +422,20 @@ class ChatMessage {
     onlineState = true;
   }
 
+  /// ~english
+  /// Releases the resources held by the message.
+  ///
+  /// The Dart message is a plain data object: it holds no native handle, file
+  /// or subscription, so there is nothing to release and this is a no-op. It
+  /// is kept for compatibility with call sites written against the native SDKs.
+  /// ~end
+  ///
+  /// ~chinese
+  /// 释放消息占用的资源。
+  ///
+  /// Dart 侧的消息是纯数据对象，不持有原生句柄、文件或订阅，因此没有需要释放的资源，
+  /// 该方法是空实现。保留它是为了兼容按原生 SDK 编写的调用代码。
+  /// ~end
   void dispose() {}
 
   /// ~english
@@ -1112,7 +1126,6 @@ class ChatMessage {
       rethrow;
     }
   }
-
 }
 
 abstract class ChatMessageBody {
@@ -1536,6 +1549,10 @@ class ChatImageMessageBody extends ChatFileMessageBody {
     data.putIfNotNull("thumbnailStatus", thumbnailStatus.index);
     data.putIfNotNull('isGif', isGif);
     data.putIfNotNull("bigImageLocalPath", bigImageLocalPath);
+    data.putIfNotNull("bigImageRemotePath", bigImageRemotePath);
+    if (bigImageDownloadStatus != null) {
+      data["bigImageDownloadStatus"] = bigImageDownloadStatus!.index;
+    }
     return data;
   }
 
@@ -2063,6 +2080,10 @@ class CombineMessageBody extends ChatMessageBody {
       summary: map["summary"],
       fileStatus: DownloadStatus
           .values[map["fileStatus"] ?? DownloadStatus.PENDING.index],
+      messageList: map["messageList"] != null
+          ? List<String>.from(map["messageList"])
+          : null,
+      compatibleText: map["compatibleText"],
     );
     body._localPath = map["localPath"];
     body._remotePath = map["remotePath"];

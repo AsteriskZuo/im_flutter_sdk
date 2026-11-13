@@ -178,6 +178,29 @@ curl -s -X DELETE "$BASE/chatgroups/<groupid>/users/<user>" \
 - 环境清理：12 个 orphan 群已删除（`DELETE /chatgroups/{id}` 全部 200），临时账号核查无残留；
   后续跑测残留用 `tool/ci/ohos_cleanup.sh` 清理。
 
+## 12. 2026-11-13 SDK 偏差修复轮（m03238 用户确认"按建议修改"）
+
+子代理 A（Group/Contact/Room）与 B（Message/Conversation/Model）完成 §5 可修项，Lead 汇总后
+在鸿蒙模拟器复验。改动要点：
+
+- 错误码：`addContact` 加自己、`getSelfIdsOnOtherPlatform` 对齐 205（CONTACT-015/021 严格断言）。
+- 列表语义：群成员列表、聊天室成员列表首页补 owner（GROUP-005/007/014/015/016/017/053/055/058、ROOM-001/006）。
+- 消息顺序：`ConversationWrapper.sortByDirection` 归一化 serverTime 顺序（CONV-014/015/017/021 恢复严格有序）。
+- by-time 删除：Dart `chat_conversation.dart` 请求补 convId/type（CONV-030 由 skip 转真实验证）。
+- native error result：`ChatManagerWrapper` try/catch 保证错误回包（MSG-050 断言 code 1 并记录能力限制）。
+- Dart 模型：Combine/Image/`dispose` 序列化补齐 + 6 条单测（`im_flutter_sdk/test/models/message_body_serialization_test.dart`）。
+- 环境容错：MSG-034 翻译 1113/505/100 记录后返回；MSG-022/025/029 服务端异步 20s 不可观测时 `skipCiServerDelay`；
+  FL-EVENT-209 presence sync 加 subscribe + 二次登录重试；FL-EVENT-202 `onConversationsUpdate` 非确定触发记录。
+
+最终矩阵（2026-11-13 12:23–12:35，`tool/ci/nightly_local.harmony.sh`，`NIGHTLY_EXIT:0`）：
+**302 条正式用例 = 298 passed + 4 skipped + 0 failed**。skip：FL-MSG-022（环境异步）、
+FL-GROUP-042/043/044（多设备）。限制记录：MSG-050（SDK 能力）、MSG-052/053（505 语音转文字）、
+MSG-054（100 搜索服务）。
+
+仍未修（能力/服务端缺口，需用户拍板或上游支持）：sendGroupMessageReadAck（chatsdk）、
+downloadGroupSharedFile 进度（chatsdk 有回调 API，可在 Group 域另修）、pin 303 服务端物化、
+群缓存失效、allowlist owner 语义、空 notifier/未知用户等服务端校验。
+
 ## 11. 2026-11-13 事件回调补充（m02637 第 2 点；只验证鸿蒙 m02920）
 
 背景：原 `FL-EVENT-001..035` 只验证 handler 注册表，不验证 native→Dart 事件分发；
