@@ -42,8 +42,25 @@ The entries read six dart-defines (see `support/env.dart`):
 E2E_APP_KEY  E2E_USER_ID  E2E_USER_TOKEN  E2E_PEER_ID  E2E_REST_API  E2E_APP_TOKEN
 ```
 
-The token file can be produced with the 5.1.0 helper (the ohos branch does not
-vendor the token tool):
+The harmony CI wrappers (`tool/ci/smoke_local.harmony.sh` and
+`tool/ci/nightly_local.harmony.sh`) generate that JSON for you from the
+gitignored local data file `im_flutter_sdk/example/config.local.json` (created
+by the one-time `make config`), so callers do not export the fields by hand.
+They call `example/tool/env_tool.dart e2e-config`, which refreshes the app/user
+tokens the same way `make env-gettoken` does. Pass `E2E_CONFIG_PATH` only to
+reuse an existing file.
+
+To produce the token file manually (for example before running `flutter test`
+directly), run the same command from the example directory:
+
+```bash
+cd im_flutter_sdk/.worktree/ohos/im_flutter_sdk/example
+dart run tool/env_tool.dart e2e-config
+# prints e.g. /var/folders/.../ohos_e2e_zuoyu01_<ms>.json (mode 600)
+```
+
+Alternatively reuse the 5.1.0 helper (the ohos branch vendors the env tool but
+not the legacy token script):
 
 ```bash
 cd im_flutter_sdk/.worktree/5.1.0
@@ -65,7 +82,17 @@ restore relations through `support/rest.dart`.
 
 ## Running
 
-Use the HarmonyOS Flutter fork (3.41.9+ohos) and an online device/emulator:
+Convenience entries (no E2E exports needed; the JSON is generated from
+`config.local.json`):
+
+```bash
+bash tool/ci/smoke_local.harmony.sh                 # logged_out suite
+bash tool/ci/nightly_local.harmony.sh               # all six suites
+bash tool/ci/nightly_local.harmony.sh harmony logged_in_base  # subset
+```
+
+Or invoke the fork directly with the HarmonyOS Flutter SDK (3.41.9+ohos) and an
+online device/emulator:
 
 ```bash
 cd im_flutter_sdk/.worktree/ohos/im_flutter_sdk/example

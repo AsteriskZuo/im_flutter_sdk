@@ -442,9 +442,12 @@ E2E_USER_ID=zuoyu01 \
 bash tool/ci/fetch_e2e_user_token.sh --json > /tmp/ohos_e2e_zuoyu01.json
 chmod 600 /tmp/ohos_e2e_zuoyu01.json
 
-# 2) 跑全部六套件（当前 ohos worktree）
+# 2) 跑全部六套件（当前 ohos worktree；无需手工 export E2E_*：入口自动从
+#    example/config.local.json 换取 token 并生成 dart-defines）
 cd im_flutter_sdk/.worktree/ohos
-E2E_CONFIG_PATH=/tmp/ohos_e2e_zuoyu01.json bash tool/ci/ohos_local.sh
+bash tool/ci/nightly_local.harmony.sh       # 或 smoke_local.harmony.sh
+# 未执行 make config 时仍可显式提供：
+# E2E_CONFIG_PATH=/tmp/ohos_e2e_zuoyu01.json bash tool/ci/ohos_local.sh
 
 # 3) 单套件
 cd im_flutter_sdk/example
@@ -511,6 +514,12 @@ bash tool/ci/ohos_cleanup.sh
   鸿蒙、不验证 iOS/Android。两个新脚本已 `bash -n` 通过，并设备实跑验证：
   `smoke_local.harmony.sh` → 21 passed，`SMOKE_EXIT:0`；`nightly_local.harmony.sh`
   → §4.4 全矩阵 298 passed + 4 skipped，`NIGHTLY_EXIT:0`。
+  2026-11-13 下午按用户反馈改为"自动准备参数"：两个 wrapper 在未提供
+  `E2E_CONFIG_PATH` 时从 `example/config.local.json` 调用
+  `example/tool/env_tool.dart e2e-config` 现场换取 app/user token 并生成六个
+  dart-defines（临时文件 mode 600、退出即删），调用者无需手工 export；
+  设备复验（无任何 E2E 环境变量）：`smoke_local.harmony.sh` → 21 passed，
+  `SMOKE_EXIT:0`；`nightly_local.harmony.sh` → 299 passed + 3 skipped（302 条，MS G-022 本轮通过），`NIGHTLY_EXIT:0`。
 - **`tool/ci/ohos_local.sh`：通过**。fork Flutter 3.41.9+ohos + 模拟器
   `127.0.0.1:5555`，最终六套件（§4.4，经 nightly_local.harmony.sh 调用）
   **298 passed + 4 skipped + 0 failed（302 条），`NIGHTLY_EXIT:0`**

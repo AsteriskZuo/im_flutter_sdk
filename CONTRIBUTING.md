@@ -108,6 +108,8 @@ example 应用把测试环境集中在一个本地文件里（与 5.1.0 一致�
 
 全新检出与 CI 不需要真实凭证：`tool/ci/ensure_example_env.sh` 在 `lib/env.dart` 缺失时复制空占位模板，`tool/use_local_packages.sh` 与 `tool/ci/ohos_local.sh` 都会调用它。
 
+鸿蒙入口 `tool/ci/smoke_local.harmony.sh` / `tool/ci/nightly_local.harmony.sh` 会自动消费这份本地数据：未显式提供 `E2E_CONFIG_PATH` 时，它们从 `example/config.local.json` 调用 `example/tool/env_tool.dart e2e-config` 现场换取 app/user token 并生成六个 `E2E_*` dart-defines（临时文件 mode 600，退出即删），因此调用者不需要手工 export 六个变量；直接跑 `tool/ci/ohos_local.sh` 时仍需 `E2E_CONFIG_PATH` 或六个变量。两个 wrapper 只增加鸿蒙平台支持，原 `smoke_local.sh` / `nightly_local.sh` 及其 android/ios 行为不变。
+
 ## 运行与验证
 
 example 是一个可视化 API 测试应用，支持两种模式：

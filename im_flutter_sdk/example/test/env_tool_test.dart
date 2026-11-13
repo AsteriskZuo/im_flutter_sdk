@@ -178,4 +178,42 @@ void main() {
       )),
     );
   });
+
+  test('buildE2eConfig maps the first account onto the six dart-defines', () {
+    final result = buildE2eConfig(
+      config: <String, dynamic>{
+        'restApi': 'https://rest.example.invalid',
+        'appKey': 'org#app',
+      },
+      accounts: const [
+        <String, Object?>{'id': 'user01', 'token': 'user-token'},
+        <String, Object?>{'id': 'user02', 'token': 'other-token'},
+      ],
+      appToken: 'app-token',
+    );
+
+    expect(result, <String, String>{
+      'E2E_APP_KEY': 'org#app',
+      'E2E_USER_ID': 'user01',
+      'E2E_USER_TOKEN': 'user-token',
+      'E2E_PEER_ID': 'user01_ci_peer',
+      'E2E_REST_API': 'https://rest.example.invalid',
+      'E2E_APP_TOKEN': 'app-token',
+    });
+  });
+
+  test('writeE2eConfig asks for config.local.json before any network call',
+      () async {
+    final root = _createExampleFixture();
+    addTearDown(() => root.deleteSync(recursive: true));
+
+    await expectLater(
+      writeE2eConfig(EnvPaths(root), const []),
+      throwsA(isA<FormatException>().having(
+        (error) => error.message,
+        'message',
+        contains('config.local.json'),
+      )),
+    );
+  });
 }

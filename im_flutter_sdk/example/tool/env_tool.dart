@@ -34,6 +34,9 @@ Future<void> main(List<String> args) async {
         await ensureLocalFiles(paths);
         await generateEnvironment(paths);
         break;
+      case 'e2e-config':
+        await writeE2eConfig(paths, args.skip(1).toList());
+        break;
       case 'help':
       case '--help':
       case '-h':
@@ -41,9 +44,12 @@ Future<void> main(List<String> args) async {
 Usage:
   dart run tool/env_tool.dart ensure
   dart run tool/env_tool.dart gettoken
+  dart run tool/env_tool.dart e2e-config [--output PATH]
 
-ensure   Copy the local config/env templates if they are missing.
-gettoken Fetch one user token per configured account and rewrite lib/env.dart.
+ensure      Copy the local config/env templates if they are missing.
+gettoken    Fetch one user token per configured account and rewrite lib/env.dart.
+e2e-config  Fetch fresh tokens and write the six E2E_* dart-defines the
+            integration suites read (printed path, mode 0600 by default).
 ''');
         break;
       default:
@@ -93,6 +99,88 @@ Future<void> generateEnvironment(EnvPaths paths) async {
   } finally {
     tokenClient.close();
   }
+}
+
+/// Writes the six `E2E_*` dart-defines consumed by the CI device suites.
+///
+/// The harmony CI wrappers call this so nobody has to export the fields by hand:
+/// the environment + credentials come from `config.local.json`, and the tokens
+/// are fetched the same way `gettoken` does it.
+Future<void> writeE2eConfig(EnvPaths paths, List<String> options) async {
+  final output = _parseOutputOption(options);
+  if (!await paths.localConfig.exists()) {
+    throw FormatException(
+      '${paths.localConfig.path} does not exist; run `make config`, fill in '
+      'the environment, then run this command again',
+    );
+  }
+  final config = await _readJsonObject(paths.localConfig);
+  _validateConfigShape(config);
+  _requireCredentials(config);
+
+  final tokenClient = TokenClient();
+  try {
+    final appToken = await tokenClient.fetchAppToken(config);
+    final accounts = await tokenClient.fetchUserTokens(
+      config: config,
+      appToken: appToken,
+    );
+    if (accounts.isEmpty) {
+      throw const FormatException(
+        'config.local.json defines no accounts to log in with',
+      );
+    }
+    final dartDefines = buildE2eConfig(
+      config: config,
+      accounts: accounts,
+      appToken: appToken,
+    );
+    final target = File(
+      output ??
+          '${Directory.systemTemp.path}/ohos_e2e_${accounts.first['id']}_'
+              '${DateTime.now().millisecondsSinceEpoch}.json',
+    );
+    await _atomicWrite(target, '${jsonEncode(dartDefines)}\n');
+    stdout.writeln(target.path);
+  } finally {
+    tokenClient.close();
+  }
+}
+
+String? _parseOutputOption(List<String> options) {
+  for (var index = 0; index < options.length; index++) {
+    if (options[index] != '--output') continue;
+    if (index + 1 >= options.length) {
+      throw const FormatException('--output requires a file path');
+    }
+    return options[index + 1];
+  }
+  return null;
+}
+
+/// Maps the configured environment onto the six dart-defines the suites read.
+Map<String, String> buildE2eConfig({
+  required Map<String, dynamic> config,
+  required List<Map<String, Object?>> accounts,
+  required String appToken,
+}) {
+  final account = accounts.first;
+  final userId = account['id'];
+  final userToken = account['token'];
+  if (userId is! String || userId.isEmpty) {
+    throw const FormatException('accounts[0].id must be a non-empty string');
+  }
+  if (userToken is! String || userToken.isEmpty) {
+    throw const FormatException('accounts[0].token is missing');
+  }
+  return <String, String>{
+    'E2E_APP_KEY': '${config['appKey']}',
+    'E2E_USER_ID': userId,
+    'E2E_USER_TOKEN': userToken,
+    'E2E_PEER_ID': '${userId}_ci_peer',
+    'E2E_REST_API': '${config['restApi']}',
+    'E2E_APP_TOKEN': appToken,
+  };
 }
 
 /// The example environment handed to the app: chat options, the app key, the
@@ -234,7 +322,7 @@ class TokenClient {
           if (entry.key != 'cluster') entry.key.toString(): entry.value,
         'token': _accessToken(response, 'user token for $userId'),
       });
-      stdout.writeln('$userId token ok');
+      stderr.writeln('$userId token ok');
     }
     return accounts;
   }
