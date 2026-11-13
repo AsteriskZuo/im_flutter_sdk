@@ -20,13 +20,16 @@ import 'support/session.dart';
 /// separate files with their own ChatOptions.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-  requireCiEnvironment(requirePeer: true);
+  // The destructive message cases provision disposable peer accounts through
+  // the REST fixture, so the base entry also needs the REST dart-defines.
+  requireCiEnvironment(requirePeer: true, requireRest: true);
 
   final client = ChatClient.getInstance;
 
   setUpAll(() async {
     await initCiClient();
     await loginForCi(client);
+    await clearPinnedConversationsForCi(client);
   });
 
   tearDownAll(() async {

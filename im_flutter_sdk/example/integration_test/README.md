@@ -58,6 +58,11 @@ chmod 600 /tmp/ohos_e2e_zuoyu01.json
 Run the peer account (`zuoyu02`) the same way when a second identity is needed;
 the suites only use the single `E2E_USER_*` account plus the REST-prepared peer.
 
+`logged_in_contact`, `logged_in_group`, `logged_in_special` and (for the
+destructive message cases that delete server data) `logged_in_base` also need
+`E2E_REST_API` + `E2E_APP_TOKEN`; those cases prepare throw-away users and
+restore relations through `support/rest.dart`.
+
 ## Running
 
 Use the HarmonyOS Flutter fork (3.41.9+ohos) and an online device/emulator:

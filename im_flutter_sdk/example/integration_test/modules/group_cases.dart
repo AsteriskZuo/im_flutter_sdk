@@ -31,12 +31,11 @@ Future<void> waitForCachedGroupCleared(String groupId) async {
 /// the same `createGroup` call, which skips the invite/accept round trip a
 /// single device cannot complete; the peer account itself is never deleted.
 ///
-/// The REST group API of this app key answers 404 on every group route and the
-/// peer cannot log in, so the peer-owned fixtures of 004/041/042/043/044 are not
-/// provisioned that way: 004 and 041 create a group owned by the current user
-/// (041 then transfers it to the peer), while the join-application rows of
-/// 042/043/044 are skipped as UNVERIFIED because they need a peer-owned
-/// approval group and a second applicant.
+/// The REST group collection is `/chatgroups` (the `/groups` route is invalid),
+/// but a single-device run has no second logged-in client: 004 and 041 create
+/// groups owned by the current user (041 then transfers one to the peer), while
+/// the join-application rows of 042/043/044 are skipped as UNVERIFIED because
+/// exercising them needs a peer-owned approval group plus a second applicant.
 /// A group transferred to the peer cannot be destroyed from this account, so
 /// the tear-down leaves it and logs the residual group.
 ///
@@ -54,14 +53,7 @@ void registerGroupCases(ChatClient client) {
   // Test: Create a group owned by the logged-in user, read it back from the
   // local cache, then read an id that does not exist.
   // Expected: The cached snapshot carries the created id, name, and owner; an
-  // unknown id resolves to an empty snapshot instead of throwing. Teardown
-  // destroys it.
-  //
-  // NOTE(deviation FL-GROUP-001): chatsdk 1.15.0 manager.getGroup documents
-  // `undefined` for an unknown id, but the ohos build returns an empty shell
-  // Group, so Dart sees a non-null ChatGroup with empty name/owner instead of
-  // null. The stale-shell check is asserted below; the row stays a deviation
-  // until the wrapper filters the shell out.
+  // unknown id resolves to null. Teardown destroys it.
   ciTestWidgets('FL-GROUP-001 getGroupWithId reads the cached group',
       (_) async {
     final group = await fixtures.create(caseId: 'FL-GROUP-001');
@@ -74,13 +66,7 @@ void registerGroupCases(ChatClient client) {
     final missingId =
         'flutter_ci_missing_${DateTime.now().microsecondsSinceEpoch}';
     final missing = await manager.getGroupWithId(missingId);
-    debugPrint('CI FL-GROUP-001: unknown id resolved to '
-        '${missing?.groupId} name="${missing?.groupName}" '
-        'owner="${missing?.owner}"');
-    expect(missing, isNotNull);
-    expect(missing!.groupId, missingId);
-    expect(missing.groupName ?? '', isEmpty);
-    expect(missing.owner ?? '', isEmpty);
+    expect(missing, isNull);
   });
 
   // Test: Create a group with the peer as a member, then read the joined list
@@ -139,9 +125,8 @@ void registerGroupCases(ChatClient client) {
   // Expected: Every page item carries a non-empty id and name, and the created
   // public group is reachable within the walked pages. Teardown destroys it.
   //
-  // The peer-owned public group the REST fixture used to create cannot be
-  // provisioned on this app key (every REST group route answers 404) and the
-  // peer cannot log in, so the row creates a self-owned public group instead;
+  // A single-device run cannot log the peer in to create a peer-owned public
+  // group, so the row creates a self-owned public group instead;
   // reachability of a created public group is the same assertion.
   ciTestWidgets('FL-GROUP-004 fetchPublicGroupsFromServer finds a public group',
       (_) async {
@@ -946,9 +931,9 @@ void registerGroupCases(ChatClient client) {
   // destroy the peer-owned group; it leaves it and the residual group is
   // logged.
   //
-  // The REST fixture used to provision a peer-owned group answers 404 on this
-  // app key and the peer cannot log in, so the row builds the same state
-  // through the SDK: create with the peer, transfer ownership, leave, join.
+  // A single-device run cannot log the peer in, so the row builds the same
+  // state through the SDK: create with the peer, transfer ownership, leave,
+  // join.
   ciTestWidgets('FL-GROUP-041 joinPublicGroup joins an open group', (_) async {
     final group = await fixtures.create(
       caseId: 'FL-GROUP-041',
@@ -975,17 +960,16 @@ void registerGroupCases(ChatClient client) {
   });
 
   // Test: Request to join a public approval group.
-  // Expected: UNVERIFIED. A peer-owned approval-required group cannot be
-  // provisioned on this app key (every REST group route answers 404 and the
-  // peer cannot log in), so the positive join request has no target group; the
-  // owner side of the flow is FL-EVENT-112. The row is skipped and recorded
-  // instead of passing without exercising the contract.
+  // Expected: UNVERIFIED. A single-device run cannot log the peer in, so it
+  // cannot approve a join request / accept an invitation and the positive join
+  // request has no second-party target; the owner side of the flow is
+  // FL-EVENT-112. The row is skipped and recorded instead of passing without
+  // exercising the contract.
   ciTestWidgets('FL-GROUP-042 requestToJoinPublicGroup records the outcome',
       (_) async {
     markTestSkipped(
-      'UNVERIFIED: no peer-owned public approval group can be provisioned on '
-      'this app key (REST group routes answer 404 and the peer cannot log in), '
-      'so requestToJoinPublicGroup has no target group.',
+      'UNVERIFIED: the join-application approval flow needs a second logged-in '
+      'client; single-device runs cannot provide the peer owner session.',
     );
   });
 
@@ -997,9 +981,8 @@ void registerGroupCases(ChatClient client) {
   ciTestWidgets('FL-GROUP-043 acceptJoinApplication records the outcome',
       (_) async {
     markTestSkipped(
-      'UNVERIFIED: acceptJoinApplication needs a peer-owned approval group and '
-      'a pending applicant; neither can be provisioned on this app key (REST '
-      'group routes answer 404 and the peer cannot log in).',
+      'UNVERIFIED: acceptJoinApplication needs a second logged-in client (peer '
+      'owner with a pending applicant); single-device runs cannot provide it.',
     );
   });
 
@@ -1011,9 +994,8 @@ void registerGroupCases(ChatClient client) {
   ciTestWidgets('FL-GROUP-044 declineJoinApplication records the outcome',
       (_) async {
     markTestSkipped(
-      'UNVERIFIED: declineJoinApplication needs a peer-owned approval group and '
-      'a pending applicant; neither can be provisioned on this app key (REST '
-      'group routes answer 404 and the peer cannot log in).',
+      'UNVERIFIED: declineJoinApplication needs a second logged-in client (peer '
+      'owner with a pending applicant); single-device runs cannot provide it.',
     );
   });
 

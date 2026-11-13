@@ -58,6 +58,33 @@ Future<void> ensureLoggedOutForCi(ChatClient client) async {
   }
 }
 
+/// Clears pinned conversations left behind by earlier runs of the shared CI
+/// account so pin/unpin cases start from a known server state.
+Future<void> clearPinnedConversationsForCi(ChatClient client) async {
+  try {
+    final pinned = await client.chatManager.fetchConversationsByOptions(
+      options: ConversationFetchOptions.pinned(pageSize: 50),
+    );
+    for (final conversation in pinned.data) {
+      try {
+        await client.chatManager.pinConversation(
+          conversationId: conversation.id,
+          isPinned: false,
+        );
+      } on ChatError catch (error) {
+        debugPrint(
+          'CI unpin cleanup skipped for ${conversation.id}: code=${error.code}',
+        );
+      }
+    }
+    if (pinned.data.isNotEmpty) {
+      debugPrint('CI cleared ${pinned.data.length} leftover pinned conversation(s)');
+    }
+  } on ChatError catch (error) {
+    debugPrint('CI pinned conversation cleanup failed: code=${error.code}');
+  }
+}
+
 /// Best-effort logout used by [tearDownAll].
 Future<void> disposeCiClient(ChatClient client) async {
   try {

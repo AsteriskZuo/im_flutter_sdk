@@ -550,7 +550,14 @@ void registerConversationCases(ChatClient client) {
         (count) => count == 1,
       );
       expect(remaining, 1);
-      expect((await conversation.loadMessage(first.msgId))?.hasRead, isTrue);
+      // The native store updates the message flag asynchronously after the
+      // unread counter changes, so poll instead of assuming one atomic write.
+      final storedFirst = await waitForCi<ChatMessage?>(
+        'the marked message reports hasRead',
+        () => conversation.loadMessage(first.msgId),
+        (message) => message?.hasRead == true,
+      );
+      expect(storedFirst?.hasRead, isTrue);
       expect((await conversation.loadMessage(second.msgId))?.hasRead, isFalse);
 
       await conversation.markMessageAsRead(first.msgId);

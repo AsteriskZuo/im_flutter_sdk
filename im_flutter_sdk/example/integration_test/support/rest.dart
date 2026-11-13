@@ -91,8 +91,10 @@ final class CiRestClient {
     );
   }
 
-  /// Groups. The SDK-side group fixture is preferred; REST is for members
-  /// that must join without an invite/accept round trip.
+  /// Groups. The REST collection path is `/chatgroups` (the `/groups` route
+  /// answers 404 "url is invalid" on this deployment). The SDK-side group
+  /// fixture is preferred; REST is for members that must join without an
+  /// invite/accept round trip.
   Future<String> createGroup({
     required String owner,
     required String name,
@@ -101,7 +103,7 @@ final class CiRestClient {
   }) async {
     final response = await _request(
       'POST',
-      'groups',
+      'chatgroups',
       body: <String, Object>{
         'groupname': name,
         'desc': description,
@@ -115,13 +117,13 @@ final class CiRestClient {
     if (data is Map && data['groupid'] is String) {
       return data['groupid'] as String;
     }
-    throw const FormatException('POST groups: response missing data.groupid');
+    throw const FormatException('POST chatgroups: response missing data.groupid');
   }
 
   Future<void> deleteGroup(String groupId) async {
     await _request(
       'DELETE',
-      'groups/${Uri.encodeComponent(groupId)}',
+      'chatgroups/${Uri.encodeComponent(groupId)}',
       ignoreNotFound: true,
     );
   }
@@ -130,7 +132,7 @@ final class CiRestClient {
     if (userIds.isEmpty) return;
     await _request(
       'POST',
-      'groups/${Uri.encodeComponent(groupId)}/users',
+      'chatgroups/${Uri.encodeComponent(groupId)}/users',
       body: <String, Object>{'usernames': userIds},
     );
   }
@@ -138,7 +140,7 @@ final class CiRestClient {
   Future<void> removeGroupMember(String groupId, String userId) async {
     await _request(
       'DELETE',
-      'groups/${Uri.encodeComponent(groupId)}/users/'
+      'chatgroups/${Uri.encodeComponent(groupId)}/users/'
           '${Uri.encodeComponent(userId)}',
       ignoreNotFound: true,
     );

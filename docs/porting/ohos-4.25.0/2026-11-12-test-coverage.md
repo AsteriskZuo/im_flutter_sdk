@@ -1,7 +1,7 @@
 # OHOS 4.25.0 Dart 公开 API 测试覆盖表
 
 > **快照时间**：2026-11-12 22:45 +08:00（Asia/Shanghai）  
-> **终态更新**：2026-11-12 23:22 +08:00，六套件最终矩阵 **287 passed / 5 skipped / 0 failed**（292 条正式用例）。  
+> **终态更新**：2026-11-13 10:38 +08:00，六套件复验矩阵 **284 passed / 8 skipped / 0 failed**（292 条正式用例；8 skip 为 UNVERIFIED/环境异步记录，明细见 verification §4.2）。  
 > **代码基线**：`d2772e3f`（`im_flutter_sdk/.worktree/ohos`）  
 > **覆盖草稿**：[2026-11-12-test-coverage-draft.md](2026-11-12-test-coverage-draft.md)（704 行，396 张表行）  
 > **失败台账**：[2026-11-12-test-failure-ledger.md](2026-11-12-test-failure-ledger.md)（分类口径以此为准）  
@@ -12,7 +12,7 @@
 
 **注意**：表内通过的 `/` 失败状态行是 22:45 的中途快照。终态结果与归因见
 [2026-11-12-test-verification.md](2026-11-12-test-verification.md) §4/§5：最终六套件
-**287 passed + 5 skipped = 292 条正式用例，0 failed**；本表保留用于"每条 API 是否有
+**284 passed + 8 skipped = 292 条正式用例，0 failed**；本表保留用于"每条 API 是否有
 正式用例、落在哪个文件"的查询，不再代表最终通过状态。
 
 ## 摘要

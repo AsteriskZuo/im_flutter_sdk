@@ -199,7 +199,12 @@ export default class GroupManagerWrapper extends Wrapper {
     }
     let groupId = SafetyMapTool.getString(call.args, 'groupId', '') ?? '';
     let group = manager.getGroup(groupId);
-    if (group === undefined) {
+    // chatsdk returns an empty shell Group for an unknown id instead of
+    // undefined; treat a missing/empty group id or name as "no group" so the
+    // Dart getGroupWithId contract (null) is preserved.
+    let resolvedId = group === undefined ? '' : (group.groupId() ?? '');
+    let resolvedName = group === undefined ? '' : (group.groupName() ?? '');
+    if (group === undefined || resolvedId.length === 0 || resolvedName.length === 0) {
       this.onSuccess(result, call.method);
     } else {
       this.onSuccess(result, call.method, GroupHelper.toJson(group));
