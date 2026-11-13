@@ -1,4 +1,55 @@
+import 'dart:convert';
+
 import 'package:im_flutter_sdk/im_flutter_sdk.dart';
+
+/// ChatOptions keys accepted by the example environment and auto mode.
+/// 4.25 has no `dataSyncType`; keys not listed here are ignored by the example.
+const List<String> chatOptionKeys = <String>[
+  'appKey',
+  'autoLogin',
+  'debugMode',
+  'acceptInvitationAlways',
+  'autoAcceptGroupInvitation',
+  'requireAck',
+  'requireDeliveryAck',
+  'deleteMessagesAsExitGroup',
+  'deleteMessagesAsExitChatRoom',
+  'isChatRoomOwnerLeaveAllowed',
+  'sortMessageByServerTime',
+  'usingHttpsOnly',
+  'serverTransfer',
+  'isAutoDownloadThumbnail',
+  'enableDNSConfig',
+  'dnsUrl',
+  'restServer',
+  'imPort',
+  'imServer',
+  'webSocketServer',
+  'webSocketPort',
+  'chatAreaCode',
+  'enableEmptyConversation',
+  'deviceName',
+  'osType',
+  'useReplacedMessageContents',
+  'enableTLS',
+  'messagesReceiveCallbackIncludeSend',
+  'regardImportMessagesAsRead',
+  'workPathCopiable',
+  'enableUserInfo',
+  'enableAutoSyncContacts',
+  'loginExtension',
+  'autoLoadConversations',
+  'enableChatroomConversation',
+];
+
+Map<String, dynamic> chatOptionsJsonFromEnvironment(
+  Map<String, dynamic> environment,
+) {
+  return <String, dynamic>{
+    for (final key in chatOptionKeys)
+      if (environment.containsKey(key)) key: environment[key],
+  };
+}
 
 /// Shared by init page and auto mode: JSON -> ChatOptions.
 /// appKey is required; other keys fall back to SDK defaults; unknown keys are ignored.
@@ -57,3 +108,14 @@ const String emOptionsTemplate = '''{
   "autoLogin": false,
   "debugMode": true
 }''';
+
+/// Init page pre-fill template built from the generated env.dart environment.
+/// Falls back to the plain template when env.dart is still the empty
+/// placeholder written by `make config` / tool/ci/ensure_example_env.sh.
+String emOptionsTemplateFromEnvironment(Map<String, dynamic> environment) {
+  final options = chatOptionsJsonFromEnvironment(environment);
+  if ((options['appKey'] as String?)?.isNotEmpty != true) {
+    return emOptionsTemplate;
+  }
+  return const JsonEncoder.withIndent('  ').convert(options);
+}

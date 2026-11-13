@@ -9,13 +9,32 @@ verifying real data correctness after SDK upgrades.
 Before first run, from the project root:
 
 ```bash
-make setup
+make setup          # config + deps + pods
 ```
 
-This creates `scripts/config.json` from the template (edit it with your appKey
-and credentials), runs `flutter pub get`, and runs `pod install` if the Podfile
-or podspec changed. See the project root README for details on individual
-`make` targets.
+Then configure the local test environment (same model as 5.1.0):
+
+```bash
+make config         # create example/config.local.json + placeholder example/lib/env.dart
+# edit im_flutter_sdk/example/config.local.json: restApi / appKey / clientId / clientSecret / accounts
+make env-gettoken   # fetch user tokens and rewrite example/lib/env.dart
+```
+
+`config.local.json` and `lib/env.dart` are gitignored; `env.dart` is generated
+with mode 600 and contains the appKey plus one user token per account (tokens
+expire after `tokenTtl`, 24h by default). Re-run `make env-gettoken` when the
+token expires. `make setup` still creates the legacy `scripts/config.json`
+(AutoMode script config) when it is missing.
+
+The generated `env.dart` pre-fills the manual pages: the init page shows the
+`ChatOptions` JSON built from the environment, and the login page defaults to
+the first account id + token (token mode). This is the "manual API verification"
+flow: init → login → search page → API call page.
+
+On a fresh checkout (and in CI) `tool/ci/ensure_example_env.sh` copies the
+empty template `templates/env.example.dart` to `lib/env.dart` when it is
+missing, so the example compiles without credentials; CI never creates
+`config.local.json`.
 
 ## Page flow
 
@@ -23,9 +42,11 @@ or podspec changed. See the project root README for details on individual
 Init page ──init ok──▶ Login page ──login ok──▶ Search page ──tap──▶ API call page
 ```
 
-- **Init** (one-shot): edit the `EMOptions` JSON template and initialize. Cannot
-  be redone without restarting the app.
-- **Login**: password or token (toggle). Also hosts logout / re-login; later
+- **Init** (one-shot): edit the `EMOptions` JSON template and initialize. The
+  template starts from `lib/env.dart` when `make env-gettoken` has generated it.
+  Cannot be redone without restarting the app.
+- **Login**: password or token (toggle); prefilled with the first account from
+  `lib/env.dart` (id + token, token mode). Also hosts logout / re-login; later
   pages can navigate back here.
 - **Search**: live, case-insensitive substring matching over API name and group.
 - **API call**: pre-filled required-field JSON template → invoke → result JSON
@@ -59,18 +80,21 @@ flutter run --dart-define=API_SCRIPT=/absolute/path/script.json \
 ```
 
 `API_CONFIG` points to a JSON file with test data (appKey, accounts, group/room
-ids). When omitted, a `config.json` next to the script file is used
-automatically. With a config file, `init` and `login` can be left out of the
-script: `init` is derived from the config's EMOptions keys (`appKey`,
-`autoLogin`, `debugMode`, `enableUserInfo`, `enableAutoSyncContacts`) and
-`login` from `loginUser` + `loginToken`/`loginPassword`. Explicit `init` /
-`login` blocks in the script override the derived values.
+ids). The base config is always the generated `lib/env.dart` environment; when
+`API_CONFIG` is given (or a `config.json` sits next to the script), its keys are
+merged over the environment. `init` is derived from the merged config's
+ChatOptions keys (`appKey`, `autoLogin`, `debugMode`, `enableUserInfo`,
+`enableAutoSyncContacts`, `autoLoadConversations`, `enableChatroomConversation`,
+… see `chatOptionKeys` in `lib/options_codec.dart`) and `login` from
+`loginUser` + `loginToken`/`loginPassword`, falling back to the first account
+(id + token) written into `lib/env.dart`. Explicit `init` / `login` blocks in the
+script override the derived values.
 
 ```json
 {
   "steps": [
-    { "api": "EMChatManager.sendMessage", "params": { "to": "$config.userId01", "chatType": 0, "direction": 0, "status": 0, "body": {"type": 0, "content": "hi"} } },
-    { "api": "EMChatManager.downloadBigImage", "params": { "message": "$prev" }, "delayAfterMs": 1000 }
+    { "api": "ChatManager.sendMessage", "params": { "to": "$config.userId01", "chatType": 0, "direction": 0, "status": 0, "body": {"type": 0, "content": "hi"} } },
+    { "api": "ChatManager.downloadBigImage", "params": { "message": "$prev" }, "delayAfterMs": 1000 }
   ]
 }
 ```
@@ -111,6 +135,29 @@ flutter run --dart-define=API_SCRIPT=/sdcard/Android/data/com.example.example/fi
 
 A full example covering the 4.22 additions lives at `scripts/script_422_apis.json`
 (expects the keys of `scripts/config.json`).
+
+**HarmonyOS note**: the HarmonyOS emulator/device app sandbox cannot read host
+paths or `/data/local/tmp`, so for script mode the script/config must be readable
+from inside the app sandbox (or use the manual pages, which are prefilled from
+`lib/env.dart`). Manual verification needs no files:
+`make env-gettoken` → `flutter run` → init (prefilled) → login (first account
+token prefilled) → search page → pick an API.
+
+## Verification entry points
+
+- `example/test/env_tool_test.dart` — unit tests for the env.dart data prep tool
+  (placeholder copy, atomic write/600, config validation, literal rendering).
+- `example/integration_test/` — six HarmonyOS integration suites (no-login,
+  logged-in base/contact/group/user-info/special). They take six `E2E_*`
+  dart-defines; see `tool/ci/ohos_local.sh`.
+- Local HarmonyOS runs: `bash tool/ci/ohos_local.sh` (all suites),
+  `bash tool/ci/smoke_local.harmony.sh`, `bash tool/ci/nightly_local.harmony.sh`
+  (Android/iOS entries stay unchanged).
+- Quality gate (official Flutter 3.47): `FORMAT_BASE_SHA=HEAD bash tool/ci/run_quality.sh`.
+
+Note: the ohos fork build requires the fork `flutter pub get` after any official
+Flutter `pub get` touched `.flutter-plugins-dependencies` (otherwise the ohos
+plugin section is missing and hvigor fails); see the verification doc.
 
 ## Coverage scope
 

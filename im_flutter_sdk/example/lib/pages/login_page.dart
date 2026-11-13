@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:im_flutter_sdk/im_flutter_sdk.dart';
 
+import '../env.dart';
 import '../log/log_store.dart';
 import '../registry/api_entry.dart';
 import '../sdk_state.dart';
@@ -17,9 +18,14 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _userController = TextEditingController();
-  final _secretController = TextEditingController();
-  bool _usePassword = true;
+  final _userController = TextEditingController(
+    text: _firstEnvironmentAccountValue('id')?.toString() ?? '',
+  );
+  final _secretController = TextEditingController(
+    text: _firstEnvironmentAccountValue('token')?.toString() ?? '',
+  );
+  bool _usePassword =
+      (_firstEnvironmentAccountValue('token')?.toString() ?? '').isEmpty;
   String? _result;
   bool _running = false;
 
@@ -168,4 +174,13 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
+}
+
+/// First account written by `make env-gettoken` into lib/env.dart.
+Object? _firstEnvironmentAccountValue(String key) {
+  final accounts = environment['accounts'];
+  if (accounts is! List || accounts.isEmpty) return null;
+  final first = accounts.first;
+  if (first is! Map) return null;
+  return first[key];
 }

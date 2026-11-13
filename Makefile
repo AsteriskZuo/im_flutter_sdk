@@ -3,6 +3,7 @@
 
 EXAMPLE_DIR := im_flutter_sdk/example
 IOS_DIR     := $(EXAMPLE_DIR)/ios
+ENV_TOOL    := $(EXAMPLE_DIR)/tool/env_tool.dart
 CONFIG_SRC  := $(EXAMPLE_DIR)/templates/config.example.json
 CONFIG_DST  := $(EXAMPLE_DIR)/scripts/config.json
 PODSPEC     := im_flutter_sdk_ios/ios/im_flutter_sdk_ios.podspec
@@ -11,7 +12,7 @@ PODLOCK     := $(IOS_DIR)/Podfile.lock
 
 .DEFAULT_GOAL := help
 
-.PHONY: help setup config local-deps deps pods clean
+.PHONY: help setup config env-gettoken local-deps deps pods clean
 
 help: ## Show this help
 	@echo "im_flutter_sdk - project setup"
@@ -20,17 +21,21 @@ help: ## Show this help
 
 setup: config deps pods ## Run all setup steps
 	@echo ""
-	@echo "Setup complete. Next: cd $(EXAMPLE_DIR) && flutter run -d <device>"
+	@echo "Setup complete. Next: $(EXAMPLE_DIR): make env-gettoken (after editing config.local.json), then flutter run -d <device>"
 
-config: ## Copy config template if not exists
+config: ## Create local env files (config.local.json + placeholder lib/env.dart) and legacy scripts/config.json if missing
+	dart run $(ENV_TOOL) ensure
 	@if [ ! -f "$(CONFIG_DST)" ]; then \
 		mkdir -p $(dir $(CONFIG_DST)); \
 		cp "$(CONFIG_SRC)" "$(CONFIG_DST)"; \
 		echo "Created: $(CONFIG_DST)"; \
-		echo "Edit it with your appKey / credentials"; \
+		echo "Edit it with your appKey / credentials (AutoMode legacy config)"; \
 	else \
 		echo "Skip: $(CONFIG_DST) already exists"; \
 	fi
+
+env-gettoken: ## Fetch tokens from example/config.local.json and write example/lib/env.dart
+	dart run $(ENV_TOOL) gettoken
 
 local-deps: ## Create gitignored pubspec_overrides.yaml files for local SDK packages
 	bash tool/use_local_packages.sh

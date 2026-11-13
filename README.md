@@ -13,7 +13,10 @@
 ## 开发环境初始化
 
 ```bash
-make setup
+make setup        # config + deps + pods
+make config       # 生成 example/config.local.json + 占位 example/lib/env.dart
+# 编辑 example/config.local.json 填入 appKey / 凭证 / 测试账号
+make env-gettoken # 换取 user token 并生成 example/lib/env.dart（gitignore，mode 600）
 ```
 
 详见 [CONTRIBUTING.md](CONTRIBUTING.md)。

@@ -27,12 +27,15 @@ make setup   # 依次执行 config + deps + pods
 
 | target | 作用 |
 |--------|------|
-| `make config` | 拷贝 `im_flutter_sdk/example/templates/config.example.json` → `im_flutter_sdk/example/scripts/config.json`（已存在则跳过） |
+| `make config` | 创建本地环境文件：`im_flutter_sdk/example/config.local.json` + 占位 `example/lib/env.dart`（已存在则跳过），并保留旧的 `templates/config.example.json` → `scripts/config.json` 拷贝 |
+| `make env-gettoken` | 读取 `example/config.local.json`，为每个账号换取 user token，生成被 gitignore 的 `example/lib/env.dart`（mode 600，默认 24h 过期） |
 | `make local-deps` | 为主包、Android、iOS 和 example 生成被 Git 忽略的本地依赖 override，保留已有文件 |
 | `make deps` | 先执行 `make local-deps`，再在 example 目录执行 `flutter pub get` |
 | `make pods` | 在 `example/ios` 执行 `pod install`（仅 Podfile/podspec 变更时执行，mtime 检测） |
 | `make clean` | 清理 build 产物和 Pods |
 | `make help` | 查看所有命令 |
+
+新增 API 不改初始化方式时，日常验证只需 `make config` → 编辑 `config.local.json` → `make env-gettoken`；已有 `example/lib/env.dart`（例如本地已生成）时 `make config` 不会覆盖它。
 
 > **重要**：修改 `im_flutter_sdk_ios.podspec` 中的 native 依赖版本（如 HyphenateChat）后，必须执行 `make pods`。`flutter run` 不会追踪 podspec 变更，会跳过 pod install，导致 iOS 使用旧版本 native SDK 引发编译错误。
 
@@ -48,10 +51,17 @@ override 只对当前解析的根包生效，不会从依赖包继承。因此�
 
 ## 测试数据准备
 
-example 应用的运行需要真实测试数据，配置在 `im_flutter_sdk/example/scripts/config.json`（含 appKey、测试账号等敏感信息，已 gitignore，不入库）：
+example 应用把测试环境集中在一个本地文件里（与 5.1.0 一致，均不入库）：
 
-1. `make config` 生成模板副本；
-2. 按 `templates/config.example.json` 中的占位符填写真实 appKey、测试账号、群组/聊天室 id 等。
+1. `make config` — 生成 `im_flutter_sdk/example/config.local.json`（含 restApi、appKey、clientId、clientSecret、accounts、groups、rooms、chatOptions 占位）和占位 `example/lib/env.dart`；
+2. 编辑 `config.local.json` 填真实 appKey 与账号（4.25 没有 `dataSyncType`，`chatOptions` 使用 `debugMode` / `enableUserInfo` / `enableAutoSyncContacts` / `autoLoadConversations` / `enableChatroomConversation` 等开关）；
+3. `make env-gettoken` — 用 clientId/clientSecret 换 app token，再为每个账号换 user token，生成 `example/lib/env.dart`（`chmod 600`，token 默认 24h 过期，过期后重新执行）。
+
+`example/lib/env.dart` 是 `const Map<String, Object?> environment`，包含 appKey、每个账号的 id+token、群组/聊天室引用；人工模式页面会用它预填初始化参数和登录账号（第一个 account 的 id+token），脚本模式以其为 base config，`API_CONFIG` 可逐键覆盖。
+
+旧机制 `im_flutter_sdk/example/scripts/config.json`（AutoMode 脚本用，同样 gitignore）仍兼容：`make config` 在缺少时继续从 `templates/config.example.json` 创建。
+
+全新检出与 CI 不需要真实凭证：`tool/ci/ensure_example_env.sh` 在 `lib/env.dart` 缺失时复制空占位模板，`tool/use_local_packages.sh` 与 `tool/ci/ohos_local.sh` 都会调用它。
 
 ## 运行与验证
 

@@ -36,6 +36,10 @@ FLUTTER_BIN="${FLUTTER_BIN:-flutter}"
 OHOS_DEVICE="${OHOS_DEVICE:-127.0.0.1:5555}"
 OHOS_SKIP_CODESIGN="${OHOS_SKIP_CODESIGN:-1}"
 
+# lib/env.dart is gitignored: create the placeholder when missing, never
+# overwrite a locally generated one.
+bash "$REPO_ROOT/tool/ci/ensure_example_env.sh"
+
 ALL_SUITES=(
   logged_out
   logged_in_base

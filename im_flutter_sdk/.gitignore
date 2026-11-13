@@ -29,3 +29,8 @@ migrate_working_dir/
 build/
 config.json
 output/
+
+# Local environment: created by `make config` and rewritten by
+# `make env-gettoken`; never commit credentials or tokens.
+/example/config.local.json
+/example/lib/env.dart

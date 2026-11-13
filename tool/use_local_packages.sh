@@ -33,3 +33,7 @@ ensure_overrides im_flutter_sdk_ohos ../ im_flutter_sdk_interface
 # The example already depends on the main package through path: ../.
 ensure_overrides im_flutter_sdk/example ../../ \
   im_flutter_sdk_interface im_flutter_sdk_android im_flutter_sdk_ios im_flutter_sdk_ohos
+
+# The example imports the gitignored lib/env.dart; make sure a placeholder
+# exists so a fresh checkout and CI can compile without local credentials.
+bash "$repo_root/tool/ci/ensure_example_env.sh"
