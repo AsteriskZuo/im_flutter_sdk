@@ -1419,6 +1419,11 @@ class ChatManager {
       Map req = {};
       req['keywords'] = keywords;
       req['timestamp'] = timestamp;
+      // The native wrappers read "count" (Android ChatManagerWrapper.java:838,
+      // iOS ChatManagerWrapper.m:900); the old "maxCount" key was ignored and
+      // the ohos wrapper fell back to 20. Send "count" and keep "maxCount" for
+      // older native artifacts that may still read it.
+      req['count'] = maxCount;
       req['maxCount'] = maxCount;
       req['from'] = from;
       req['direction'] = direction.index;

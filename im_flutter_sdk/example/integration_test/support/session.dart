@@ -1,0 +1,70 @@
+import 'package:flutter/foundation.dart';
+import 'package:im_flutter_sdk/im_flutter_sdk.dart';
+
+import 'env.dart';
+
+/// The [ChatOptions] shared by every stable CI entry.
+///
+/// Every switch that can change behavior is explicit here. The native SDK
+/// persists state in the app sandbox, so a different option set needs a fresh
+/// test process; each entry file is executed as its own process by the runner.
+ChatOptions ciChatOptions({
+  bool enableUserInfo = false,
+  bool enableAutoSyncContacts = false,
+  bool enableChatroomConversation = false,
+  bool autoLoadConversations = true,
+}) {
+  requireCiEnvironment();
+  return ChatOptions.withAppKey(
+    ciAppKey,
+    autoLogin: false,
+    debugMode: false,
+    enableUserInfo: enableUserInfo,
+    enableAutoSyncContacts: enableAutoSyncContacts,
+    enableChatroomConversation: enableChatroomConversation,
+    autoLoadConversations: autoLoadConversations,
+  );
+}
+
+/// Initializes the singleton client for a CI entry.
+Future<void> initCiClient({
+  bool enableUserInfo = false,
+  bool enableAutoSyncContacts = false,
+  bool enableChatroomConversation = false,
+  bool autoLoadConversations = true,
+}) async {
+  await ChatClient.getInstance.init(
+    ciChatOptions(
+      enableUserInfo: enableUserInfo,
+      enableAutoSyncContacts: enableAutoSyncContacts,
+      enableChatroomConversation: enableChatroomConversation,
+      autoLoadConversations: autoLoadConversations,
+    ),
+  );
+}
+
+/// Clears a session persisted by an earlier run so the entry starts logged out.
+Future<void> ensureLoggedOutForCi(ChatClient client) async {
+  if (await client.isConnected() || client.currentUserId != null) {
+    try {
+      await client.logout(false);
+      await client.getCurrentUserId();
+    } on ChatError catch (error) {
+      // A persisted session that the native SDK no longer recognizes must not
+      // abort the entry; the cached user id is refreshed below.
+      debugPrint('CI logout while idling returned code=${error.code}');
+      await client.getCurrentUserId();
+    }
+  }
+}
+
+/// Best-effort logout used by [tearDownAll].
+Future<void> disposeCiClient(ChatClient client) async {
+  try {
+    if (await client.isConnected() || client.currentUserId != null) {
+      await client.logout(false);
+    }
+  } on ChatError catch (error) {
+    debugPrint('CI dispose logout returned code=${error.code}');
+  }
+}

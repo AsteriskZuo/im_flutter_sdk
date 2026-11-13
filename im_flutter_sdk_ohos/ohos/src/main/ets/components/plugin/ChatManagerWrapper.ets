@@ -1155,8 +1155,11 @@ export default class ChatManagerWrapper extends Wrapper {
       return;
     }
     // chatsdk only needs the message ids (<= 20); the conversationId argument
-    // has no counterpart (gap-ledger 3.1).
-    let messageIds = SafetyMapTool.getStringArray(call.args, 'msgIds') ?? [];
+    // has no counterpart (gap-ledger 3.1). The Dart side sends "messageIds"
+    // (see chat_manager.dart loadMessagesWithIds); accept the legacy "msgIds"
+    // spelling as a fallback.
+    let messageIds = SafetyMapTool.getStringArray(call.args, 'messageIds') ??
+      SafetyMapTool.getStringArray(call.args, 'msgIds') ?? [];
     this.handlePromise(result, call.method, manager.loadMessages(messageIds),
       (msgs) => MessageHelper.listToJson(msgs));
   }
