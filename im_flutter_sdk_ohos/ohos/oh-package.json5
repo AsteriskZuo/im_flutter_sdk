@@ -1,6 +1,6 @@
 {
   "name": "im_flutter_sdk_ohos",
-  "version": "1.15.0",
+  "version": "1.15.0-ohos",
   "description": "OHOS implementation of the im_flutter_sdk plugin.",
   "main": "index.ets",
   "author": "",

@@ -21,19 +21,26 @@ void main() {
     file.writeAsStringSync(content);
   }
 
+  /// HarmonyOS line release version; the two release packages must match exactly.
+  const releaseVersion = '1.15.0-ohos';
+
   void writeValidFixture() {
+    // Release packages: main package plus the HarmonyOS implementation.
+    for (final package in <String>['im_flutter_sdk', 'im_flutter_sdk_ohos']) {
+      write('$package/pubspec.yaml',
+          'name: $package\nversion: $releaseVersion\n');
+    }
+    // Reused packages: published 4.25.0 releases, excluded from the release line.
     for (final package in <String>[
-      'im_flutter_sdk',
+      'im_flutter_sdk_interface',
       'im_flutter_sdk_android',
       'im_flutter_sdk_ios',
-      'im_flutter_sdk_interface',
-      'im_flutter_sdk_ohos',
     ]) {
-      write('$package/pubspec.yaml', 'name: $package\nversion: 1.15.0\n');
+      write('$package/pubspec.yaml', 'name: $package\nversion: 4.25.0\n');
     }
     write(
       'im_flutter_sdk_ios/ios/im_flutter_sdk_ios.podspec',
-      "s.version = '1.15.0'\ns.dependency 'HyphenateChat','4.25.0'\n",
+      "s.version = '4.25.0'\ns.dependency 'HyphenateChat','4.25.0'\n",
     );
     write(
       'im_flutter_sdk_ios/ios/im_flutter_sdk_ios/Package.swift',
@@ -48,15 +55,38 @@ void main() {
     );
   }
 
-  test('accepts aligned federated and podspec versions', () {
+  test('accepts aligned release versions with reused packages at 4.25.0', () {
     writeValidFixture();
 
     final result = checkVersions(fixture.path);
 
     expect(result.errors, isEmpty);
-    expect(result.flutterVersion, '1.15.0');
+    expect(result.flutterVersion, releaseVersion);
     expect(result.androidNativeVersion, '4.25.1');
     expect(result.iosNativeVersion, '4.25.0');
+  });
+
+  test('does not compare the reused package versions with the release line',
+      () {
+    writeValidFixture();
+    // The reused packages stay on their published 4.25.0 releases: the checker must
+    // never require them to match 1.15.0-ohos nor report them as leaving the 1.x line.
+    write(
+      'im_flutter_sdk_interface/pubspec.yaml',
+      'name: im_flutter_sdk_interface\nversion: 4.25.0\n',
+    );
+    write(
+      'im_flutter_sdk_android/pubspec.yaml',
+      'name: im_flutter_sdk_android\nversion: 4.25.0\n',
+    );
+    write(
+      'im_flutter_sdk_ios/pubspec.yaml',
+      'name: im_flutter_sdk_ios\nversion: 4.25.0\n',
+    );
+
+    final result = checkVersions(fixture.path);
+
+    expect(result.errors, isEmpty);
   });
 
   test('accepts an Android native version independent of the Flutter version',
@@ -75,10 +105,10 @@ void main() {
 
   test('ignores the patch digit of both iOS integration paths', () {
     writeValidFixture();
-    // The five packages stay at 1.15.0 while both iOS paths moved to 4.25.4.
+    // Both iOS paths move to 4.25.4 while the release packages stay on 1.15.0-ohos.
     write(
       'im_flutter_sdk_ios/ios/im_flutter_sdk_ios.podspec',
-      "s.version = '1.15.0'\ns.dependency 'HyphenateChat','4.25.4'\n",
+      "s.version = '4.25.0'\ns.dependency 'HyphenateChat','4.25.4'\n",
     );
     write(
       'im_flutter_sdk_ios/ios/im_flutter_sdk_ios/Package.swift',
@@ -93,13 +123,14 @@ void main() {
     expect(result.iosNativeVersion, '4.25.4');
   });
 
-  test(
-      'accepts a podspec version on the same major.minor line with another patch',
+  test('accepts a podspec version decoupled from the release package version',
       () {
     writeValidFixture();
+    // The reused iOS package keeps its published podspec version 4.25.0 while the
+    // release packages are on 1.15.0-ohos: the checker no longer compares them.
     write(
       'im_flutter_sdk_ios/ios/im_flutter_sdk_ios.podspec',
-      "s.version = '1.15.7'\ns.dependency 'HyphenateChat','4.25.0'\n",
+      "s.version = '4.25.0'\ns.dependency 'HyphenateChat','4.25.0'\n",
     );
 
     final result = checkVersions(fixture.path);
@@ -125,43 +156,11 @@ void main() {
     expect(result.errors.single, contains('4.24.1'));
   });
 
-  test('reports a podspec version on another major.minor line', () {
-    writeValidFixture();
-    write(
-      'im_flutter_sdk_ios/ios/im_flutter_sdk_ios.podspec',
-      "s.version = '1.14.9'\ns.dependency 'HyphenateChat','4.25.0'\n",
-    );
-
-    final result = checkVersions(fixture.path);
-
-    expect(result.errors, hasLength(1));
-    expect(result.errors.single, contains('major.minor'));
-    expect(result.errors.single, contains('1.14.9'));
-  });
-
-  test('reports every package and podspec mismatch', () {
-    writeValidFixture();
-    write(
-      'im_flutter_sdk_android/pubspec.yaml',
-      'name: im_flutter_sdk_android\nversion: 1.15.3\n',
-    );
-    write(
-      'im_flutter_sdk_ios/ios/im_flutter_sdk_ios.podspec',
-      "s.version = '1.14.2'\ns.dependency 'HyphenateChat','4.25.0'\n",
-    );
-
-    final result = checkVersions(fixture.path);
-
-    expect(result.errors, hasLength(2));
-    expect(result.errors.join('\n'), contains('im_flutter_sdk_android'));
-    expect(result.errors.join('\n'), contains('podspec'));
-  });
-
-  test('reports an ohos package version out of line', () {
+  test('reports the HarmonyOS implementation package out of line', () {
     writeValidFixture();
     write(
       'im_flutter_sdk_ohos/pubspec.yaml',
-      'name: im_flutter_sdk_ohos\nversion: 1.14.0\n',
+      'name: im_flutter_sdk_ohos\nversion: 1.14.0-ohos\n',
     );
 
     final result = checkVersions(fixture.path);
@@ -169,6 +168,49 @@ void main() {
     expect(result.errors, hasLength(1));
     expect(result.errors.single, contains('im_flutter_sdk_ohos'));
     expect(
-        result.errors.single, contains('does not match im_flutter_sdk 1.15.0'));
+      result.errors.single,
+      contains('does not match im_flutter_sdk $releaseVersion'),
+    );
+  });
+
+  test('reports a release package on a different version', () {
+    writeValidFixture();
+    write(
+      'im_flutter_sdk_ohos/pubspec.yaml',
+      'name: im_flutter_sdk_ohos\nversion: 2.0.0-ohos\n',
+    );
+
+    final result = checkVersions(fixture.path);
+
+    expect(result.errors, hasLength(1));
+    expect(
+      result.errors.single,
+      contains('does not match im_flutter_sdk $releaseVersion'),
+    );
+  });
+
+  test('reports a missing release package pubspec', () {
+    writeValidFixture();
+    File('${fixture.path}/im_flutter_sdk_ohos/pubspec.yaml').deleteSync();
+
+    final result = checkVersions(fixture.path);
+
+    expect(result.errors, hasLength(1));
+    expect(result.errors.single, contains('Missing file for version'));
+  });
+
+  test('does not require the reused package pubspec files', () {
+    writeValidFixture();
+    for (final package in <String>[
+      'im_flutter_sdk_interface',
+      'im_flutter_sdk_android',
+      'im_flutter_sdk_ios',
+    ]) {
+      File('${fixture.path}/$package/pubspec.yaml').deleteSync();
+    }
+
+    final result = checkVersions(fixture.path);
+
+    expect(result.errors, isEmpty);
   });
 }

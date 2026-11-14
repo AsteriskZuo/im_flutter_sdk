@@ -15,8 +15,9 @@ void main(List<String> arguments) {
   }
 
   stdout.writeln(
-    'Versions are consistent: Flutter ${result.flutterVersion} (five packages identical, '
-    'podspec on the same major.minor line), '
+    'Versions are consistent: HarmonyOS release line ${result.flutterVersion} '
+    '(im_flutter_sdk and im_flutter_sdk_ohos identical; interface/android/ios stay on their '
+    'published 4.25.0 releases), '
     'iOS Native ${result.iosNativeVersion} (podspec and Package.swift on the same major.minor line), '
     'Android Native ${result.androidNativeVersion} (independently released, patch digit ignored).',
   );

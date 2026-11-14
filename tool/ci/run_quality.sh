@@ -10,6 +10,7 @@ packages=(
   im_flutter_sdk_android
   im_flutter_sdk_ios
   im_flutter_sdk
+  im_flutter_sdk_ohos
   im_flutter_sdk/example
 )
 

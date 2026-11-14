@@ -1,13 +1,13 @@
-## 1.15.0
+## 1.15.0-ohos
 
 ### 中文
 
-鸿蒙平台实现包首个正式版本，随主包 1.15.0 发布。
+鸿蒙平台实现包首个版本，随主包 `1.15.0-ohos` 一起发布（本包先发布到 pub.dev，主包按精确版本引入）。
 
 **新增**
 
 - 新增 `im_flutter_sdk_ohos` 平台实现包，基于 HarmonyOS 原生 `@easemob/chatsdk` 1.15.0；
-- 实现 `im_flutter_sdk_interface` 的全部 MethodChannel 路由，覆盖 `ChatClient` 与 8 个 Manager 的 wrapper；
+- 实现 `im_flutter_sdk_interface` 的全部 MethodChannel 路由，覆盖 `ChatClient` 与 8 个 Manager 的 wrapper（interface 为 pub.dev 已发布 4.25.0，复用，不随本线发版）；
 - 新增鸿蒙本地测试入口：仓库根目录 `tool/ci/ohos_local.sh`、`tool/ci/smoke_local.harmony.sh`、`tool/ci/nightly_local.harmony.sh`（smoke 零凭证；nightly 只需长期凭证，token 由脚本现场换取）。
 
 **修复**
@@ -26,12 +26,12 @@
 
 ### English
 
-First official release of the HarmonyOS implementation package, shipped with the main package 1.15.0.
+First release of the HarmonyOS implementation package, shipped together with the main package `1.15.0-ohos` (this package is published to pub.dev first; the main package depends on it by exact version).
 
 **Added**
 
 - Added the `im_flutter_sdk_ohos` implementation package, built on HarmonyOS native `@easemob/chatsdk` 1.15.0;
-- Implemented all MethodChannel routes of `im_flutter_sdk_interface`, covering the wrappers for `ChatClient` and 8 managers;
+- Implemented all MethodChannel routes of `im_flutter_sdk_interface`, covering the wrappers for `ChatClient` and 8 managers (interface stays on its published 4.25.0 release and is not republished on this line);
 - Added HarmonyOS local test entries under the repository root: `tool/ci/ohos_local.sh`, `tool/ci/smoke_local.harmony.sh`, and `tool/ci/nightly_local.harmony.sh` (smoke needs no credentials; nightly needs only long-lived credentials, with tokens fetched by the script at run time).
 
 **Fixed**

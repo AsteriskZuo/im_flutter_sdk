@@ -2,9 +2,6 @@ import 'dart:io';
 
 const _packagePaths = <String>[
   'im_flutter_sdk',
-  'im_flutter_sdk_android',
-  'im_flutter_sdk_ios',
-  'im_flutter_sdk_interface',
   'im_flutter_sdk_ohos',
 ];
 
@@ -22,16 +19,19 @@ class VersionCheckResult {
   final String iosNativeVersion;
 }
 
-/// Checks the version invariants of the federated packages:
+/// Checks the version invariants of the HarmonyOS-line release packages:
 ///
-/// 1. the five package versions stay identical (strict equality), and the iOS podspec `s.version`
-///    stays on the same major.minor line as them;
+/// 1. the two release packages stay identical (strict equality): `im_flutter_sdk` and
+///    `im_flutter_sdk_ohos`. The reused `im_flutter_sdk_interface` / `im_flutter_sdk_android` /
+///    `im_flutter_sdk_ios` packages keep their published 4.25.0 releases and are deliberately not
+///    part of this check, and the iOS podspec `s.version` is the reused package version, so it is
+///    not compared with the release line either;
 /// 2. the two iOS native dependency declarations (CocoaPods podspec and SPM `Package.swift`) stay on
 ///    the same major.minor line, because both integrate the same native SDK;
 /// 3. native dependency versions are released independently of this repository, so **the patch
-///    digit is never compared**: the Flutter packages at 1.15.0 may depend on native `4.25.x`, and
-///    the two iOS integration paths may differ in the patch digit (`4.25.0` against `4.25.1`),
-///    while a different major.minor line (4.24.1 against 4.25.0) is an error.
+///    digit is never compared**: the release packages at `1.15.0-ohos` may depend on native
+///    `4.25.x`, and the two iOS integration paths may differ in the patch digit (`4.25.0` against
+///    `4.25.1`), while a different major.minor line (4.24.1 against 4.25.0) is an error.
 VersionCheckResult checkVersions(String repositoryRoot) {
   final errors = <String>[];
   final packageVersions = <String, String>{};
@@ -54,19 +54,6 @@ VersionCheckResult checkVersions(String repositoryRoot) {
         'does not match im_flutter_sdk $flutterVersion',
       );
     }
-  }
-
-  final podspecVersion = _readMatch(
-    '$repositoryRoot/im_flutter_sdk_ios/ios/im_flutter_sdk_ios.podspec',
-    RegExp(r'''s\.version\s*=\s*['"]([^'"]+)['"]'''),
-    'podspec version',
-    errors,
-  );
-  if (!_sameMajorMinor(podspecVersion, flutterVersion)) {
-    errors.add(
-      'iOS podspec version $podspecVersion is not on the same major.minor line as '
-      'im_flutter_sdk $flutterVersion',
-    );
   }
 
   final androidNativeVersion = _readMatch(

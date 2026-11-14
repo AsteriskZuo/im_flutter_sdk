@@ -26,13 +26,13 @@ ensure_overrides() {
 }
 
 ensure_overrides im_flutter_sdk ../ \
-  im_flutter_sdk_interface im_flutter_sdk_android im_flutter_sdk_ios im_flutter_sdk_ohos
+  im_flutter_sdk_interface im_flutter_sdk_ohos
 ensure_overrides im_flutter_sdk_android ../ im_flutter_sdk_interface
 ensure_overrides im_flutter_sdk_ios ../ im_flutter_sdk_interface
 ensure_overrides im_flutter_sdk_ohos ../ im_flutter_sdk_interface
 # The example already depends on the main package through path: ../.
 ensure_overrides im_flutter_sdk/example ../../ \
-  im_flutter_sdk_interface im_flutter_sdk_android im_flutter_sdk_ios im_flutter_sdk_ohos
+  im_flutter_sdk_interface im_flutter_sdk_ohos
 
 # The example imports the gitignored lib/env.dart; make sure a placeholder
 # exists so a fresh checkout and CI can compile without local credentials.

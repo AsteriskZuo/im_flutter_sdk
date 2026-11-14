@@ -1,8 +1,8 @@
-## 1.15.0
+## 1.15.0-ohos
 
 ### 中文
 
-鸿蒙线首个正式版本，版本号跟随 HarmonyOS 原生 SDK（`@easemob/chatsdk` 1.15.0）。
+鸿蒙线首个版本，以 `1.15.0-ohos` 标识鸿蒙线（版本号跟随 HarmonyOS 原生 SDK `@easemob/chatsdk` 1.15.0）。
 
 **新增**
 
@@ -21,7 +21,8 @@
 
 **说明**
 
-- Android/iOS 实现包随版本号统一为 1.15.0，但本次不单独发版；其原生依赖与 4.25.x 保持一致。
+- 主包只声明 HarmonyOS 平台；Android/iOS 请使用 pub.dev 官方发布线（4.25.0 / 5.0.0）。
+- `im_flutter_sdk_ohos` 与主包同步发布 `1.15.0-ohos`（先发布实现包到 pub.dev，再打主包 Git tag）；`im_flutter_sdk_interface` / `_android` / `_ios` 使用 pub.dev 已发布 **4.25.0**，**不发布新版本**。
 
 **已知限制**
 
@@ -32,7 +33,7 @@
 
 ### English
 
-First official release of the HarmonyOS line. The version number follows the HarmonyOS native SDK (`@easemob/chatsdk` 1.15.0).
+First release of the HarmonyOS line, identified as `1.15.0-ohos`. The version follows the HarmonyOS native SDK (`@easemob/chatsdk` 1.15.0).
 
 **Added**
 
@@ -51,7 +52,8 @@ First official release of the HarmonyOS line. The version number follows the Har
 
 **Notes**
 
-- The Android/iOS implementation packages are versioned 1.15.0 for consistency but are not released separately this time; their native dependencies stay in line with 4.25.x.
+- The main package only declares the HarmonyOS platform; Android/iOS should use the official pub.dev release line (4.25.0 / 5.0.0).
+- `im_flutter_sdk_ohos` is released together with the main package as `1.15.0-ohos` (implementation package first, then the main-package Git tag); `im_flutter_sdk_interface` / `_android` / `_ios` stay on their published **4.25.0** releases and are **not republished**.
 
 **Known limitations**
 
